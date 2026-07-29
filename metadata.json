@@ -1,0 +1,5 @@
+{
+  "name": "FinanZe",
+  "description": "A comprehensive personal finance tracker inspired by Organizze. Features expense/income tracking, credit card management, installment handling, and AI-powered financial insights.",
+  "requestFramePermissions": []
+}
