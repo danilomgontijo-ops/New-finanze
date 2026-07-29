@@ -722,10 +722,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
         a.bonusCost += bonusValue;
         a.lots.push({ date: tDate, q: quantity, cost: bonusValue });
       } else if (event === "SPLIT") {
-        const factor =
-          quantity > 50 && a.quantity > 0
-            ? (a.quantity + quantity) / a.quantity
-            : quantity;
+        // quantity representa sempre o FATOR do desdobramento (ex: 4 para 1:4), nunca a qtd. de ações recebidas.
+        const factor = quantity;
         a.quantity *= factor;
         a.lots.forEach((lot: any) => {
           lot.q *= factor;
@@ -1254,10 +1252,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
         else if (det.event === "BONUS") runningQty += det.quantity;
         else if (det.event === "SELL") runningQty -= det.quantity;
         else if (det.event === "SPLIT") {
-          const factor =
-            det.quantity > 50 && runningQty > 0
-              ? (runningQty + det.quantity) / runningQty
-              : det.quantity;
+          // det.quantity é sempre o FATOR do desdobramento.
+          const factor = det.quantity;
           runningQty *= factor;
         } else if (det.event === "MERGE") runningQty /= det.quantity;
         else if (det.event === "TICKER_UPDATE" && det.newTicker) runningQty = 0;
@@ -1279,11 +1275,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
         futureEvents.forEach((e) => {
           const det = e.investmentDetails!;
           if (det.event === "SPLIT") {
-            const qtyBefore = qtyBeforeTx[e.id];
-            const factor =
-              det.quantity > 50 && qtyBefore > 0
-                ? (qtyBefore + det.quantity) / qtyBefore
-                : det.quantity || 1;
+            // det.quantity é sempre o FATOR do desdobramento.
+            const factor = det.quantity || 1;
             multiplier *= factor;
           } else if (det.event === "MERGE") {
             multiplier /= det.quantity || 1;
@@ -1508,10 +1501,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
           // However, for the PORTFOLIO, they are internal.
           // Let's keep them as internal for now (don't add to monthNetFlow).
         } else if (det.event === "SPLIT") {
-          const factor =
-            det.quantity > 50 && asset.qty > 0
-              ? (asset.qty + det.quantity) / asset.qty
-              : det.quantity;
+          // det.quantity é sempre o FATOR do desdobramento.
+          const factor = det.quantity;
           asset.qty *= factor;
         } else if (det.event === "MERGE") asset.qty /= det.quantity;
         else if (det.event === "TICKER_UPDATE" && det.newTicker) {
@@ -1711,10 +1702,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 currentQty = det.quantity;
               }
             } else if (det.event === "SPLIT") {
-              const factor =
-                det.quantity > 50 && currentQty > 0
-                  ? (currentQty + det.quantity) / currentQty
-                  : det.quantity || 1;
+              // det.quantity é sempre o FATOR do desdobramento.
+              const factor = det.quantity || 1;
               currentQty *= factor;
             } else if (det.event === "MERGE") {
               currentQty /= det.quantity;
@@ -3496,10 +3485,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
           const costSold = qty * pos.avgPrice;
           pos.totalCost -= costSold;
         } else if (event === "SPLIT") {
-          const factor =
-            qty > 50 && pos.quantity > 0
-              ? (pos.quantity + qty) / pos.quantity
-              : qty;
+          // qty é sempre o FATOR do desdobramento.
+          const factor = qty;
           pos.quantity *= factor;
           pos.avgPrice = pos.quantity > 0 ? pos.totalCost / pos.quantity : 0;
         } else if (event === "MERGE") {
