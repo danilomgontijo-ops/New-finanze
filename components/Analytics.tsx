@@ -672,13 +672,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({
           <div className="space-y-2">
               <div className="flex justify-between items-center">
                   <h4 className={`text-[10px] font-bold uppercase tracking-wider ${type === TransactionType.EXPENSE ? 'text-rose-600' : (type === TransactionType.INVESTMENT ? 'text-blue-600' : 'text-emerald-600')}`}>{type === TransactionType.EXPENSE ? 'Despesas' : (type === TransactionType.INVESTMENT ? 'Investimentos' : 'Receitas')}</h4>
-                  <button onClick={() => selectAllCategories(type)} className="text-[10px] text-gray-700 hover:underline">Inverter Seleção</button>
+                  <button onClick={() => selectAllCategories(type)} className="text-[10px] text-zinc-700 dark:text-zinc-300 hover:underline">Inverter Seleção</button>
               </div>
               <div className="flex flex-wrap gap-2">
                   {cats.map(cat => {
                       const isSelected = filterCategoryIds.includes(cat.id);
                       return (
-                          <button key={cat.id} onClick={() => toggleCategoryFilter(cat.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${isSelected ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' : 'bg-white dark:bg-zinc-900 border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                          <button key={cat.id} onClick={() => toggleCategoryFilter(cat.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${isSelected ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:bg-zinc-950/40'}`}>
                               {isSelected ? <CheckSquare size={12} className="shrink-0" /> : <Square size={12} className="shrink-0" />}
                               <span className="truncate max-w-[120px]">{cat.name}</span>
                           </button>
@@ -704,37 +704,37 @@ export const Analytics: React.FC<AnalyticsProps> = ({
           <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
               {/* View Switcher & Date */}
               <div className="flex items-center gap-3 w-full lg:w-auto">
-                  <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl shrink-0">
-                      <button onClick={() => setTimeRange('month')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${timeRange === 'month' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Mês</button>
-                      <button onClick={() => setTimeRange('year')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${timeRange === 'year' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Ano</button>
-                      <button onClick={() => setTimeRange('custom')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${timeRange === 'custom' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Personalizado</button>
-                      <button onClick={() => setTimeRange('all')} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${timeRange === 'all' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Tudo</button>
+                  <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-full shrink-0">
+                      <button onClick={() => setTimeRange('month')} className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${timeRange === 'month' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Mês</button>
+                      <button onClick={() => setTimeRange('year')} className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${timeRange === 'year' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Ano</button>
+                      <button onClick={() => setTimeRange('custom')} className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${timeRange === 'custom' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Personalizado</button>
+                      <button onClick={() => setTimeRange('all')} className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${timeRange === 'all' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Tudo</button>
                   </div>
                   
-                  <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-950 px-2 py-1 rounded-xl border border-zinc-200 dark:border-zinc-800/60 flex-1 lg:flex-none justify-center">
+                  <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 px-2 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 shadow-sm flex-1 lg:flex-none justify-center">
                       {timeRange === 'month' && (
                           <>
-                              <button onClick={handlePrevMonth} className="p-1.5 hover:bg-white dark:bg-zinc-900 rounded-lg text-gray-500 transition-colors"><ChevronLeft size={18}/></button>
-                              <span className="font-bold text-gray-900 uppercase text-xs tracking-wide min-w-[100px] text-center">{currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
-                              <button onClick={handleNextMonth} className="p-1.5 hover:bg-white dark:bg-zinc-900 rounded-lg text-gray-500 transition-colors"><ChevronRight size={18}/></button>
+                              <button onClick={handlePrevMonth} className="p-1.5 hover:bg-white dark:bg-zinc-900 rounded-lg text-zinc-500 dark:text-zinc-400 transition-colors"><ChevronLeft size={18}/></button>
+                              <span className="font-bold text-zinc-900 dark:text-zinc-100 uppercase text-xs tracking-wide min-w-[100px] text-center">{currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
+                              <button onClick={handleNextMonth} className="p-1.5 hover:bg-white dark:bg-zinc-900 rounded-lg text-zinc-500 dark:text-zinc-400 transition-colors"><ChevronRight size={18}/></button>
                           </>
                       )}
                       {timeRange === 'year' && (
                           <>
-                              <button onClick={() => setSelectedYear(y => y - 1)} className="p-1.5 hover:bg-white dark:bg-zinc-900 rounded-lg text-gray-500"><ChevronLeft size={18}/></button>
-                              <span className="font-bold text-gray-900 min-w-[60px] text-center">{selectedYear}</span>
-                              <button onClick={() => setSelectedYear(y => y + 1)} className="p-1.5 hover:bg-white dark:bg-zinc-900 rounded-lg text-gray-500"><ChevronRight size={18}/></button>
+                              <button onClick={() => setSelectedYear(y => y - 1)} className="p-1.5 hover:bg-white dark:bg-zinc-900 rounded-lg text-zinc-500 dark:text-zinc-400"><ChevronLeft size={18}/></button>
+                              <span className="font-bold text-zinc-900 dark:text-zinc-100 min-w-[60px] text-center">{selectedYear}</span>
+                              <button onClick={() => setSelectedYear(y => y + 1)} className="p-1.5 hover:bg-white dark:bg-zinc-900 rounded-lg text-zinc-500 dark:text-zinc-400"><ChevronRight size={18}/></button>
                           </>
                       )}
                       {timeRange === 'custom' && (
                           <>
-                              <input type="month" value={customStartMonth} onChange={(e) => setCustomStartMonth(e.target.value)} className="bg-transparent text-xs font-bold text-gray-800 outline-none w-24 text-center" />
-                              <span className="text-gray-500 text-xs">até</span>
-                              <input type="month" value={customEndMonth} onChange={(e) => setCustomEndMonth(e.target.value)} className="bg-transparent text-xs font-bold text-gray-800 outline-none w-24 text-center" />
+                              <input type="month" value={customStartMonth} onChange={(e) => setCustomStartMonth(e.target.value)} className="bg-transparent text-xs font-bold text-zinc-800 dark:text-zinc-200 outline-none w-24 text-center" />
+                              <span className="text-zinc-500 dark:text-zinc-400 text-xs">até</span>
+                              <input type="month" value={customEndMonth} onChange={(e) => setCustomEndMonth(e.target.value)} className="bg-transparent text-xs font-bold text-zinc-800 dark:text-zinc-200 outline-none w-24 text-center" />
                           </>
                       )}
                       {timeRange === 'all' && (
-                          <span className="font-bold text-gray-900 uppercase text-xs tracking-wide min-w-[100px] text-center">Todo o Período</span>
+                          <span className="font-bold text-zinc-900 dark:text-zinc-100 uppercase text-xs tracking-wide min-w-[100px] text-center">Todo o Período</span>
                       )}
                   </div>
               </div>
@@ -760,45 +760,45 @@ export const Analytics: React.FC<AnalyticsProps> = ({
 
           {/* Row 2: Filters */}
           <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800/40">
-             <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl shrink-0">
-                  <button onClick={() => setAnalysisType(TransactionType.EXPENSE)} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${analysisType === TransactionType.EXPENSE ? 'bg-white dark:bg-zinc-900 shadow text-rose-600' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Despesas</button>
-                  <button onClick={() => setAnalysisType(TransactionType.INCOME)} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${analysisType === TransactionType.INCOME ? 'bg-white dark:bg-zinc-900 shadow text-emerald-600' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Receitas</button>
-                  <button onClick={() => setAnalysisType(TransactionType.INVESTMENT)} className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${analysisType === TransactionType.INVESTMENT ? 'bg-white dark:bg-zinc-900 shadow text-blue-600' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Investimentos</button>
+             <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-full shrink-0">
+                  <button onClick={() => setAnalysisType(TransactionType.EXPENSE)} className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${analysisType === TransactionType.EXPENSE ? 'bg-white dark:bg-zinc-900 shadow text-rose-600' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Despesas</button>
+                  <button onClick={() => setAnalysisType(TransactionType.INCOME)} className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${analysisType === TransactionType.INCOME ? 'bg-white dark:bg-zinc-900 shadow text-emerald-600' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Receitas</button>
+                  <button onClick={() => setAnalysisType(TransactionType.INVESTMENT)} className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${analysisType === TransactionType.INVESTMENT ? 'bg-white dark:bg-zinc-900 shadow text-blue-600' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'}`}>Investimentos</button>
               </div>
 
               <button 
                 onClick={() => setIncludeNathy(!includeNathy)} 
-                className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-xs font-bold whitespace-nowrap transition-all ${includeNathy ? 'bg-pink-50/10 dark:bg-pink-950/20 border-pink-200/40 dark:border-pink-900/30 text-pink-700 dark:text-pink-400' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40'}`}
+                className={`flex items-center gap-2 px-3 py-2 border rounded-full text-xs font-bold whitespace-nowrap transition-all ${includeNathy ? 'bg-pink-50/10 dark:bg-pink-950/20 border-pink-200/40 dark:border-pink-900/30 text-pink-700 dark:text-pink-400' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40'}`}
                 title="Mostrar gastos da Nathy e partes divididas que normalmente são excluídas da sua análise pessoal."
               >
                   <Users size={14} /> {includeNathy ? 'Ocultar Nathy' : 'Incluir Nathy'}
               </button>
-              <button onClick={() => setIsFilterVisible(!isFilterVisible)} className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-xs font-bold whitespace-nowrap transition-all ${isFilterVisible || filterTag || filterCategoryIds.length > 0 ? 'bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40'}`}><Filter size={14} /> Filtros Avançados</button>
+              <button onClick={() => setIsFilterVisible(!isFilterVisible)} className={`flex items-center gap-2 px-3 py-2 border rounded-full text-xs font-bold whitespace-nowrap transition-all ${isFilterVisible || filterTag || filterCategoryIds.length > 0 ? 'bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40'}`}><Filter size={14} /> Filtros Avançados</button>
           </div>
       </div>
 
       {isFilterVisible && (
-          <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200 shadow-lg animate-in slide-in-from-top-2">
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-lg animate-in slide-in-from-top-2">
               <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-bold text-gray-800 flex items-center gap-2"><Filter size={18} className="text-gray-700" /> Configurar Filtros</h3>
+                  <h3 className="font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2"><Filter size={18} className="text-zinc-700 dark:text-zinc-300" /> Configurar Filtros</h3>
                   {(filterCategoryIds.length > 0 || filterTag) && (
                       <button onClick={() => { setFilterCategoryIds([]); setFilterTag(''); }} className="text-xs font-bold text-rose-500 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"><X size={14} /> Limpar Tudo</button>
                   )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                      <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2"><Search size={14}/> Buscar Tag ou Texto</label>
+                      <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase flex items-center gap-2"><Search size={14}/> Buscar Tag ou Texto</label>
                       <div className="relative">
-                          <input type="text" value={filterTag} onChange={e => setFilterTag(e.target.value)} placeholder="Ex: Uber, iFood, #ferias..." className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-500 outline-none" />
-                          {filterTag && <button onClick={() => setFilterTag('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-rose-500"><X size={16}/></button>}
+                          <input type="text" value={filterTag} onChange={e => setFilterTag(e.target.value)} placeholder="Ex: Uber, iFood, #ferias..." className="w-full pl-4 pr-10 py-2.5 bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                          {filterTag && <button onClick={() => setFilterTag('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 hover:text-rose-500"><X size={16}/></button>}
                       </div>
                   </div>
-                  <div className="space-y-4 md:col-span-2 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  <div className="space-y-4 md:col-span-2 bg-zinc-50 dark:bg-zinc-950/40 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
                       <div className="flex justify-between items-center">
-                          <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2"><PieIcon size={14}/> Filtrar por Categorias</label>
+                          <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase flex items-center gap-2"><PieIcon size={14}/> Filtrar por Categorias</label>
                           <div className="flex gap-2">
-                              <button onClick={() => setFilterCategoryIds(categories.map(c => c.id))} className="text-[10px] text-gray-700 bg-white dark:bg-zinc-900 border border-gray-200 px-2 py-1 rounded shadow-sm hover:bg-gray-50">Marcar Todas</button>
-                              <button onClick={clearCategoryFilters} className="text-[10px] text-gray-500 bg-white dark:bg-zinc-900 border border-gray-200 px-2 py-1 rounded shadow-sm hover:bg-gray-50">Desmarcar Todas</button>
+                              <button onClick={() => setFilterCategoryIds(categories.map(c => c.id))} className="text-[10px] text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-2 py-1 rounded shadow-sm hover:bg-zinc-50 dark:bg-zinc-950/40">Marcar Todas</button>
+                              <button onClick={clearCategoryFilters} className="text-[10px] text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-2 py-1 rounded shadow-sm hover:bg-zinc-50 dark:bg-zinc-950/40">Desmarcar Todas</button>
                           </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-60 overflow-y-auto custom-scrollbar pr-2">
@@ -811,9 +811,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({
           </div>
       )}
 
-      <div className="flex bg-white dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm w-fit max-w-full overflow-x-auto custom-scrollbar">
+      <div className="flex bg-white dark:bg-zinc-900 p-1 rounded-full border border-zinc-200 dark:border-zinc-800 shadow-sm w-fit max-w-full overflow-x-auto custom-scrollbar">
           {[{ id: 'overview', label: 'Resumo e Agrupamentos', icon: Activity }, { id: 'categories', label: 'Distribuição', icon: PieIcon }, { id: 'trends', label: 'Histórico Mensal', icon: TrendingUp }, { id: 'annual', label: 'Comparativo Anual', icon: Calendar }].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center whitespace-nowrap gap-2 px-6 py-2 text-sm font-bold rounded-lg transition-all ${activeTab === tab.id ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'}`}><tab.icon size={16} /> {tab.label}</button>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center whitespace-nowrap gap-2 px-6 py-2 text-sm font-bold rounded-full transition-all ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-md' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'}`}><tab.icon size={16} /> {tab.label}</button>
           ))}
       </div>
 
@@ -822,11 +822,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({
               <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col">
                   <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 flex justify-between items-center flex-wrap gap-2">
                       <div><h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2 uppercase tracking-wide"><List size={16} className="text-zinc-500 dark:text-zinc-400" /> {analysisType === TransactionType.EXPENSE ? 'Gastos' : (analysisType === TransactionType.INVESTMENT ? 'Investimentos' : 'Receitas')} Agrupados</h3></div>
-                      <div className="flex bg-zinc-200 dark:bg-zinc-700 p-1 rounded-lg">
-                          <button onClick={() => setGroupMode('description')} className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${groupMode === 'description' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-700 dark:text-zinc-200' : 'text-zinc-500 dark:text-zinc-400'}`}>{analysisType === TransactionType.INVESTMENT ? 'Ativo/Descrição' : 'Descrição'}</button>
-                          <button onClick={() => setGroupMode('category')} className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${groupMode === 'category' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-700 dark:text-zinc-200' : 'text-zinc-500 dark:text-zinc-400'}`}>Categoria</button>
+                      <div className="flex bg-zinc-200 dark:bg-zinc-700 p-1 rounded-full">
+                          <button onClick={() => setGroupMode('description')} className={`px-3 py-1 text-[10px] font-bold rounded-full transition-all ${groupMode === 'description' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-700 dark:text-zinc-200' : 'text-zinc-500 dark:text-zinc-400'}`}>{analysisType === TransactionType.INVESTMENT ? 'Ativo/Descrição' : 'Descrição'}</button>
+                          <button onClick={() => setGroupMode('category')} className={`px-3 py-1 text-[10px] font-bold rounded-full transition-all ${groupMode === 'category' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-700 dark:text-zinc-200' : 'text-zinc-500 dark:text-zinc-400'}`}>Categoria</button>
                           {(analysisType === TransactionType.EXPENSE || analysisType === TransactionType.INVESTMENT) && (
-                             <button onClick={() => setGroupMode('subcategory')} className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${groupMode === 'subcategory' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-700 dark:text-zinc-200' : 'text-zinc-500 dark:text-zinc-400'}`}>Subcategoria</button>
+                             <button onClick={() => setGroupMode('subcategory')} className={`px-3 py-1 text-[10px] font-bold rounded-full transition-all ${groupMode === 'subcategory' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-700 dark:text-zinc-200' : 'text-zinc-500 dark:text-zinc-400'}`}>Subcategoria</button>
                           )}
                       </div>
                   </div>
@@ -842,67 +842,67 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                                   <th className="px-6 py-3 text-right">Total Acumulado</th>
                               </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-100">
+                          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
                               {groupedDataList?.map((item, idx) => (
-                                  <tr key={idx} className="hover:bg-gray-50 transition-colors group">
-                                      <td className="px-6 py-4 font-semibold text-gray-800 max-w-[200px] truncate" title={item.label}>{item.label}</td>
-                                      <td className="px-6 py-4 text-xs text-gray-500 max-w-[150px] truncate" title={item.secondary}>{item.secondary}</td>
+                                  <tr key={idx} className="hover:bg-zinc-50 dark:bg-zinc-950/40 transition-colors group">
+                                      <td className="px-6 py-4 font-semibold text-zinc-800 dark:text-zinc-200 max-w-[200px] truncate" title={item.label}>{item.label}</td>
+                                      <td className="px-6 py-4 text-xs text-zinc-500 dark:text-zinc-400 max-w-[150px] truncate" title={item.secondary}>{item.secondary}</td>
                                       <td className="px-6 py-4 text-center">
-                                          <span className="bg-gray-100 px-2 py-1 rounded-md text-xs font-bold text-gray-700">{item.count}x</span>
+                                          <span className="bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md text-xs font-bold text-zinc-700 dark:text-zinc-300">{item.count}x</span>
                                       </td>
                                       <td className="px-6 py-4">
                                           <div className="flex flex-col gap-1 w-full">
-                                              <span className="text-[10px] font-bold text-gray-700">{item.shareOfTotal.toFixed(1)}%</span>
-                                              <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                                                  <div className="h-full bg-gray-500 rounded-full" style={{ width: `${item.shareOfTotal}%` }}></div>
+                                              <span className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300">{item.shareOfTotal.toFixed(1)}%</span>
+                                              <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                                  <div className="h-full bg-blue-500 rounded-full" style={{ width: `${item.shareOfTotal}%` }}></div>
                                               </div>
                                           </div>
                                       </td>
                                       <td className="px-6 py-4">
                                           {groupMode !== 'category' ? (
                                               <div className="flex flex-col gap-1 w-full">
-                                                  <span className="text-[10px] font-bold text-gray-700">{item.shareOfCategory.toFixed(1)}%</span>
-                                                  <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                                  <span className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300">{item.shareOfCategory.toFixed(1)}%</span>
+                                                  <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                                                       <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${item.shareOfCategory}%` }}></div>
                                                   </div>
                                               </div>
                                           ) : (
-                                              <span className="text-xs text-gray-700 font-medium">-</span>
+                                              <span className="text-xs text-zinc-700 dark:text-zinc-300 font-medium">-</span>
                                           )}
                                       </td>
-                                      <td className="px-6 py-4 text-right font-bold text-gray-900">{formatCurrency(item.total)}</td>
+                                      <td className="px-6 py-4 text-right font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(item.total)}</td>
                                   </tr>
                               ))}
-                              {(!groupedDataList || groupedDataList.length === 0) && (<tr><td colSpan={6} className="p-12 text-center text-gray-500">Nenhum dado encontrado para o período.</td></tr>)}
+                              {(!groupedDataList || groupedDataList.length === 0) && (<tr><td colSpan={6} className="p-12 text-center text-zinc-500 dark:text-zinc-400">Nenhum dado encontrado para o período.</td></tr>)}
                           </tbody>
                       </table>
                   </div>
                   {selectionSummary && (
-                      <div className="bg-gray-50 border-t border-gray-200 p-4 grid grid-cols-2 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom-2">
+                      <div className="bg-zinc-50 dark:bg-zinc-950/40 border-t border-zinc-200 dark:border-zinc-800 p-4 grid grid-cols-2 md:grid-cols-4 gap-4 animate-in slide-in-from-bottom-2">
                           <div className="flex flex-col">
-                              <span className="text-[10px] font-bold uppercase text-gray-500 mb-1 flex items-center gap-1"><Calculator size={10}/> Total no Período</span>
-                              <span className="text-lg font-bold text-gray-900">{formatCurrency(selectionSummary.total)}</span>
+                              <span className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-1 flex items-center gap-1"><Calculator size={10}/> Total no Período</span>
+                              <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(selectionSummary.total)}</span>
                           </div>
                           <div className="flex flex-col">
-                              <span className="text-[10px] font-bold uppercase text-gray-500 mb-1 flex items-center gap-1"><Percent size={10}/> Média por Lançamento</span>
-                              <span className="text-sm font-bold text-gray-800">{formatCurrency(selectionSummary.avg)}</span>
+                              <span className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-1 flex items-center gap-1"><Percent size={10}/> Média por Lançamento</span>
+                              <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{formatCurrency(selectionSummary.avg)}</span>
                           </div>
                           <div className="flex flex-col">
-                              <span className="text-[10px] font-bold uppercase text-gray-500 mb-1 flex items-center gap-1"><Hash size={10}/> Quantidade</span>
-                              <span className="text-sm font-bold text-gray-800">{selectionSummary.count} itens</span>
+                              <span className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-1 flex items-center gap-1"><Hash size={10}/> Quantidade</span>
+                              <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{selectionSummary.count} itens</span>
                           </div>
                           <div className="flex flex-col">
-                              <span className="text-[10px] font-bold uppercase text-gray-500 mb-1 flex items-center gap-1"><Maximize size={10}/> Maior Lançamento</span>
-                              <span className="text-sm font-bold text-gray-800">{formatCurrency(selectionSummary.max.amount)}</span>
-                              <span className="text-[9px] text-gray-500 truncate max-w-[100px]" title={selectionSummary.max.description}>{selectionSummary.max.description}</span>
+                              <span className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400 mb-1 flex items-center gap-1"><Maximize size={10}/> Maior Lançamento</span>
+                              <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{formatCurrency(selectionSummary.max.amount)}</span>
+                              <span className="text-[9px] text-zinc-500 dark:text-zinc-400 truncate max-w-[100px]" title={selectionSummary.max.description}>{selectionSummary.max.description}</span>
                           </div>
                       </div>
                   )}
               </div>
               <div className="space-y-6">
                   {timeRange === 'month' && (
-                      <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200 shadow-sm h-[300px]">
-                          <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2"><TrendingUp size={16} className="text-gray-500"/> {analysisType === TransactionType.EXPENSE ? 'Gastos' : (analysisType === TransactionType.INVESTMENT ? 'Investimentos' : 'Receitas')} Acumulados</h3>
+                      <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm h-[300px]">
+                          <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 mb-4 flex items-center gap-2"><TrendingUp size={16} className="text-zinc-500 dark:text-zinc-400"/> {analysisType === TransactionType.EXPENSE ? 'Gastos' : (analysisType === TransactionType.INVESTMENT ? 'Investimentos' : 'Receitas')} Acumulados</h3>
                           <ResponsiveContainer width="100%" height="100%">
                               <AreaChart data={trajectoryData}>
                                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -917,23 +917,23 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                   <div className={`p-8 rounded-2xl shadow-lg relative overflow-hidden flex flex-col justify-center min-h-[300px] ${analysisType === TransactionType.EXPENSE ? 'bg-emerald-600 text-white' : (analysisType === TransactionType.INVESTMENT ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white')}`}>
                       {isFiltering || includeNathy ? (
                           <>
-                              <Percent className="absolute -right-4 -bottom-4 w-32 h-32 text-gray-900/10" />
+                              <Percent className="absolute -right-4 -bottom-4 w-32 h-32 text-zinc-900 dark:text-zinc-100/10" />
                               <h3 className="text-lg font-bold mb-2 uppercase tracking-wide opacity-90">Representatividade</h3>
-                              <p className="text-gray-900/80 text-sm mb-6 leading-relaxed">
+                              <p className="text-zinc-900 dark:text-zinc-100/80 text-sm mb-6 leading-relaxed">
                                   {analysisType === TransactionType.EXPENSE 
                                       ? "Estes gastos representam" 
                                       : (analysisType === TransactionType.INVESTMENT ? "Estes investimentos representam" : "Estas receitas representam")}
-                                  <strong className="block text-gray-900 text-lg mt-1">da sua Renda Total do período.</strong>
+                                  <strong className="block text-zinc-900 dark:text-zinc-100 text-lg mt-1">da sua Renda Total do período.</strong>
                               </p>
                               <div className="text-5xl font-bold mb-2">{representativeValue.toFixed(1)}%</div>
-                              <div className="h-2 w-full bg-black/20 rounded-full mt-4 border border-gray-200">
+                              <div className="h-2 w-full bg-black/20 rounded-full mt-4 border border-zinc-200 dark:border-zinc-800">
                                   <div className="h-full bg-white dark:bg-zinc-900 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-1000" style={{width: `${Math.min(representativeValue, 100)}%`}}></div>
                               </div>
                               <p className="text-[10px] mt-4 opacity-60 text-center uppercase tracking-widest font-bold">Base: R$ {formatCurrency(globalStats.income)}</p>
                           </>
                       ) : (
                           <>
-                              <ShieldCheck className="absolute -right-4 -bottom-4 w-32 h-32 text-gray-900/10" />
+                              <ShieldCheck className="absolute -right-4 -bottom-4 w-32 h-32 text-zinc-900 dark:text-zinc-100/10" />
                               <h3 className="text-lg font-bold mb-2">Resumo da Meta</h3>
                               {analysisType === TransactionType.INVESTMENT ? (() => {
                                   const budgetPct = settings.monthlyBudgetPercentage || 80;
@@ -942,9 +942,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                                   const investmentPercent = targetSavings > 0 ? (periodStats.myInvestmentFromPocket / targetSavings) * 100 : 0;
                                   return (
                                       <>
-                                          <p className="text-gray-900 text-sm mb-6">Neste período, você atingiu da sua meta de investimentos:</p>
+                                          <p className="text-zinc-900 dark:text-zinc-100 text-sm mb-6">Neste período, você atingiu da sua meta de investimentos:</p>
                                           <div className="text-5xl font-bold mb-2">{investmentPercent.toFixed(1)}%</div>
-                                          <div className="h-2 w-full bg-gray-100 rounded-full mt-4">
+                                          <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full mt-4">
                                               <div className="h-full bg-white dark:bg-zinc-900 rounded-full transition-all duration-1000" style={{width: `${Math.min(investmentPercent, 100)}%`}}></div>
                                           </div>
                                           <p className="text-[10px] mt-4 opacity-60 text-center uppercase tracking-widest font-bold">Meta: R$ {formatCurrency(targetSavings)}</p>
@@ -967,9 +967,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                                   );
                               })() : (
                                   <>
-                                      <p className="text-gray-900 text-sm mb-6">Neste período, sua taxa de economia média é de:</p>
+                                      <p className="text-zinc-900 dark:text-zinc-100 text-sm mb-6">Neste período, sua taxa de economia média é de:</p>
                                       <div className="text-5xl font-bold mb-2">{periodStats.savingsRate.toFixed(1)}%</div>
-                                      <div className="h-2 w-full bg-gray-100 rounded-full mt-4">
+                                      <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full mt-4">
                                           <div className="h-full bg-white dark:bg-zinc-900 rounded-full transition-all duration-1000" style={{width: `${Math.min(periodStats.savingsRate, 100)}%`}}></div>
                                       </div>
                                   </>
@@ -984,13 +984,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({
       {activeTab === 'categories' && (
           <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2 bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200 shadow-sm h-[450px] flex flex-col">
+                  <div className="lg:col-span-2 bg-white dark:bg-zinc-900 p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm h-[450px] flex flex-col">
                       <div className="flex justify-between items-center mb-6">
-                          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 uppercase tracking-wider"><PieIcon size={16} className="text-gray-500" /> Distribuição de {analysisType === TransactionType.EXPENSE ? 'Gastos' : (analysisType === TransactionType.INVESTMENT ? 'Investimentos' : 'Receitas')} {distMode === 'subcategory' && '(Top 10)'}</h3>
-                          <div className="flex bg-gray-100 p-1 rounded-lg">
-                              <button onClick={() => { setDistMode('category'); setSelectedDetailSlice(null); }} className={`px-3 py-1 text-[10px] font-bold rounded transition-colors ${distMode === 'category' ? 'bg-white dark:bg-zinc-900 shadow text-gray-700' : 'text-gray-500'}`}>Categorias</button>
+                          <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2 uppercase tracking-wider"><PieIcon size={16} className="text-zinc-500 dark:text-zinc-400" /> Distribuição de {analysisType === TransactionType.EXPENSE ? 'Gastos' : (analysisType === TransactionType.INVESTMENT ? 'Investimentos' : 'Receitas')} {distMode === 'subcategory' && '(Top 10)'}</h3>
+                          <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
+                              <button onClick={() => { setDistMode('category'); setSelectedDetailSlice(null); }} className={`px-3 py-1 text-[10px] font-bold rounded-full transition-colors ${distMode === 'category' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-700 dark:text-zinc-300' : 'text-zinc-500 dark:text-zinc-400'}`}>Categorias</button>
                               {(analysisType === TransactionType.EXPENSE || analysisType === TransactionType.INVESTMENT) && (
-                                <button onClick={() => { setDistMode('subcategory'); setSelectedDetailSlice(null); }} className={`px-3 py-1 text-[10px] font-bold rounded transition-colors ${distMode === 'subcategory' ? 'bg-white dark:bg-zinc-900 shadow text-gray-700' : 'text-gray-500'}`}>Subcategorias</button>
+                                <button onClick={() => { setDistMode('subcategory'); setSelectedDetailSlice(null); }} className={`px-3 py-1 text-[10px] font-bold rounded-full transition-colors ${distMode === 'subcategory' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-700 dark:text-zinc-300' : 'text-zinc-500 dark:text-zinc-400'}`}>Subcategorias</button>
                               )}
                           </div>
                       </div>
@@ -1012,17 +1012,17 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                               <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{fontSize: '11px', fontWeight: 'bold'}} />
                           </PieChart>
                       </ResponsiveContainer>
-                      <p className="text-[10px] text-center text-gray-500 mt-2 italic">Dica: Clique em uma fatia para ver os lançamentos detalhados abaixo.</p>
+                      <p className="text-[10px] text-center text-zinc-500 dark:text-zinc-400 mt-2 italic">Dica: Clique em uma fatia para ver os lançamentos detalhados abaixo.</p>
                   </div>
-                  <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
-                      <div className="p-4 border-b border-gray-200 bg-gray-50"><h3 className="text-sm font-bold text-gray-800 uppercase">Ranking Detalhado</h3></div>
+                  <div className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm overflow-hidden flex flex-col">
+                      <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40"><h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 uppercase">Ranking Detalhado</h3></div>
                       <div className="overflow-y-auto flex-1 custom-scrollbar max-h-[400px]">
                           {distributionData?.map((item, idx) => {
                               const isExpanded = expandedCategory === item.id && distMode === 'category';
                               const subData = isExpanded ? getSubcategoryBreakdown(item.id) : [];
                               return (
                                 <React.Fragment key={idx}>
-                                    <div className={`w-full flex justify-between items-center p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${selectedDetailSlice === item.id ? 'bg-gray-50 border-gray-200' : ''}`}
+                                    <div className={`w-full flex justify-between items-center p-4 border-b border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50 dark:bg-zinc-950/40 transition-colors cursor-pointer ${selectedDetailSlice === item.id ? 'bg-zinc-50 dark:bg-zinc-950/40 border-zinc-200 dark:border-zinc-800' : ''}`}
                                          onClick={() => {
                                              if (distMode === 'category') setExpandedCategory(expandedCategory === item.id ? null : item.id);
                                              setSelectedDetailSlice(item.id);
@@ -1030,20 +1030,20 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
-                                            <span className="text-xs font-bold text-gray-800 truncate max-w-[120px]">{item.name}</span>
-                                            {distMode === 'category' && (isExpanded ? <ChevronUp size={12} className="text-gray-500"/> : <ChevronDown size={12} className="text-gray-500"/>)}
+                                            <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[120px]">{item.name}</span>
+                                            {distMode === 'category' && (isExpanded ? <ChevronUp size={12} className="text-zinc-500 dark:text-zinc-400"/> : <ChevronDown size={12} className="text-zinc-500 dark:text-zinc-400"/>)}
                                         </div>
                                         <div className="text-right">
-                                            <span className="block text-xs font-bold text-gray-900">{formatCurrency(item.value)}</span>
-                                            <span className="text-[10px] text-gray-500 font-bold">{((item.value / (analysisType === TransactionType.EXPENSE ? periodStats.expense : (analysisType === TransactionType.INVESTMENT ? periodStats.investment : periodStats.income))) * 100).toFixed(1)}%</span>
+                                            <span className="block text-xs font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(item.value)}</span>
+                                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold">{((item.value / (analysisType === TransactionType.EXPENSE ? periodStats.expense : (analysisType === TransactionType.INVESTMENT ? periodStats.investment : periodStats.income))) * 100).toFixed(1)}%</span>
                                         </div>
                                     </div>
                                     {isExpanded && (
-                                        <div className="bg-gray-50 border-b border-gray-200 animate-in slide-in-from-top-2">
+                                        <div className="bg-zinc-50 dark:bg-zinc-950/40 border-b border-zinc-200 dark:border-zinc-800 animate-in slide-in-from-top-2">
                                             {subData.map((sub, sIdx) => (
                                                 <div 
                                                     key={sIdx} 
-                                                    className={`flex justify-between items-center py-2 px-4 pl-10 text-xs text-gray-700 border-b border-gray-200 last:border-0 hover:bg-gray-50 cursor-pointer transition-colors ${selectedDetailSlice === sub.id ? 'bg-gray-50' : ''}`}
+                                                    className={`flex justify-between items-center py-2 px-4 pl-10 text-xs text-zinc-700 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-800 last:border-0 hover:bg-zinc-50 dark:bg-zinc-950/40 cursor-pointer transition-colors ${selectedDetailSlice === sub.id ? 'bg-zinc-50 dark:bg-zinc-950/40' : ''}`}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setSelectedDetailSlice(sub.id);
@@ -1052,13 +1052,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                                                     <span className="font-medium truncate max-w-[120px]">{sub.name}</span>
                                                     <div className="text-right">
                                                         <span className="block font-medium">{formatCurrency(sub.value)}</span>
-                                                        <span className="text-[9px] text-gray-500">{(sub.value / item.value * 100).toFixed(1)}%</span>
+                                                        <span className="text-[9px] text-zinc-500 dark:text-zinc-400">{(sub.value / item.value * 100).toFixed(1)}%</span>
                                                     </div>
                                                 </div>
                                             ))}
                                             <button 
                                                 onClick={() => setSelectedDetailSlice(item.id)}
-                                                className="w-full text-center py-2 text-[10px] font-bold text-gray-500 hover:bg-gray-50 uppercase tracking-wider flex items-center justify-center gap-1"
+                                                className="w-full text-center py-2 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:bg-zinc-950/40 uppercase tracking-wider flex items-center justify-center gap-1"
                                             >
                                                 <List size={10} /> Ver Tudo da Categoria
                                             </button>
@@ -1072,25 +1072,25 @@ export const Analytics: React.FC<AnalyticsProps> = ({
               </div>
 
               {selectedDetailSlice && (
-                  <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 shadow-lg overflow-hidden animate-in slide-in-from-top-4">
+                  <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-lg overflow-hidden animate-in slide-in-from-top-4">
                       <div className="p-4 bg-emerald-600 text-white flex justify-between items-center">
                           <div className="flex items-center gap-3">
-                              <div className="p-2 bg-gray-100 rounded-lg"><List size={18}/></div>
+                              <div className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg"><List size={18}/></div>
                               <div>
                                   <h3 className="text-sm font-bold uppercase tracking-widest">Lançamentos em: {detailSliceName}</h3>
-                                  <p className="text-[10px] text-gray-900">Exibindo todos os {analysisType === TransactionType.EXPENSE ? 'gastos' : (analysisType === TransactionType.INVESTMENT ? 'investimentos' : 'ganhos')} no período analisado.</p>
+                                  <p className="text-[10px] text-zinc-900 dark:text-zinc-100">Exibindo todos os {analysisType === TransactionType.EXPENSE ? 'gastos' : (analysisType === TransactionType.INVESTMENT ? 'investimentos' : 'ganhos')} no período analisado.</p>
                               </div>
                           </div>
                           <div className="flex items-center gap-2">
-                              <button onClick={() => setGroupDetailsByName(!groupDetailsByName)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${groupDetailsByName ? 'bg-white dark:bg-zinc-900 text-gray-800 border-white' : 'bg-gray-200 text-gray-900 border-white/20 hover:bg-gray-100'}`}>
+                              <button onClick={() => setGroupDetailsByName(!groupDetailsByName)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${groupDetailsByName ? 'bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 border-white' : 'bg-white/20 text-white border-white/20 hover:bg-white/30'}`}>
                                   <Merge size={12} /> {groupDetailsByName ? 'Agrupado por Nome' : 'Agrupar Similares'}
                               </button>
-                              <button onClick={() => setSelectedDetailSlice(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={20}/></button>
+                              <button onClick={() => setSelectedDetailSlice(null)} className="p-2 hover:bg-zinc-100 dark:bg-zinc-800 rounded-full transition-colors"><X size={20}/></button>
                           </div>
                       </div>
                       <div className="overflow-x-auto">
                           <table className="w-full text-sm">
-                              <thead className="bg-gray-50 text-gray-500 font-bold uppercase text-[10px]">
+                              <thead className="bg-zinc-50 dark:bg-zinc-950/40 text-zinc-500 dark:text-zinc-400 font-bold uppercase text-[10px]">
                                   <tr>
                                       <th className="px-6 py-3 text-left">{groupDetailsByName ? 'Data / Frequência' : 'Data'}</th>
                                       <th className="px-6 py-3 text-left">Descrição</th>
@@ -1098,24 +1098,24 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                                       <th className="px-6 py-3 text-right">Valor</th>
                                   </tr>
                               </thead>
-                              <tbody className="divide-y divide-gray-100">
+                              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
                                   {visibleDetailList.map((t: any, idx: number) => (
-                                      <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                                          <td className="px-6 py-4 text-xs text-gray-500 font-mono">
+                                      <tr key={idx} className="hover:bg-zinc-50 dark:bg-zinc-950/40 transition-colors">
+                                          <td className="px-6 py-4 text-xs text-zinc-500 dark:text-zinc-400 font-mono">
                                               {groupDetailsByName && t.count > 1 ? (
-                                                  <span className="font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-md">{t.count} ocorrências</span>
+                                                  <span className="font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/40 px-2 py-1 rounded-md">{t.count} ocorrências</span>
                                               ) : (
                                                   new Date(t.date || t.dates?.[0]).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
                                               )}
                                           </td>
                                           <td className="px-6 py-4">
-                                              <div className="font-bold text-gray-800">{t.description}</div>
+                                              <div className="font-bold text-zinc-800 dark:text-zinc-200">{t.description}</div>
                                               <div className="flex gap-1 mt-1">
                                                   {t.isFixed && <span className="text-[8px] bg-amber-100 text-amber-600 px-1 rounded font-bold">FIXA</span>}
                                                   {t.totalInstallments && t.totalInstallments > 1 && <span className="text-[8px] bg-purple-100 text-purple-600 px-1 rounded font-bold">PARCELADO</span>}
                                               </div>
                                           </td>
-                                          <td className="px-6 py-4 text-xs text-gray-500">
+                                          <td className="px-6 py-4 text-xs text-zinc-500 dark:text-zinc-400">
                                               {groupDetailsByName && t.count > 1 ? 'Diversos' : (
                                                   <>
                                                     {t.paymentMethod === PaymentMethod.CREDIT_CARD ? 'Cartão de Crédito' : 'Débito/Dinheiro'}
@@ -1123,18 +1123,18 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                                                   </>
                                               )}
                                           </td>
-                                          <td className="px-6 py-4 text-right font-bold text-gray-900">{formatCurrency(t.amount)}</td>
+                                          <td className="px-6 py-4 text-right font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(t.amount)}</td>
                                       </tr>
                                   ))}
                                   {visibleDetailList.length === 0 && (
-                                      <tr><td colSpan={4} className="p-8 text-center text-gray-500">Nenhum lançamento encontrado.</td></tr>
+                                      <tr><td colSpan={4} className="p-8 text-center text-zinc-500 dark:text-zinc-400">Nenhum lançamento encontrado.</td></tr>
                                   )}
                               </tbody>
                           </table>
                       </div>
-                      <div className="p-4 bg-gray-50 border-t border-gray-200 text-right">
-                          <span className="text-xs font-bold text-gray-500 mr-2 uppercase">Total da Seleção:</span>
-                          <span className="text-lg font-bold text-gray-700">{formatCurrency(visibleDetailList.reduce((acc: number, curr: any) => acc + curr.amount, 0))}</span>
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-950/40 border-t border-zinc-200 dark:border-zinc-800 text-right">
+                          <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mr-2 uppercase">Total da Seleção:</span>
+                          <span className="text-lg font-bold text-zinc-700 dark:text-zinc-300">{formatCurrency(visibleDetailList.reduce((acc: number, curr: any) => acc + curr.amount, 0))}</span>
                       </div>
                   </div>
               )}
@@ -1143,20 +1143,20 @@ export const Analytics: React.FC<AnalyticsProps> = ({
 
       {activeTab === 'trends' && (
           <div className="space-y-6">
-              <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200 shadow-sm h-[400px]">
-                  <h3 className="text-sm font-bold text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-wider"><TrendingUp size={16} className="text-gray-500"/> Histórico de Receitas vs Despesas (Filtros Ativos)</h3>
+              <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm h-[400px]">
+                  <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 mb-6 flex items-center gap-2 uppercase tracking-wider"><TrendingUp size={16} className="text-zinc-500 dark:text-zinc-400"/> Histórico de Receitas vs Despesas (Filtros Ativos)</h3>
                   <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={trendsHistoryData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" /><XAxis dataKey="name" stroke="#94a3b8" fontSize={10} /><YAxis stroke="#94a3b8" fontSize={10} /><Tooltip formatter={(v: number) => formatCurrency(v)} /><Legend /><Bar dataKey="Receita" fill="#10b981" radius={[4, 4, 0, 0]} /><Bar dataKey="Despesa" fill="#f43f5e" radius={[4, 4, 0, 0]} /></BarChart>
                   </ResponsiveContainer>
               </div>
 
-              <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200 shadow-sm h-[400px]">
+              <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm h-[400px]">
                   <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 uppercase tracking-wider">
-                          <Activity size={16} className="text-gray-500"/> 
+                      <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2 uppercase tracking-wider">
+                          <Activity size={16} className="text-zinc-500 dark:text-zinc-400"/> 
                           {isFiltering ? 'Evolução da Seleção Atual' : 'Evolução Detalhada (Top 5 Categorias)'}
                       </h3>
-                      {!isFiltering && <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-1 rounded">Sem filtros ativos. Exibindo Top 5.</span>}
+                      {!isFiltering && <span className="text-[10px] text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded">Sem filtros ativos. Exibindo Top 5.</span>}
                   </div>
                   <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={categoryEvolutionData.data}>
@@ -1184,8 +1184,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({
 
       {activeTab === 'annual' && (
           <div className="space-y-6">
-              <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-gray-200 shadow-sm h-[450px]">
-                  <h3 className="text-sm font-bold text-gray-800 mb-6 flex items-center gap-2 uppercase tracking-wider"><Target size={16} className="text-gray-500"/> Comparativo: Total Geral vs Filtros Selecionados ({selectedYear})</h3>
+              <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm h-[450px]">
+                  <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 mb-6 flex items-center gap-2 uppercase tracking-wider"><Target size={16} className="text-zinc-500 dark:text-zinc-400"/> Comparativo: Total Geral vs Filtros Selecionados ({selectedYear})</h3>
                   <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={annualComparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />

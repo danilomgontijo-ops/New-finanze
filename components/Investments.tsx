@@ -293,7 +293,7 @@ const MultiSelect = ({ options, selected, onChange, placeholder }: any) => {
     <div className="relative">
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-white dark:bg-zinc-900 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-lg px-2 py-1 cursor-pointer flex items-center justify-between min-w-[120px]"
+        className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1 cursor-pointer flex items-center justify-between min-w-[120px]"
       >
         <span className="truncate">
           {selected.length === 0
@@ -308,7 +308,7 @@ const MultiSelect = ({ options, selected, onChange, placeholder }: any) => {
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           ></div>
-          <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-zinc-900 border border-slate-200 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+          <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto">
             {options.map((opt: any) => (
               <label
                 key={opt.id}
@@ -3749,7 +3749,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
   return (
     <div className="space-y-4 animate-in fade-in pb-24">
       {/* PROFESSIONAL INVESTMENT MENU BAR */}
-      <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl p-3 rounded-[2rem] border border-zinc-200/40 dark:border-zinc-800/50 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white dark:bg-zinc-900 p-3 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex w-full md:w-auto overflow-x-auto gap-2">
           {[
             { id: "overview", label: "Visão Geral", icon: AreaChartIcon },
@@ -3761,13 +3761,11 @@ export const Investments: React.FC<InvestmentsProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap border ${activeTab === tab.id ? "bg-blue-50/75 dark:bg-blue-950/40 border-blue-200/50 dark:border-blue-800/30 text-blue-700 dark:text-blue-300" : "bg-transparent border-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 text-zinc-900 dark:text-zinc-100"}`}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${activeTab === tab.id ? "bg-blue-600 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}
             >
               <tab.icon
                 size={14}
-                className={
-                  activeTab === tab.id ? "text-blue-600 dark:text-blue-400" : "text-zinc-500 dark:text-zinc-400"
-                }
+                className={activeTab === tab.id ? "text-white" : "text-zinc-500 dark:text-zinc-400"}
               />
               {tab.label}
             </button>
@@ -3799,20 +3797,20 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   setOverviewSearchTerm(e.target.value);
                 else setProventosSearch(e.target.value);
               }}
-              className="w-full pl-9 pr-4 py-2 text-xs border border-zinc-200 dark:border-zinc-800 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-zinc-50/50 dark:bg-zinc-950/40 text-zinc-800 dark:text-zinc-200"
+              className="w-full pl-9 pr-4 py-2 text-xs border border-zinc-200 dark:border-zinc-800 rounded-full outline-none focus:ring-2 focus:ring-blue-600 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-800 dark:text-zinc-200"
               placeholder="Filtrar por ticker..."
             />
           </div>
           <button
             onClick={() => setIsManualHistoryOpen(true)}
-            className="p-2 bg-amber-50/50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 rounded-xl hover:bg-amber-100/50 dark:hover:bg-amber-950/40 transition-all border border-amber-100 dark:border-amber-900/30"
+            className="p-2 bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 rounded-full hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-all"
             title="Gerenciar Cotações Manuais"
           >
             <History size={18} />
           </button>
           <button
             onClick={onOpenBulkImport}
-            className="p-2 bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100/50 dark:hover:bg-blue-950/40 transition-all border border-blue-100 dark:border-blue-900/30"
+            className="p-2 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-all"
             title="Importar Dados"
           >
             <Upload size={18} />
@@ -3822,21 +3820,15 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
       {/* DASHBOARD CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-zinc-900 p-5 rounded-[2rem] border border-zinc-200/40 dark:border-zinc-800/50 shadow-md shadow-zinc-200/5 text-zinc-900 dark:text-zinc-100">
-          <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block mb-1">
+        <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-5 md:p-6 rounded-2xl md:rounded-3xl shadow-sm text-white">
+          <span className="text-xs font-semibold text-white/75 uppercase tracking-wider block mb-1">
             Patrimônio Atual
           </span>
-          <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+          <div className="text-2xl font-bold tabular-nums tracking-tight">
             {formatCurrency(portfolioData.summary.marketValue)}
           </div>
-          <div className="flex justify-between items-center mt-2 text-[10px] font-semibold">
-            <span
-              className={
-                portfolioData.summary.unrealizedTotal >= 0
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-rose-600 dark:text-rose-400"
-              }
-            >
+          <div className="flex justify-between items-center mt-3 text-[11px] font-semibold">
+            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-white/15">
               {portfolioData.summary.unrealizedTotal >= 0 ? "+" : ""}
               {formatCurrency(portfolioData.summary.unrealizedTotal)}
               <span className="ml-1 opacity-80">
@@ -3851,41 +3843,35 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 %)
               </span>
             </span>
-            <span
-              className={
-                portfolioData.summary.dailyProfitTotal >= 0
-                  ? "text-emerald-500"
-                  : "text-rose-500"
-              }
-            >
+            <span className="text-white/80">
               Dia: {portfolioData.summary.dailyProfitTotal >= 0 ? "+" : ""}
               {formatCurrency(portfolioData.summary.dailyProfitTotal)}
             </span>
           </div>
         </div>
-        <div className="bg-white dark:bg-zinc-900 p-5 rounded-[2rem] border border-zinc-200/40 dark:border-zinc-800/50 shadow-md shadow-zinc-200/5 text-zinc-900 dark:text-zinc-100">
-          <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block mb-1">
+        <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm text-zinc-900 dark:text-zinc-100">
+          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block mb-1">
             Proventos {activeTab === "history" ? "(Filtro)" : "Acumulados"}
           </span>
-          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+          <div className="text-2xl font-bold tabular-nums tracking-tight text-blue-600 dark:text-blue-400">
             {formatCurrency(
               activeTab === "history"
                 ? historySummary.proventos
                 : portfolioData.summary.proventosTotal,
             )}
           </div>
-          <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
             {activeTab === "history"
               ? "No período selecionado"
               : `YoC a.a.: ${calculateYoC(portfolioData.summary.proventos12mTotal, portfolioData.summary.investedValue).toFixed(2)}% | a.m.: ${convertAnnualToMonthlyCompound(calculateYoC(portfolioData.summary.proventos12mTotal, portfolioData.summary.investedValue)).toFixed(2)}%`}
           </p>
         </div>
-        <div className="bg-white dark:bg-zinc-900 p-5 rounded-[2rem] border border-zinc-200/40 dark:border-zinc-800/50 shadow-md shadow-zinc-200/5 text-zinc-900 dark:text-zinc-100">
-          <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block mb-1">
+        <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm text-zinc-900 dark:text-zinc-100">
+          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block mb-1">
             Lucro Realizado {activeTab === "history" && "(Filtro)"}
           </span>
           <div
-            className={`text-2xl font-bold ${(activeTab === "history" ? historySummary.realizedProfit : portfolioData.summary.realizedProfit) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
+            className={`text-2xl font-bold tabular-nums tracking-tight ${(activeTab === "history" ? historySummary.realizedProfit : portfolioData.summary.realizedProfit) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
           >
             {formatCurrency(
               activeTab === "history"
@@ -3893,20 +3879,20 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 : portfolioData.summary.realizedProfit,
             )}
           </div>
-          <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-2 font-medium">Vendas fechadas</p>
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-2 font-medium">Vendas fechadas</p>
         </div>
-        <div className="bg-white dark:bg-zinc-900 p-5 rounded-[2rem] border border-zinc-200/40 dark:border-zinc-800/50 shadow-md shadow-zinc-200/5 text-zinc-900 dark:text-zinc-100">
-          <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block mb-1">
+        <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm text-zinc-900 dark:text-zinc-100">
+          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block mb-1">
             {activeTab === "history" ? "Fluxo Líquido" : "Custo de Aquisição"}
           </span>
-          <div className="text-2xl font-bold text-zinc-800 dark:text-zinc-200">
+          <div className="text-2xl font-bold tabular-nums tracking-tight text-zinc-800 dark:text-zinc-200">
             {formatCurrency(
               activeTab === "history"
                 ? historySummary.netFlow
                 : portfolioData.summary.investedValue,
             )}
           </div>
-          <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
             {activeTab === "history"
               ? "Aportes - Vendas no filtro"
               : `PTAX: R$ ${portfolioData.usdRate.toFixed(4)}`}
@@ -3916,7 +3902,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
       {activeTab === "overview" && (
         <div className="space-y-6 animate-in fade-in">
-          <div className="bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-center">
+          <div className="bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm flex flex-wrap gap-4 items-center">
             <div className="flex items-center gap-2">
               <Filter size={14} className="text-gray-600" />
               <span className="text-xs font-bold text-slate-600 uppercase">
@@ -3929,7 +3915,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 setOverviewFilterCategory(e.target.value);
                 setOverviewFilterSubCategory("");
               }}
-              className="bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px] truncate"
+              className="bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px] truncate"
             >
               <option value="">Todas Categorias</option>
               {categories
@@ -3943,7 +3929,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             <select
               value={overviewFilterSubCategory}
               onChange={(e) => setOverviewFilterSubCategory(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px] truncate"
+              className="bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px] truncate"
             >
               <option value="">Todas Subcategorias</option>
               {subCategories
@@ -3966,7 +3952,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             <select
               value={overviewFilterTicker}
               onChange={(e) => setOverviewFilterTicker(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px] truncate"
+              className="bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px] truncate"
             >
               <option value="">Todos Ativos</option>
               {Array.from(
@@ -3993,12 +3979,12 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     : ""
               }
               onChange={(e) => setOverviewFilterDate(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px]"
+              className="bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px]"
               title="Mês Inicial"
             />
             <button
               onClick={() => setShowDetailedReport(!showDetailedReport)}
-              className={`ml-auto flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${showDetailedReport ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-zinc-900 text-blue-600 border-blue-200 hover:bg-blue-50 dark:bg-blue-950/60"}`}
+              className={`ml-auto flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${showDetailedReport ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-zinc-900 text-blue-600 border-blue-200 hover:bg-blue-50 dark:bg-blue-950/60"}`}
             >
               <FileText size={14} />
               {showDetailedReport
@@ -4008,7 +3994,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           </div>
 
           {showDetailedReport && overviewData.report && (
-            <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 shadow-sm space-y-8 animate-in slide-in-from-top-4 duration-500">
+            <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm space-y-8 animate-in slide-in-from-top-4 duration-500">
               {/* 1. Identificação */}
               <div className="border-b border-slate-100 pb-4">
                 <h2 className="text-xl font-bold text-slate-800">
@@ -4246,7 +4232,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                           )}
                         </span>
                       </div>
-                      <div className="flex justify-between text-[10px] pt-1 border-t border-slate-200">
+                      <div className="flex justify-between text-[10px] pt-1 border-t border-zinc-200/60 dark:border-zinc-800/80">
                         <span className="font-bold text-slate-700">
                           Fluxo Líquido
                         </span>
@@ -4666,7 +4652,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
           {!showDetailedReport && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-slate-200 shadow-sm h-[350px]">
+              <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm h-[350px]">
                 <h3 className="text-sm font-bold text-slate-700 uppercase mb-4 flex items-center gap-2">
                   <AreaChartIcon size={16} className="text-blue-500" />{" "}
                   Evolução Patrimonial
@@ -4762,7 +4748,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 </ResponsiveContainer>
               </div>
 
-              <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-slate-200 shadow-sm h-[350px]">
+              <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm h-[350px]">
                 <h3 className="text-sm font-bold text-slate-700 uppercase mb-4 flex items-center gap-2">
                   <TrendingUp size={16} className="text-emerald-500" />{" "}
                   Rentabilidade Acumulada (TWR vs Benchmarks)
@@ -4810,7 +4796,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           )}
 
           {/* ... (Table code remains similar) ... */}
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm overflow-hidden">
             <div className="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center overflow-visible">
               <h3 className="text-xs font-bold text-slate-700 uppercase">
                 Histórico Mensal Detalhado
@@ -4819,7 +4805,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <button
                   onClick={() => setShowSyncOptions(!showSyncOptions)}
                   disabled={isSyncingHistory}
-                  className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-lg text-[10px] font-bold border border-blue-100 hover:bg-blue-100 disabled:opacity-50 transition-all"
+                  className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-xl text-[10px] font-bold border border-blue-100 hover:bg-blue-100 disabled:opacity-50 transition-all"
                 >
                   {isSyncingHistory ? (
                     <Loader2 size={10} className="animate-spin" />
@@ -4830,7 +4816,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 </button>
 
                 {showSyncOptions && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-zinc-900 border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden divide-y divide-slate-100">
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 rounded-xl shadow-lg z-50 overflow-hidden divide-y divide-slate-100">
                     <button
                       onClick={() => handleSyncHistory("current_month")}
                       className="w-full text-left px-3 py-2 text-[10px] text-slate-700 hover:bg-slate-50 transition-colors"
@@ -5002,7 +4988,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                         {isExpanded && (
                           <tr className="bg-slate-50/50 animate-in slide-in-from-top-2">
                             <td colSpan={10} className="p-4">
-                              <div className="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 p-3 shadow-sm">
+                              <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200/60 dark:border-zinc-800/80 p-3 shadow-sm">
                                 <h4 className="text-[10px] font-bold text-gray-900 uppercase mb-2">
                                   Detalhamento de Ativos em {row.date}
                                 </h4>
@@ -5344,7 +5330,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             })}
           </div>
 
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm overflow-hidden">
             <div className="p-3 border-b border-slate-100 bg-slate-50/50 flex flex-wrap gap-2 justify-between items-center">
               <h3 className="font-bold text-slate-700 text-xs uppercase flex items-center gap-2">
                 <LayoutList size={14} className="text-blue-500" /> Posição
@@ -5377,7 +5363,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <button
                   onClick={handleUpdatePrices}
                   disabled={loadingOnline}
-                  className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-lg text-[10px] font-bold border border-blue-100 hover:bg-blue-100 disabled:opacity-50 transition-all"
+                  className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-xl text-[10px] font-bold border border-blue-100 hover:bg-blue-100 disabled:opacity-50 transition-all"
                 >
                   {loadingOnline ? (
                     <Loader2 size={10} className="animate-spin" />
@@ -5532,7 +5518,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                             </p>
                                             {item.yieldRate && (
                                               <span
-                                                className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-gray-900 font-bold border border-slate-200 inline-block mt-0.5"
+                                                className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-gray-900 font-bold border border-zinc-200/60 dark:border-zinc-800/80 inline-block mt-0.5"
                                                 title="Rentabilidade Contratada"
                                               >
                                                 {item.yieldRate}
@@ -5656,14 +5642,14 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
       {activeTab === "history" && (
         // ... (history tab content same as before, see Investments.tsx in file tree)
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm overflow-hidden animate-in fade-in">
           <div className="p-3 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-4">
             <div className="flex flex-wrap gap-4 justify-between items-center">
               <div className="flex items-center gap-4">
                 <h3 className="text-xs font-bold text-slate-700 uppercase flex items-center gap-2">
                   <History size={14} /> Histórico de Operações
                 </h3>
-                <div className="flex bg-slate-200 p-1 rounded-lg">
+                <div className="flex bg-slate-200 p-1 rounded-xl">
                   <button
                     onClick={() => setHistoryViewMode("grouped")}
                     className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${historyViewMode === "grouped" ? "bg-white dark:bg-zinc-900 shadow text-blue-600" : "text-gray-900 hover:text-slate-700"}`}
@@ -5688,7 +5674,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <select
                   value={historyFilterCategory}
                   onChange={(e) => setHistoryFilterCategory(e.target.value)}
-                  className="bg-white dark:bg-zinc-900 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500 max-w-[120px] truncate"
+                  className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500 max-w-[120px] truncate"
                 >
                   <option value="">Todas Categorias</option>
                   {categories
@@ -5702,7 +5688,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <select
                   value={historyFilterSubCategory}
                   onChange={(e) => setHistoryFilterSubCategory(e.target.value)}
-                  className="bg-white dark:bg-zinc-900 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500 max-w-[120px] truncate"
+                  className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500 max-w-[120px] truncate"
                 >
                   <option value="">Todas Subcategorias</option>
                   {subCategories
@@ -5727,14 +5713,14 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     type="date"
                     value={historyStart}
                     onChange={(e) => setHistoryStart(e.target.value)}
-                    className="bg-white dark:bg-zinc-900 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <span className="text-gray-600 text-[10px]">até</span>
                   <input
                     type="date"
                     value={historyEnd}
                     onChange={(e) => setHistoryEnd(e.target.value)}
-                    className="bg-white dark:bg-zinc-900 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -5748,7 +5734,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 .map((catName) => (
                   <div key={catName} className="space-y-2 animate-in fade-in">
                     {/* ... Grouped View ... */}
-                    <div className="sticky top-0 bg-slate-100/90 backdrop-blur-sm z-10 px-3 py-1.5 border-b border-slate-200 rounded-lg shadow-sm">
+                    <div className="sticky top-0 bg-slate-100/90 backdrop-blur-sm z-10 px-3 py-1.5 border-b border-zinc-200/60 dark:border-zinc-800/80 rounded-xl shadow-sm">
                       <span className="text-[10px] font-bold uppercase text-slate-600 tracking-widest">
                         {catName}
                       </span>
@@ -5765,7 +5751,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                               return (
                                 <div
                                   key={ticker}
-                                  className="bg-white dark:bg-zinc-900 border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                                  className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                                 >
                                   <div
                                     className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
@@ -5778,7 +5764,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                     }
                                   >
                                     <div className="flex items-center gap-3">
-                                      <div className="w-8 h-8 rounded bg-white dark:bg-zinc-900 border border-slate-200 flex items-center justify-center p-1 shadow-sm shrink-0 overflow-hidden">
+                                      <div className="w-8 h-8 rounded bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 flex items-center justify-center p-1 shadow-sm shrink-0 overflow-hidden">
                                         <img
                                           src={getAssetIcon(ticker, catName)}
                                           alt=""
@@ -6072,14 +6058,14 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 ))}
 
             {historyViewMode === "operations" && (
-              <div className="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 overflow-hidden shadow-sm animate-in fade-in">
+              <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200/60 dark:border-zinc-800/80 overflow-hidden shadow-sm animate-in fade-in">
                 {/* ... Operations Table (Flat) ... */}
                 <div className="p-3 border-b border-slate-100 bg-slate-50/30 flex items-center gap-2 text-xs font-bold text-gray-900 uppercase tracking-wide">
                   <Briefcase size={14} /> Lista de Operações
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left">
-                    <thead className="bg-slate-50 font-bold text-gray-900 border-b border-slate-200">
+                    <thead className="bg-slate-50 font-bold text-gray-900 border-b border-zinc-200/60 dark:border-zinc-800/80">
                       <tr>
                         <th className="px-4 py-3">
                           <input
@@ -6139,7 +6125,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                 <tr className="bg-slate-100/50">
                                   <td
                                     colSpan={8}
-                                    className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-y border-slate-200"
+                                    className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-y border-zinc-200/60 dark:border-zinc-800/80"
                                   >
                                     {monthKey}
                                   </td>
@@ -6243,14 +6229,14 @@ export const Investments: React.FC<InvestmentsProps> = ({
             )}
 
             {historyViewMode === "dividends" && (
-              <div className="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200 overflow-hidden shadow-sm animate-in fade-in">
+              <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200/60 dark:border-zinc-800/80 overflow-hidden shadow-sm animate-in fade-in">
                 {/* ... Dividends Table (Flat) ... */}
                 <div className="p-3 border-b border-slate-100 bg-emerald-50/30 flex items-center gap-2 text-xs font-bold text-emerald-600 uppercase tracking-wide">
                   <Gift size={14} /> Lista de Proventos
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left">
-                    <thead className="bg-slate-50 font-bold text-gray-900 border-b border-slate-200">
+                    <thead className="bg-slate-50 font-bold text-gray-900 border-b border-zinc-200/60 dark:border-zinc-800/80">
                       <tr>
                         <th className="px-4 py-3">Data Pagamento</th>
                         <th className="px-4 py-3">Ativo</th>
@@ -6320,7 +6306,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
         <div className="space-y-6 animate-in fade-in">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="bg-white dark:bg-zinc-900 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm">
               <span className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block mb-1">
                 Total Recebido (Histórico)
               </span>
@@ -6328,7 +6314,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 {formatCurrency(portfolioData.summary.proventosTotal)}
               </div>
             </div>
-            <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="bg-white dark:bg-zinc-900 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm">
               <span className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block mb-1">
                 Média Mensal (12m)
               </span>
@@ -6336,7 +6322,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 {formatCurrency(portfolioData.summary.proventos12mTotal / 12)}
               </div>
             </div>
-            <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="bg-white dark:bg-zinc-900 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm">
               <span className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block mb-1">
                 Yield on Cost (Global)
               </span>
@@ -6348,7 +6334,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-slate-200 shadow-sm h-[350px]">
+            <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm h-[350px]">
               <h3 className="text-xs font-bold text-slate-700 uppercase mb-4 flex items-center gap-2">
                 <BarChart3 size={14} className="text-emerald-500" /> Evolução
                 Mensal
@@ -6388,7 +6374,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-slate-200 shadow-sm h-[350px] overflow-hidden flex flex-col">
+            <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm h-[350px] overflow-hidden flex flex-col">
               <h3 className="text-xs font-bold text-slate-700 uppercase mb-4 flex items-center gap-2">
                 <Target size={14} className="text-blue-500" /> Top 10
                 Pagadoras
@@ -6428,7 +6414,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             </button>
             <button
               onClick={() => setIsDivBulkOpen(true)}
-              className="bg-white dark:bg-zinc-900 text-slate-600 border border-slate-200 px-4 py-2 rounded-xl font-bold hover:bg-slate-50 shadow-sm flex items-center gap-2 text-xs"
+              className="bg-white dark:bg-zinc-900 text-slate-600 border border-zinc-200/60 dark:border-zinc-800/80 px-4 py-2 rounded-xl font-bold hover:bg-slate-50 shadow-sm flex items-center gap-2 text-xs"
             >
               <Upload size={14} /> Importar CSV
             </button>
@@ -6441,7 +6427,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           </div>
 
           {/* Monthly Table with Filters */}
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm overflow-hidden">
             <div className="p-3 border-b border-slate-100 bg-emerald-50/30 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 uppercase tracking-wide">
                 <Gift size={14} /> Histórico Detalhado
@@ -6450,7 +6436,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <select
                   value={proventosCategoryFilter}
                   onChange={(e) => setProventosCategoryFilter(e.target.value)}
-                  className="bg-white dark:bg-zinc-900 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500 max-w-[120px] truncate"
+                  className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500 max-w-[120px] truncate"
                 >
                   <option value="">Todas Categorias</option>
                   {categories
@@ -6464,7 +6450,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <select
                   value={proventosYearFilter}
                   onChange={(e) => setProventosYearFilter(e.target.value)}
-                  className="bg-white dark:bg-zinc-900 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="">Todos os Anos</option>
                   {Array.from(
@@ -6485,7 +6471,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   placeholder="Filtrar Ticker..."
                   value={proventosTickerFilter}
                   onChange={(e) => setProventosTickerFilter(e.target.value)}
-                  className="bg-white dark:bg-zinc-900 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-lg px-2 py-1 w-24 outline-none focus:ring-2 focus:ring-emerald-500 uppercase"
+                  className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1 w-24 outline-none focus:ring-2 focus:ring-emerald-500 uppercase"
                 />
               </div>
             </div>
@@ -6565,17 +6551,17 @@ export const Investments: React.FC<InvestmentsProps> = ({
       {activeTab === "tax" && (
         <div className="space-y-6 animate-in fade-in">
           {/* Header Controls */}
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm">
             <div className="flex bg-slate-100 p-1 rounded-xl">
               <button
                 onClick={() => setTaxViewMode("darf")}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${taxViewMode === "darf" ? "bg-white dark:bg-zinc-900 shadow text-rose-600" : "text-gray-900 hover:text-slate-700"}`}
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-2 ${taxViewMode === "darf" ? "bg-white dark:bg-zinc-900 shadow text-rose-600" : "text-gray-900 hover:text-slate-700"}`}
               >
                 <ShieldCheck size={14} /> Controle de DARF (Mensal)
               </button>
               <button
                 onClick={() => setTaxViewMode("dirf")}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${taxViewMode === "dirf" ? "bg-white dark:bg-zinc-900 shadow text-blue-600" : "text-gray-900 hover:text-slate-700"}`}
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-2 ${taxViewMode === "dirf" ? "bg-white dark:bg-zinc-900 shadow text-blue-600" : "text-gray-900 hover:text-slate-700"}`}
               >
                 <FileText size={14} /> Declaração Anual (DIRF)
               </button>
@@ -6588,7 +6574,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
               <select
                 value={taxYearFilter}
                 onChange={(e) => setTaxYearFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-700 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {Array.from(
                   new Set(
@@ -6610,7 +6596,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             <div className="space-y-6 animate-in fade-in">
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="bg-white dark:bg-zinc-900 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm">
                   <span className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block mb-1">
                     Total Vendas ({taxYearFilter})
                   </span>
@@ -6623,7 +6609,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     )}
                   </div>
                 </div>
-                <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="bg-white dark:bg-zinc-900 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm">
                   <span className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block mb-1">
                     Lucro Realizado ({taxYearFilter})
                   </span>
@@ -6646,7 +6632,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     )}
                   </div>
                 </div>
-                <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="bg-white dark:bg-zinc-900 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm">
                   <span className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block mb-1">
                     Imposto Estimado (DARF)
                   </span>
@@ -6659,13 +6645,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
               </div>
 
               {/* DARF Report Table */}
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm overflow-hidden">
                 <div className="p-3 border-b border-slate-100 bg-rose-50/30 flex items-center gap-2 text-xs font-bold text-rose-600 uppercase tracking-wide">
                   <ShieldCheck size={14} /> Apuração Mensal de Imposto
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left">
-                    <thead className="bg-slate-50 font-bold text-gray-900 border-b border-slate-200 text-[10px] uppercase">
+                    <thead className="bg-slate-50 font-bold text-gray-900 border-b border-zinc-200/60 dark:border-zinc-800/80 text-[10px] uppercase">
                       <tr>
                         <th className="px-4 py-3">Mês/Ano</th>
                         <th className="px-4 py-3 text-right">Vendas Totais</th>
@@ -6821,12 +6807,12 @@ export const Investments: React.FC<InvestmentsProps> = ({
                           {selectedTaxMonth === r.month && (
                             <tr>
                               <td colSpan={10} className="p-0">
-                                <div className="bg-slate-50 p-4 border-y border-slate-200 animate-in slide-in-from-top-2">
+                                <div className="bg-slate-50 p-4 border-y border-zinc-200/60 dark:border-zinc-800/80 animate-in slide-in-from-top-2">
                                   <h4 className="text-[10px] font-bold text-gray-900 uppercase mb-2 flex items-center gap-2">
                                     <Briefcase size={12} /> Detalhe das
                                     Operações ({r.month})
                                   </h4>
-                                  <table className="w-full text-xs text-left bg-white dark:bg-zinc-900 rounded-lg border border-slate-200 overflow-hidden">
+                                  <table className="w-full text-xs text-left bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200/60 dark:border-zinc-800/80 overflow-hidden">
                                     <thead className="bg-slate-100 text-[10px] font-bold text-gray-900 uppercase">
                                       <tr>
                                         <th className="px-3 py-2">Data</th>
@@ -6922,7 +6908,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 .map(([groupName, items]) => (
                   <div
                     key={groupName}
-                    className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+                    className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm overflow-hidden"
                   >
                     <div className="p-3 border-b border-slate-100 bg-blue-50 dark:bg-blue-950/60/30 flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-wide">
                       <FileText size={14} /> {groupName} - Posição em 31/12/
@@ -6930,7 +6916,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs text-left">
-                        <thead className="bg-slate-50 font-bold text-gray-900 border-b border-slate-200 text-[10px] uppercase">
+                        <thead className="bg-slate-50 font-bold text-gray-900 border-b border-zinc-200/60 dark:border-zinc-800/80 text-[10px] uppercase">
                           <tr>
                             <th className="px-4 py-3">Código</th>
                             <th className="px-4 py-3">
@@ -6986,7 +6972,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   </div>
                 ))}
               {Object.keys(dirfData).length === 0 && (
-                <div className="bg-white dark:bg-zinc-900 p-12 rounded-2xl border border-slate-200 shadow-sm text-center text-gray-600 italic text-xs">
+                <div className="bg-white dark:bg-zinc-900 p-12 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm text-center text-gray-600 italic text-xs">
                   Nenhuma posição encontrada para o ano de {taxYearFilter}.
                 </div>
               )}
@@ -7052,7 +7038,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             </div>
 
             <div className="flex-1 overflow-auto p-6 custom-scrollbar">
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm overflow-hidden">
                 <table className="w-full text-xs text-left whitespace-nowrap">
                   <thead className="bg-slate-50 text-gray-900 font-bold uppercase text-[10px] border-b">
                     <tr>
@@ -7200,18 +7186,18 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
             <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
               {manualPriceActionError && (
-                <div className="px-4 py-2 bg-rose-50 text-rose-600 text-[10px] font-bold rounded-lg border border-rose-100 flex items-center justify-between animate-in fade-in slide-in-from-top-1">
+                <div className="px-4 py-2 bg-rose-50 text-rose-600 text-[10px] font-bold rounded-xl border border-rose-100 flex items-center justify-between animate-in fade-in slide-in-from-top-1">
                   <span>{manualPriceActionError}</span>
                   <button
                     onClick={() => setManualPriceActionError("")}
-                    className="p-1 hover:bg-rose-100 rounded-lg"
+                    className="p-1 hover:bg-rose-100 rounded-xl"
                   >
                     <X size={12} />
                   </button>
                 </div>
               )}
               {!manualHistoryTab || manualHistoryTab === "single" ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">
                       Ticker
@@ -7228,7 +7214,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                         setIndividualDeleteConfirm(null);
                       }}
                       placeholder="Ex: PETR4"
-                      className="w-full bg-white dark:bg-zinc-900 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold uppercase outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 rounded-xl px-4 py-2 text-sm font-bold uppercase outline-none focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
                   <div className="space-y-1">
@@ -7240,7 +7226,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                       step="0.0001"
                       id="new-manual-price"
                       placeholder="0,00"
-                      className="w-full bg-white dark:bg-zinc-900 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 rounded-xl px-4 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
                   <div className="space-y-1">
@@ -7252,7 +7238,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                         type="date"
                         id="new-manual-date"
                         defaultValue={new Date().toISOString().split("T")[0]}
-                        className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-amber-500"
+                        className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 rounded-xl px-4 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-amber-500"
                       />
                       <button
                         onClick={async () => {
@@ -7307,7 +7293,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 animate-in fade-in slide-in-from-top-2 duration-200">
                   <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1.5 ml-1">
                     <Clipboard size={10} /> Cole sua lista aqui (Data e Valor
                     por linha)
@@ -7316,7 +7302,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     id="manual-bulk-input"
                     rows={5}
                     placeholder="01/01/2024 10.50&#10;02/01/2024 R$ 11,00"
-                    className="w-full bg-white dark:bg-zinc-900 border border-slate-200 rounded-xl px-4 py-3 text-xs font-mono outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 rounded-xl px-4 py-3 text-xs font-mono outline-none focus:ring-2 focus:ring-amber-500"
                   />
                   <button
                     onClick={async () => {
@@ -7442,7 +7428,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                               <>
                                 <button
                                   onClick={() => setBulkDeleteConfirm(false)}
-                                  className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase hover:bg-slate-200 transition-all border border-slate-200"
+                                  className="px-3 py-1 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-bold uppercase hover:bg-slate-200 transition-all border border-zinc-200/60 dark:border-zinc-800/80"
                                 >
                                   Cancelar
                                 </button>
@@ -7466,7 +7452,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                     setSelectedManualDates([]);
                                     setBulkDeleteConfirm(false);
                                   }}
-                                  className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 text-white rounded-lg text-[10px] font-bold uppercase hover:bg-rose-700 transition-all border border-rose-600 shadow-sm"
+                                  className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 text-white rounded-xl text-[10px] font-bold uppercase hover:bg-rose-700 transition-all border border-rose-600 shadow-sm"
                                 >
                                   Confirmar Exclusão ({selectedManualDates.length})
                                 </button>
@@ -7474,7 +7460,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                             ) : (
                               <button
                                 onClick={() => setBulkDeleteConfirm(true)}
-                                className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-bold uppercase hover:bg-rose-100 transition-all border border-rose-200"
+                                className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 rounded-xl text-[10px] font-bold uppercase hover:bg-rose-100 transition-all border border-rose-200"
                               >
                                 <Trash2 size={12} /> Excluir Selecionados (
                                 {selectedManualDates.length})
@@ -7609,7 +7595,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                         onClick={() =>
                                           setIndividualDeleteConfirm(null)
                                         }
-                                        className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+                                        className="p-1 text-slate-400 hover:text-slate-600 rounded-xl"
                                       >
                                         <X size={12} />
                                       </button>
@@ -7638,7 +7624,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                           );
                                           setIndividualDeleteConfirm(null);
                                         }}
-                                        className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg"
+                                        className="p-1 text-rose-600 hover:bg-rose-50 rounded-xl"
                                       >
                                         <Check size={14} />
                                       </button>
@@ -7648,7 +7634,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                       onClick={() =>
                                         setIndividualDeleteConfirm(h.date)
                                       }
-                                      className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                                      className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                                     >
                                       <Trash2 size={14} />
                                     </button>
@@ -7685,7 +7671,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                           setBulkDeleteConfirm(false);
                           setIndividualDeleteConfirm(null);
                         }}
-                        className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${selectedTickerForHistory === p.ticker ? "bg-amber-100 border-amber-300 text-amber-800 shadow-sm" : "bg-white dark:bg-zinc-900 border-slate-200 text-slate-600 hover:border-amber-200"}`}
+                        className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all ${selectedTickerForHistory === p.ticker ? "bg-amber-100 border-amber-300 text-amber-800 shadow-sm" : "bg-white dark:bg-zinc-900 border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 hover:border-amber-200"}`}
                       >
                         {p.ticker} ({p.manualHistory?.length})
                       </button>
@@ -7751,7 +7737,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   onChange={(e) =>
                     setBatchTargetTicker(e.target.value.toUpperCase())
                   }
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 font-bold uppercase placeholder:font-normal"
+                  className="w-full bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 font-bold uppercase placeholder:font-normal"
                   placeholder="Ex: PETR4"
                 />
                 <p className="text-[10px] text-gray-600 mt-1">
@@ -7769,7 +7755,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   type="text"
                   value={batchTargetBroker}
                   onChange={(e) => setBatchTargetBroker(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:font-normal"
+                  className="w-full bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:font-normal"
                   placeholder="Ex: XP, BTG, Itaú"
                 />
               </div>
@@ -7786,7 +7772,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     setBatchTargetCat(e.target.value);
                     setBatchTargetSub("");
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Selecione...</option>
                   {categories
@@ -7806,7 +7792,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   value={batchTargetSub}
                   onChange={(e) => setBatchTargetSub(e.target.value)}
                   disabled={!batchTargetCat}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="w-full bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 >
                   <option value="">Sem alteração / Nenhuma</option>
                   {filteredSubCategoriesForBatch.map((s) => (
@@ -7819,14 +7805,14 @@ export const Investments: React.FC<InvestmentsProps> = ({
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setIsBatchEditOpen(false)}
-                  className="flex-1 py-2 text-gray-900 font-bold hover:bg-slate-100 rounded-lg"
+                  className="flex-1 py-2 text-gray-900 font-bold hover:bg-slate-100 rounded-xl"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleBatchEdit}
                   disabled={isBatchSaving}
-                  className="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-lg flex items-center justify-center gap-2"
+                  className="flex-1 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg flex items-center justify-center gap-2"
                 >
                   {isBatchSaving ? (
                     <Loader2 size={16} className="animate-spin" />

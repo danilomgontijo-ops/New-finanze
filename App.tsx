@@ -295,90 +295,56 @@ const App: React.FC = () => {
            </div>
        </div>
 
-       {/* Top/Side Navigation - Floating Glassmorphic Workspace Dock */}
-       <aside className={`hidden md:flex md:m-4 md:mr-0 md:rounded-3xl z-30 w-64 backdrop-blur-xl bg-white/60 dark:bg-zinc-900/60 text-zinc-600 dark:text-zinc-400 transform transition-all duration-300 ease-in-out md:relative md:translate-x-0 flex-col shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-zinc-200/50 dark:border-zinc-800/40`}>
-           <div className="p-6 flex flex-col items-center border-b border-zinc-100/80 dark:border-zinc-800/80">
-               <div className="w-12 h-12 bg-blue-600 dark:bg-blue-500 text-white rounded-xl flex items-center justify-center mb-3 shadow-md shadow-blue-200/50 dark:shadow-blue-950/20">
-                   <Wallet size={24} strokeWidth={2} />
-               </div>
-               <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-0.5 tracking-tight">FinanZe</h1>
-               <p className="text-zinc-400 dark:text-zinc-500 text-xs font-semibold uppercase tracking-[0.2em]">Workspace</p>
+       {/* Pill Sidebar Navigation */}
+       <aside className="hidden md:flex md:m-4 md:mr-0 w-20 rounded-[2.5rem] z-30 bg-gradient-to-b from-blue-600 to-blue-700 flex-col items-center py-5 gap-6 shadow-xl shadow-blue-200/60 dark:shadow-none">
+           <div className="w-11 h-11 rounded-full bg-white text-blue-600 flex items-center justify-center shrink-0">
+               <Wallet size={20} strokeWidth={2.25} />
            </div>
-           
-           <nav className="flex-1 mt-6 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
-               <button 
-                onClick={() => { setCurrentView('dashboard'); setIsSidebarOpen(false); }}
-                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'dashboard' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
-               >
-                   {currentView === 'dashboard' && (
-                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl z-0 ring-1 ring-blue-100/50 dark:ring-blue-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
-                   )}
-                   <LayoutDashboard size={18} className={`relative z-10 ${currentView === 'dashboard' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
-                   <span className="relative z-10">Dashboard</span>
-               </button>
-               <button 
-                onClick={() => { setCurrentView('transactions'); setIsSidebarOpen(false); }}
-                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'transactions' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
-               >
-                   {currentView === 'transactions' && (
-                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl z-0 ring-1 ring-blue-100/50 dark:ring-blue-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
-                   )}
-                   <List size={18} className={`relative z-10 ${currentView === 'transactions' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
-                   <span className="relative z-10">Lançamentos</span>
-               </button>
-               <button 
-                onClick={() => { setCurrentView('analytics'); setIsSidebarOpen(false); }}
-                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'analytics' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
-               >
-                   {currentView === 'analytics' && (
-                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl z-0 ring-1 ring-blue-100/50 dark:ring-blue-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
-                   )}
-                   <PieChart size={18} className={`relative z-10 ${currentView === 'analytics' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
-                   <span className="relative z-10">Análises</span>
-               </button>
-               <button 
-                onClick={() => { setCurrentView('investments'); setIsSidebarOpen(false); }}
-                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'investments' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
-               >
-                   {currentView === 'investments' && (
-                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl z-0 ring-1 ring-blue-100/50 dark:ring-blue-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
-                   )}
-                   <TrendingUp size={18} className={`relative z-10 ${currentView === 'investments' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
-                   <span className="relative z-10">Investimentos</span>
-               </button>
-               <button 
-                onClick={() => { setCurrentView('settings'); setIsSidebarOpen(false); }}
-                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'settings' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
-               >
-                   {currentView === 'settings' && (
-                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl z-0 ring-1 ring-blue-100/50 dark:ring-blue-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
-                   )}
-                   <SettingsIcon size={18} className={`relative z-10 ${currentView === 'settings' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
-                   <span className="relative z-10">Configurações</span>
-               </button>
+
+           <nav className="flex-1 flex flex-col gap-1.5">
+               {([
+                   { view: 'dashboard' as const, icon: LayoutDashboard, label: 'Dashboard' },
+                   { view: 'transactions' as const, icon: List, label: 'Lançamentos' },
+                   { view: 'analytics' as const, icon: PieChart, label: 'Análises' },
+                   { view: 'investments' as const, icon: TrendingUp, label: 'Investimentos' },
+                   { view: 'settings' as const, icon: SettingsIcon, label: 'Configurações' },
+               ]).map(({ view, icon: Icon, label }) => (
+                   <button
+                       key={view}
+                       onClick={() => { setCurrentView(view); setIsSidebarOpen(false); }}
+                       className="group relative w-11 h-11 rounded-2xl flex items-center justify-center"
+                       title={label}
+                   >
+                       {currentView === view && (
+                           <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-white rounded-2xl shadow-sm" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                       )}
+                       <Icon size={18} className={`relative z-10 transition-colors ${currentView === view ? 'text-blue-600' : 'text-white/60 group-hover:text-white'}`} />
+                       <span className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-zinc-900 dark:bg-zinc-100 px-2.5 py-1.5 text-xs font-semibold text-white dark:text-zinc-900 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0 z-20">
+                           {label}
+                       </span>
+                   </button>
+               ))}
            </nav>
 
-           <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
-               <button onClick={() => setIsDarkMode(!isDarkMode)} className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all"><span className="flex items-center gap-3">{isDarkMode ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} className="text-blue-500" />}{isDarkMode ? "Tema Claro" : "Tema Escuro"}</span><span className="text-[9px] bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">{isDarkMode ? "Dark" : "Light"}</span></button>
-              <div className="space-y-1">
-                  <button 
-                   onClick={() => { setIsReportOpen(true); setIsSidebarOpen(false); }}
-                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                  >
-                      <FileText size={16} /> Relatórios
-                  </button>
-                  <button 
-                   onClick={() => { setIsImporterOpen(true); setIsSidebarOpen(false); }}
-                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                  >
-                      <Upload size={16} /> Importar Extrato
-                  </button>
-                  <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-2 mx-2"></div>
-                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-zinc-500 dark:text-zinc-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 transition-colors">
-                      <LogOut size={16} /> Sair
-                  </button>
-              </div>
-          </div>
+           <div className="flex flex-col items-center gap-1.5">
+               <div className="w-6 h-px bg-white/20 my-1" />
+               <button onClick={() => setIsDarkMode(!isDarkMode)} className="group relative w-11 h-11 rounded-2xl flex items-center justify-center text-white/60 hover:bg-white/15 hover:text-white transition-colors" title="Alternar Tema">
+                   {isDarkMode ? <Sun size={17} /> : <Moon size={17} />}
+                   <span className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-zinc-900 dark:bg-zinc-100 px-2.5 py-1.5 text-xs font-semibold text-white dark:text-zinc-900 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0 z-20">Tema</span>
+               </button>
+               <button onClick={() => { setIsReportOpen(true); setIsSidebarOpen(false); }} className="group relative w-11 h-11 rounded-2xl flex items-center justify-center text-white/60 hover:bg-white/15 hover:text-white transition-colors" title="Relatórios">
+                   <FileText size={17} />
+                   <span className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-zinc-900 dark:bg-zinc-100 px-2.5 py-1.5 text-xs font-semibold text-white dark:text-zinc-900 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0 z-20">Relatórios</span>
+               </button>
+               <button onClick={() => { setIsImporterOpen(true); setIsSidebarOpen(false); }} className="group relative w-11 h-11 rounded-2xl flex items-center justify-center text-white/60 hover:bg-white/15 hover:text-white transition-colors" title="Importar Extrato">
+                   <Upload size={17} />
+                   <span className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-zinc-900 dark:bg-zinc-100 px-2.5 py-1.5 text-xs font-semibold text-white dark:text-zinc-900 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0 z-20">Importar</span>
+               </button>
+               <button onClick={handleLogout} className="group relative w-11 h-11 rounded-2xl flex items-center justify-center text-white/60 hover:bg-white/15 hover:text-white transition-colors" title="Sair">
+                   <LogOut size={17} />
+                   <span className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-zinc-900 dark:bg-zinc-100 px-2.5 py-1.5 text-xs font-semibold text-white dark:text-zinc-900 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0 z-20">Sair</span>
+               </button>
+           </div>
        </aside>
        
        {/* Main Content Pane - Framed to support floating island sidebar perfectly */}

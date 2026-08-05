@@ -722,48 +722,48 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   return (
     <div className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[95vh] animate-in fade-in zoom-in-95 duration-200 relative border border-zinc-200/50">
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[95vh] animate-in fade-in zoom-in-95 duration-200 relative border border-zinc-200/50 dark:border-zinc-700">
         
         {/* UPDATE MODE MODAL OVERLAY */}
         {showUpdateModal && (
-            <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 animate-in fade-in duration-300">
+            <div className="absolute inset-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 animate-in fade-in duration-300">
                 <div className="bg-blue-50 p-5 rounded-full text-blue-600 mb-6 shadow-inner border border-blue-100">
                     <Repeat size={36} />
                 </div>
-                <h3 className="text-2xl font-medium tracking-tight text-zinc-900 mb-3 text-center tracking-tight">Editar Recorrência</h3>
-                <p className="text-sm text-zinc-500 text-center mb-10 max-w-xs leading-relaxed">
-                    Esta é uma transação <span className="font-semibold text-zinc-700">{initialData?.installmentId ? 'parcelada' : (initialData?.fixedGroupId ? 'fixa' : 'compartilhada')}</span>. Como deseja aplicar as alterações?
+                <h3 className="text-2xl font-medium tracking-tight text-zinc-900 dark:text-zinc-50 mb-3 text-center tracking-tight">Editar Recorrência</h3>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center mb-10 max-w-xs leading-relaxed">
+                    Esta é uma transação <span className="font-semibold text-zinc-700 dark:text-zinc-300">{initialData?.installmentId ? 'parcelada' : (initialData?.fixedGroupId ? 'fixa' : 'compartilhada')}</span>. Como deseja aplicar as alterações?
                 </p>
                 <div className="space-y-4 w-full max-w-sm">
-                    <button onClick={() => handleConfirmUpdate('single')} className="w-full flex items-center p-4 border border-zinc-200/60 rounded-xl hover:bg-zinc-50 transition-all text-left gap-4 group hover:border-blue-200 hover:shadow-sm shadow-zinc-200/5">
-                        <div className="bg-white p-2.5 rounded-2xl border border-zinc-200 shadow-sm shadow-zinc-200/5 text-zinc-500 group-hover:text-blue-600 group-hover:border-blue-200 transition-colors"><FileText size={20} /></div>
+                    <button onClick={() => handleConfirmUpdate('single')} className="w-full flex items-center p-4 border border-zinc-200/60 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all text-left gap-4 group hover:border-blue-200 hover:shadow-sm shadow-zinc-200/5">
+                        <div className="bg-white dark:bg-zinc-900 p-2.5 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-sm shadow-zinc-200/5 text-zinc-500 dark:text-zinc-400 group-hover:text-blue-600 group-hover:border-blue-200 transition-colors"><FileText size={20} /></div>
                         <div>
-                            <span className="block text-sm font-semibold text-zinc-800 group-hover:text-blue-700 transition-colors">Apenas esta</span>
-                            <span className="block text-xs text-zinc-500 mt-0.5">Alterar somente este lançamento.</span>
+                            <span className="block text-sm font-semibold text-zinc-800 dark:text-zinc-100 group-hover:text-blue-700 transition-colors">Apenas esta</span>
+                            <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Alterar somente este lançamento.</span>
                         </div>
                     </button>
                     <button onClick={() => handleConfirmUpdate('future')} className="w-full flex items-center p-4 border border-blue-200 bg-blue-50/50 rounded-2xl hover:bg-blue-50 transition-all text-left gap-4 group ring-2 ring-blue-500/20 shadow-sm shadow-zinc-200/5">
-                        <div className="bg-white p-2.5 rounded-2xl border border-blue-200 shadow-sm shadow-zinc-200/5 text-blue-600"><FastForward size={20} /></div>
+                        <div className="bg-white dark:bg-zinc-900 p-2.5 rounded-2xl border border-blue-200 shadow-sm shadow-zinc-200/5 text-blue-600"><FastForward size={20} /></div>
                         <div>
-                            <span className="block text-sm font-semibold text-blue-900">Esta e futuras</span>
+                            <span className="block text-sm font-semibold text-blue-900 dark:text-blue-100">Esta e futuras</span>
                             <span className="block text-xs text-blue-600/80 mt-0.5">Alterar desta data em diante.</span>
                         </div>
                     </button>
-                    <button onClick={() => handleConfirmUpdate('all')} className="w-full flex items-center p-4 border border-zinc-200/60 rounded-xl hover:bg-zinc-50 transition-all text-left gap-4 group hover:border-blue-200 hover:shadow-sm shadow-zinc-200/5">
-                        <div className="bg-white p-2.5 rounded-2xl border border-zinc-200 shadow-sm shadow-zinc-200/5 text-zinc-500 group-hover:text-blue-600 group-hover:border-blue-200 transition-colors"><Layers size={20} /></div>
+                    <button onClick={() => handleConfirmUpdate('all')} className="w-full flex items-center p-4 border border-zinc-200/60 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all text-left gap-4 group hover:border-blue-200 hover:shadow-sm shadow-zinc-200/5">
+                        <div className="bg-white dark:bg-zinc-900 p-2.5 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-sm shadow-zinc-200/5 text-zinc-500 dark:text-zinc-400 group-hover:text-blue-600 group-hover:border-blue-200 transition-colors"><Layers size={20} /></div>
                         <div>
-                            <span className="block text-sm font-semibold text-zinc-800 group-hover:text-blue-700 transition-colors">Todas</span>
-                            <span className="block text-xs text-zinc-500 mt-0.5">Alterar toda a série.</span>
+                            <span className="block text-sm font-semibold text-zinc-800 dark:text-zinc-100 group-hover:text-blue-700 transition-colors">Todas</span>
+                            <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Alterar toda a série.</span>
                         </div>
                     </button>
                 </div>
-                <button onClick={() => setShowUpdateModal(false)} className="mt-8 text-zinc-500 text-sm hover:text-zinc-800 font-semibold tracking-wide uppercase transition-colors">Cancelar</button>
+                <button onClick={() => setShowUpdateModal(false)} className="mt-8 text-zinc-500 dark:text-zinc-400 text-sm hover:text-zinc-800 dark:hover:text-zinc-100 font-semibold tracking-wide uppercase transition-colors">Cancelar</button>
             </div>
         )}
 
-        <div className="px-8 py-6 border-b border-zinc-100 flex justify-between items-center bg-white/80 sticky top-0 z-10 backdrop-blur-xl border-b border-zinc-100">
-          <h2 className="text-xl font-semibold text-zinc-900 tracking-tight">{initialData ? 'Editar Registro' : 'Novo Lançamento'}</h2>
-          <button onClick={onClose} className="p-2.5 bg-white hover:bg-zinc-100 text-zinc-500 rounded-2xl transition-colors border border-zinc-200 shadow-sm shadow-zinc-200/5 hover:text-zinc-800"><X size={20} /></button>
+        <div className="px-8 py-6 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-white/80 dark:bg-zinc-900/80 sticky top-0 z-10 backdrop-blur-xl border-b border-zinc-100 dark:border-zinc-800">
+          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 tracking-tight">{initialData ? 'Editar Registro' : 'Novo Lançamento'}</h2>
+          <button onClick={onClose} className="p-2.5 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-2xl transition-colors border border-zinc-200 dark:border-zinc-700 shadow-sm shadow-zinc-200/5 hover:text-zinc-800 dark:hover:text-zinc-100"><X size={20} /></button>
         </div>
 
         <div className="overflow-y-auto p-8 custom-scrollbar">
@@ -773,10 +773,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               </div>
           )}
 
-          <div className="flex bg-zinc-100/50 p-1 rounded-xl mb-8 shadow-inner border border-zinc-200/50">
-            <button onClick={() => setType(TransactionType.EXPENSE)} className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${type === TransactionType.EXPENSE ? 'bg-white text-rose-600 shadow-sm ring-1 ring-zinc-900/5' : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/50'}`}>Despesa</button>
-            <button onClick={() => setType(TransactionType.INCOME)} className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${type === TransactionType.INCOME ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-zinc-900/5' : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/50'}`}>Receita</button>
-            <button onClick={() => setType(TransactionType.INVESTMENT)} className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${type === TransactionType.INVESTMENT ? 'bg-white text-blue-600 shadow-sm ring-1 ring-zinc-900/5' : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/50'}`}>Investimento</button>
+          <div className="flex gap-2 mb-8">
+            <button onClick={() => setType(TransactionType.EXPENSE)} className={`flex-1 py-2.5 text-sm font-semibold rounded-full transition-all duration-200 ${type === TransactionType.EXPENSE ? 'bg-rose-600 text-white shadow-md shadow-rose-200 dark:shadow-none' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}>Despesa</button>
+            <button onClick={() => setType(TransactionType.INCOME)} className={`flex-1 py-2.5 text-sm font-semibold rounded-full transition-all duration-200 ${type === TransactionType.INCOME ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 dark:shadow-none' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}>Receita</button>
+            <button onClick={() => setType(TransactionType.INVESTMENT)} className={`flex-1 py-2.5 text-sm font-semibold rounded-full transition-all duration-200 ${type === TransactionType.INVESTMENT ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}>Investimento</button>
           </div>
 
           <form id="transaction-form" className="space-y-6">
@@ -786,20 +786,20 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               <div className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                    <div>
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-blue-400"/> Data da Operação</label>
-                    <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5" />
+                    <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-blue-400"/> Data da Operação</label>
+                    <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5" />
                    </div>
                    
                    <div>
-                     <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Landmark size={14} className="text-blue-400"/> Corretora</label>
-                     <input type="text" value={invBroker} onChange={(e) => setInvBroker(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="XP, BTG, NuInvest..." />
+                     <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Landmark size={14} className="text-blue-400"/> Corretora</label>
+                     <input type="text" value={invBroker} onChange={(e) => setInvBroker(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500" placeholder="XP, BTG, NuInvest..." />
                    </div>
                 </div>
 
                 {/* DADOS DO ATIVO COM AUTOCOMPLETE E EVENTO */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="relative" ref={dropdownRef}>
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><TrendingUp size={14} className="text-blue-400"/> Ativo / Título</label>
+                    <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><TrendingUp size={14} className="text-blue-400"/> Ativo / Título</label>
                     <input 
                       type="text" 
                       required 
@@ -810,19 +810,19 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                       }}
                       onFocus={() => setShowTickerSuggestions(true)}
                       onBlur={normalizeTickerName}
-                      className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-zinc-900 font-semibold uppercase transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 placeholder:font-medium" 
+                      className="w-full px-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-zinc-900 dark:text-zinc-50 font-semibold uppercase transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 placeholder:font-medium" 
                       placeholder="PETR4, Tesouro Selic..." 
                       autoComplete="off"
                     />
                     
                     {/* DROPDOWN DE SUGESTÕES */}
                     {showTickerSuggestions && filteredTickerSuggestions.length > 0 && (
-                        <ul className="absolute left-0 right-0 top-full mt-2 bg-white border border-zinc-200/60 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 custom-scrollbar animate-in fade-in slide-in-from-top-2 ring-1 ring-zinc-900/5">
+                        <ul className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50 custom-scrollbar animate-in fade-in slide-in-from-top-2 ring-1 ring-zinc-900/5">
                             {filteredTickerSuggestions.map(suggestion => (
                                 <li 
                                     key={suggestion}
                                     onMouseDown={() => selectSuggestedTicker(suggestion)}
-                                    className="px-5 py-3 text-sm font-semibold text-zinc-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer border-b border-zinc-100 last:border-0 transition-colors"
+                                    className="px-5 py-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-blue-50 hover:text-blue-700 cursor-pointer border-b border-zinc-100 dark:border-zinc-800 last:border-0 transition-colors"
                                 >
                                     {suggestion}
                                 </li>
@@ -832,11 +832,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">Evento</label>
+                    <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">Evento</label>
                     <select 
                         value={invEvent} 
                         onChange={(e) => setInvEvent(e.target.value as any)} 
-                        className="w-full px-4 py-3 bg-zinc-100/80 border border-zinc-200/60 rounded-xl outline-none text-sm font-semibold text-zinc-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                        className="w-full px-4 py-3 bg-zinc-100/80 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700 rounded-xl outline-none text-sm font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer"
                     >
                         <option value="BUY">Compra (Aplicação)</option>
                         <option value="SELL">Venda (Resgate)</option>
@@ -857,8 +857,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 {isDividendEvent && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Globe size={14} className="text-blue-400"/> Moeda</label>
-                            <select value={invCurrency} onChange={(e) => setInvCurrency(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none font-semibold text-zinc-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer shadow-sm shadow-zinc-200/5">
+                            <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Globe size={14} className="text-blue-400"/> Moeda</label>
+                            <select value={invCurrency} onChange={(e) => setInvCurrency(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer shadow-sm shadow-zinc-200/5">
                                 <option value="BRL">BRL (R$)</option>
                                 <option value="USD">USD (U$)</option>
                             </select>
@@ -869,7 +869,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 {invEvent === 'BONUS' && (
                     <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100 animate-in fade-in mt-5 shadow-sm shadow-zinc-200/5">
                         <label className="block text-[10px] font-semibold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-1.5"><RefreshCcw size={14}/> Razão da Bonificação (%)</label>
-                        <input type="number" step="0.000001" value={invBonusRatio} onChange={(e) => setInvBonusRatio(e.target.value)} className="w-full px-4 py-3 bg-white border border-blue-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-zinc-900 font-semibold transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Ex: 10 para 10%" />
+                        <input type="number" step="0.000001" value={invBonusRatio} onChange={(e) => setInvBonusRatio(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-blue-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-zinc-900 dark:text-zinc-50 font-semibold transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500" placeholder="Ex: 10 para 10%" />
                         <p className="text-[10px] text-blue-500/80 mt-3 font-medium leading-relaxed">Informe a porcentagem exata (ex: 10 para 10%). Isso garante o cálculo correto do preço nominal no histórico.</p>
                     </div>
                 )}
@@ -877,7 +877,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 {invEvent === 'TICKER_UPDATE' && (
                     <div className="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100 animate-in fade-in mt-5 shadow-sm shadow-zinc-200/5">
                         <label className="block text-[10px] font-semibold text-emerald-600 uppercase tracking-widest mb-2 flex items-center gap-1.5"><RefreshCcw size={14}/> Novo Código (Ticker)</label>
-                        <input type="text" required value={invNewTicker} onChange={(e) => setInvNewTicker(e.target.value.toUpperCase())} className="w-full px-4 py-3 bg-white border border-emerald-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-zinc-900 font-semibold uppercase transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Novo Ticker..." />
+                        <input type="text" required value={invNewTicker} onChange={(e) => setInvNewTicker(e.target.value.toUpperCase())} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-emerald-200 rounded-2xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-zinc-900 dark:text-zinc-50 font-semibold uppercase transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500" placeholder="Novo Ticker..." />
                         <p className="text-[10px] text-emerald-600/80 mt-3 font-medium leading-relaxed">Os dados de custo e quantidade serão migrados do Ticker antigo para o Novo.</p>
                     </div>
                 )}
@@ -885,18 +885,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 {!isDividendEvent && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div className={invEvent === 'SPLIT' || invEvent === 'MERGE' || invEvent === 'TICKER_UPDATE' ? 'sm:col-span-2' : 'col-span-1'}>
-                            <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">
+                            <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">
                                 {invEvent === 'SPLIT' || invEvent === 'MERGE' ? 'Fator (Ex: 3 para 1:3)' : (invEvent === 'TICKER_UPDATE' ? 'Proporção (Ex: 1 para 1:1, 0.5 para 2:1)' : 'Quantidade')}
                             </label>
-                            <input type="number" step="0.000001" required value={invQuantity} onChange={(e) => setInvQuantity(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 font-medium" placeholder={invEvent === 'SPLIT' ? "Ex: 2 (para 1:2)" : (invEvent === 'TICKER_UPDATE' ? "Ex: 1" : "0,00")} />
+                            <input type="number" step="0.000001" required value={invQuantity} onChange={(e) => setInvQuantity(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-medium" placeholder={invEvent === 'SPLIT' ? "Ex: 2 (para 1:2)" : (invEvent === 'TICKER_UPDATE' ? "Ex: 1" : "0,00")} />
                         </div>
                         
                         {invEvent !== 'SPLIT' && invEvent !== 'MERGE' && invEvent !== 'TICKER_UPDATE' && (
                             <div>
-                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">{invEvent === 'BONUS' ? 'Custo Atribuído (Unit.)' : 'Preço Unitário'}</label>
+                                <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">{invEvent === 'BONUS' ? 'Custo Atribuído (Unit.)' : 'Preço Unitário'}</label>
                                 <div className="relative flex items-center">
-                                <select value={invCurrency} onChange={(e) => setInvCurrency(e.target.value)} className="absolute left-2 text-[10px] bg-zinc-100/80 border border-zinc-200/60 rounded-xl px-2 font-semibold h-8 outline-none text-zinc-600 appearance-none cursor-pointer focus:ring-2 focus:ring-blue-500/20"><option value="BRL">R$</option><option value="USD">U$</option></select>
-                                <input type="number" step="0.0001" required value={invPrice} onChange={(e) => setInvPrice(e.target.value)} className="w-full pl-16 pr-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl outline-none font-semibold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 placeholder:font-medium" placeholder="0,00" />
+                                <select value={invCurrency} onChange={(e) => setInvCurrency(e.target.value)} className="absolute left-2 text-[10px] bg-zinc-100/80 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700 rounded-xl px-2 font-semibold h-8 outline-none text-zinc-600 appearance-none cursor-pointer focus:ring-2 focus:ring-blue-500/20"><option value="BRL">R$</option><option value="USD">U$</option></select>
+                                <input type="number" step="0.0001" required value={invPrice} onChange={(e) => setInvPrice(e.target.value)} className="w-full pl-16 pr-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl outline-none font-semibold text-zinc-900 dark:text-zinc-50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 placeholder:font-medium" placeholder="0,00" />
                                 </div>
                             </div>
                         )}
@@ -904,7 +904,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                         {invEvent === 'SELL' && (
                             <div className="col-span-1 sm:col-span-2 flex items-center gap-3 pt-2 pb-2">
                                 <input type="checkbox" checked={invIsTotalRedemption} onChange={(e) => handleTotalRedemptionChange(e.target.checked)} className="w-5 h-5 text-blue-600 border-zinc-300 rounded-md focus:ring-blue-500 transition-colors cursor-pointer" />
-                                <label className="text-xs font-semibold text-zinc-800 cursor-pointer select-none" onClick={() => handleTotalRedemptionChange(!invIsTotalRedemption)}>Resgate Total (Zerar Posição)</label>
+                                <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-100 cursor-pointer select-none" onClick={() => handleTotalRedemptionChange(!invIsTotalRedemption)}>Resgate Total (Zerar Posição)</label>
                             </div>
                         )}
                     </div>
@@ -912,7 +912,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
                 {(invEvent === 'BUY' || invEvent === 'SELL' || invEvent === 'AMORTIZACAO') && (
                     <div className="bg-blue-600 p-6 rounded-3xl shadow-lg shadow-blue-200 flex justify-between items-center text-white relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 dark:bg-zinc-800/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
                         <div className="relative z-10">
                             <span className="text-[10px] font-semibold text-blue-200 uppercase tracking-widest block mb-1.5">Total Operação (BRL)</span>
                             <p className="text-[10px] text-blue-300 font-medium">Rendimentos e Taxas inclusos</p>
@@ -924,56 +924,56 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 )}
 
                 {invCurrency === 'USD' && (
-                  <div className="bg-zinc-50/80 p-5 rounded-3xl border border-zinc-200/80 flex flex-col gap-4 shadow-sm shadow-zinc-200/5">
+                  <div className="bg-zinc-50/80 dark:bg-zinc-800/40 p-5 rounded-3xl border border-zinc-200/80 dark:border-zinc-700 flex flex-col gap-4 shadow-sm shadow-zinc-200/5">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                            <Globe size={16} className="text-zinc-400"/>
+                            <Globe size={16} className="text-zinc-400 dark:text-zinc-500"/>
                             <span className="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">PTAX da Operação</span>
                         </div>
-                        <button type="button" onClick={handleFetchForex} disabled={loadingForex} className="bg-white text-zinc-600 px-4 py-2 rounded-2xl text-[10px] font-semibold shadow-sm shadow-zinc-200/5 hover:bg-zinc-50 disabled:opacity-50 flex items-center gap-2 border border-zinc-200 transition-all hover:border-zinc-300 hover:text-zinc-900">
+                        <button type="button" onClick={handleFetchForex} disabled={loadingForex} className="bg-white dark:bg-zinc-900 text-zinc-600 px-4 py-2 rounded-2xl text-[10px] font-semibold shadow-sm shadow-zinc-200/5 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 disabled:opacity-50 flex items-center gap-2 border border-zinc-200 dark:border-zinc-700 transition-all hover:border-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-50">
                             {loadingForex ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />} Buscar Online
                         </button>
                     </div>
                     <div className="relative flex items-center">
-                        <span className="absolute left-4 text-xs font-semibold text-zinc-400">R$</span>
+                        <span className="absolute left-4 text-xs font-semibold text-zinc-400 dark:text-zinc-500">R$</span>
                         <input 
                             type="number" 
                             step="0.0001" 
                             required 
                             value={invPtax} 
                             onChange={(e) => setInvPtax(e.target.value)} 
-                            className="w-full pl-10 pr-4 py-3 border border-zinc-200/60 rounded-xl text-sm font-semibold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 placeholder:font-medium bg-white" 
+                            className="w-full pl-10 pr-4 py-3 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm font-semibold text-zinc-900 dark:text-zinc-50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 placeholder:font-medium bg-white dark:bg-zinc-900" 
                             placeholder="Ex: 5.2045"
                         />
                     </div>
-                    <p className="text-[10px] text-zinc-500 font-medium">* Usado para conversão dos valores em Dólar para Reais.</p>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">* Usado para conversão dos valores em Dólar para Reais.</p>
                   </div>
                 )}
 
                 {isDividendEvent && (
-                    <div className="bg-zinc-50/80 p-5 rounded-3xl border border-zinc-200/80 space-y-5 animate-in fade-in shadow-sm shadow-zinc-200/5">
+                    <div className="bg-zinc-50/80 dark:bg-zinc-800/40 p-5 rounded-3xl border border-zinc-200/80 dark:border-zinc-700 space-y-5 animate-in fade-in shadow-sm shadow-zinc-200/5">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
-                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">Valor Bruto ({invCurrency})</label>
-                                <input type="number" step="0.01" required value={invGrossAmount} onChange={(e) => setInvGrossAmount(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="0,00" />
+                                <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">Valor Bruto ({invCurrency})</label>
+                                <input type="number" step="0.01" required value={invGrossAmount} onChange={(e) => setInvGrossAmount(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500" placeholder="0,00" />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">Imposto ({invCurrency})</label>
-                                <input type="number" step="0.01" value={invTax} onChange={(e) => setInvTax(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-rose-600 font-semibold transition-all shadow-sm shadow-zinc-200/5 placeholder:text-rose-300" placeholder="0,00" />
+                                <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">Imposto ({invCurrency})</label>
+                                <input type="number" step="0.01" value={invTax} onChange={(e) => setInvTax(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-rose-600 font-semibold transition-all shadow-sm shadow-zinc-200/5 placeholder:text-rose-300 dark:placeholder:text-rose-700" placeholder="0,00" />
                             </div>
                         </div>
                         
-                        <div className="pt-5 border-t border-zinc-200/80 flex justify-between items-end">
-                            <div className="text-xs text-zinc-500 font-medium flex flex-col gap-1">
-                                <span className="font-semibold text-zinc-700">Valor Líquido {invCurrency === 'USD' && '(Convertido)'}</span>
-                                <span className="text-[10px] text-zinc-400 uppercase tracking-wider">(Entrada no Caixa em BRL)</span>
+                        <div className="pt-5 border-t border-zinc-200/80 dark:border-zinc-700 flex justify-between items-end">
+                            <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium flex flex-col gap-1">
+                                <span className="font-semibold text-zinc-700 dark:text-zinc-300">Valor Líquido {invCurrency === 'USD' && '(Convertido)'}</span>
+                                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">(Entrada no Caixa em BRL)</span>
                             </div>
                             <div className="text-right">
                                 <div className="text-4xl font-light text-emerald-600 tracking-tight">
                                     R$ {(parseFloat(amount || '0') || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
                                 </div>
                                 {invCurrency === 'USD' && (
-                                    <div className="text-[10px] text-zinc-500 font-semibold mt-1 bg-zinc-100 px-2 py-1 rounded-lg inline-block">
+                                    <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold mt-1 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-lg inline-block">
                                         = ( {parseFloat(invGrossAmount || '0').toFixed(2)} - {parseFloat(invTax || '0').toFixed(2)} ) x {parseFloat(invPtax || '0').toFixed(4)}
                                     </div>
                                 )}
@@ -984,11 +984,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
                 {/* Exibe Rentabilidade APENAS se for Renda Fixa */}
                 {!isDividendEvent && isFixedIncome && (
-                    <div className="space-y-5 animate-in fade-in bg-zinc-50/40 p-5 rounded-3xl border border-zinc-200/60">
+                    <div className="space-y-5 animate-in fade-in bg-zinc-50/40 dark:bg-zinc-800/30 p-5 rounded-3xl border border-zinc-200/60 dark:border-zinc-700">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
-                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Percent size={14} className="text-blue-400"/> Indexador</label>
-                                <select value={fixedIncomeIndexer} onChange={(e) => setFixedIncomeIndexer(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
+                                <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Percent size={14} className="text-blue-400"/> Indexador</label>
+                                <select value={fixedIncomeIndexer} onChange={(e) => setFixedIncomeIndexer(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
                                     <option value="CDI">% do CDI</option>
                                     <option value="IPCA">IPCA +</option>
                                     <option value="PRE">Pré-fixado (% a.a.)</option>
@@ -997,14 +997,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Percent size={14} className="text-blue-400"/> Taxa / Valor</label>
+                                <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Percent size={14} className="text-blue-400"/> Taxa / Valor</label>
                                 {fixedIncomeIndexer === 'CUSTOM' ? (
-                                    <input type="text" value={invYieldRate} onChange={(e) => setInvYieldRate(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Ex: 100% CDI" />
+                                    <input type="text" value={invYieldRate} onChange={(e) => setInvYieldRate(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500" placeholder="Ex: 100% CDI" />
                                 ) : (
                                     <div className="relative">
-                                        <input type="number" step="0.01" value={fixedIncomeRate} onChange={(e) => setFixedIncomeRate(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Ex: 110" />
+                                        <input type="number" step="0.01" value={fixedIncomeRate} onChange={(e) => setFixedIncomeRate(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500" placeholder="Ex: 110" />
                                         <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                                            <span className="text-zinc-400 text-sm font-semibold">%</span>
+                                            <span className="text-zinc-400 dark:text-zinc-500 text-sm font-semibold">%</span>
                                         </div>
                                     </div>
                                 )}
@@ -1012,8 +1012,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
-                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-blue-400"/> Vencimento</label>
-                                <input type="date" value={invMaturityDate} onChange={(e) => setInvMaturityDate(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5" />
+                                <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-blue-400"/> Vencimento</label>
+                                <input type="date" value={invMaturityDate} onChange={(e) => setInvMaturityDate(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5" />
                             </div>
                         </div>
                     </div>
@@ -1022,31 +1022,31 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 {!isDividendEvent && invEvent !== 'SPLIT' && invEvent !== 'MERGE' && invEvent !== 'TICKER_UPDATE' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calculator size={14} className="text-blue-400"/> Taxas (Na moeda orig.)</label>
-                            <input type="number" step="0.01" value={invFees} onChange={(e) => setInvFees(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="0,00" />
+                            <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calculator size={14} className="text-blue-400"/> Taxas (Na moeda orig.)</label>
+                            <input type="number" step="0.01" value={invFees} onChange={(e) => setInvFees(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500" placeholder="0,00" />
                         </div>
                         {/* Oculta IRRF se for compra, pois não há imposto retido na fonte na aquisição */}
                         {invEvent !== 'BUY' && (
                             <div className="animate-in fade-in">
-                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><ShieldCheck size={14} className="text-rose-400"/> IRRF/Imposto (BRL)</label>
-                                <input type="number" step="0.01" value={invTax} onChange={(e) => setInvTax(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 font-semibold text-rose-600 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-rose-300" placeholder="0,00" />
+                                <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><ShieldCheck size={14} className="text-rose-400"/> IRRF/Imposto (BRL)</label>
+                                <input type="number" step="0.01" value={invTax} onChange={(e) => setInvTax(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 font-semibold text-rose-600 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-rose-300 dark:placeholder:text-rose-700" placeholder="0,00" />
                             </div>
                         )}
                     </div>
                 )}
 
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 bg-zinc-50/50 p-4 rounded-2xl border border-zinc-100 mt-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 bg-zinc-50/50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 mt-5">
                    <div className="col-span-1">
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Layers size={14} className="text-blue-400"/> Categoria de Investimento</label>
-                    <select required value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setSubCategoryId(''); }} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none font-semibold text-zinc-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
+                    <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Layers size={14} className="text-blue-400"/> Categoria de Investimento</label>
+                    <select required value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setSubCategoryId(''); }} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none font-semibold text-zinc-800 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
                       <option value="">Selecione...</option>
                       {filteredCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                    </div>
                    <div className="col-span-1">
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Layers size={14} className="text-blue-400"/> Subcategoria</label>
-                    <select value={subCategoryId} onChange={(e) => setSubCategoryId(e.target.value)} disabled={!categoryId || filteredSubCategories.length === 0} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none disabled:bg-zinc-50 disabled:text-zinc-400 disabled:cursor-not-allowed focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
+                    <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Layers size={14} className="text-blue-400"/> Subcategoria</label>
+                    <select value={subCategoryId} onChange={(e) => setSubCategoryId(e.target.value)} disabled={!categoryId || filteredSubCategories.length === 0} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none disabled:bg-zinc-50 dark:disabled:bg-zinc-800/50 disabled:text-zinc-400 dark:disabled:text-zinc-500 disabled:cursor-not-allowed focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
                       <option value="">Nenhuma</option>
                       {filteredSubCategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
@@ -1054,8 +1054,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><FileText size={14} className="text-blue-400"/> Observação (Opcional)</label>
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none resize-none h-24 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Detalhes..."></textarea>
+                  <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><FileText size={14} className="text-blue-400"/> Observação (Opcional)</label>
+                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none resize-none h-24 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500" placeholder="Detalhes..."></textarea>
                 </div>
               </div>
             ) : (
@@ -1063,10 +1063,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               <div className="space-y-6">
                 
                 {/* VALOR TOTAL - LABEL ENFATIZADO */}
-                <div className="bg-zinc-50/40 p-5 rounded-3xl border border-zinc-200/60 relative overflow-hidden">
+                <div className="bg-zinc-50/40 dark:bg-zinc-800/30 p-5 rounded-3xl border border-zinc-200/60 dark:border-zinc-700 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-10 -mt-10 blur-2xl"></div>
                   <div className="relative z-10 flex justify-between items-center mb-3">
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest">Valor Total {type === TransactionType.INCOME ? 'Recebido' : 'da Compra'}</label>
+                    <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Valor Total {type === TransactionType.INCOME ? 'Recebido' : 'da Compra'}</label>
                     {installments > 1 && (
                       <span className="text-[10px] font-semibold text-blue-700 bg-blue-100/50 px-2.5 py-1 rounded-lg border border-blue-200/50">
                         Sua Parcela Mensal: R$ {(installmentValuePreview || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -1082,7 +1082,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                         value={amount} 
                         readOnly={type === TransactionType.INVESTMENT}
                         onChange={(e) => setAmount(e.target.value)} 
-                        className={`w-full pl-20 pr-5 py-6 text-4xl font-medium bg-white border border-zinc-200/60 rounded-3xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm placeholder:text-zinc-300 ${type === TransactionType.INVESTMENT ? 'bg-slate-50 cursor-not-allowed opacity-80' : ''}`} 
+                        className={`w-full pl-20 pr-5 py-6 text-4xl font-medium bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-3xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm placeholder:text-zinc-300 dark:placeholder:text-zinc-600 ${type === TransactionType.INVESTMENT ? 'bg-slate-50 cursor-not-allowed opacity-80' : ''}`} 
                         placeholder="0,00" 
                     />
                   </div>
@@ -1100,7 +1100,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><FileText size={14} className="text-blue-400" /> Descrição</label>
+                  <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><FileText size={14} className="text-blue-400" /> Descrição</label>
                   <input 
                     id="desc-input"
                     list="description-suggestions" // Link to datalist
@@ -1109,7 +1109,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     value={description} 
                     onChange={(e) => setDescription(e.target.value)}
                     onBlur={handleDescriptionBlur} 
-                    className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" 
+                    className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500" 
                     placeholder="Ex: Uber, Mercado..." 
                     autoComplete="new-password"
                   />
@@ -1123,16 +1123,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className={type === TransactionType.INCOME ? "col-span-1 sm:col-span-2" : "col-span-1"}>
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Layers size={14} className="text-blue-400" /> Categoria</label>
-                    <select required value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setSubCategoryId(''); }} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
+                    <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Layers size={14} className="text-blue-400" /> Categoria</label>
+                    <select required value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setSubCategoryId(''); }} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
                       <option value="">Selecione</option>
                       {filteredCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
                   {type !== TransactionType.INCOME && (
                     <div className="col-span-1">
-                      <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><ChevronDown size={14} className="text-blue-400" /> Subcategoria</label>
-                      <select value={subCategoryId} onChange={(e) => setSubCategoryId(e.target.value)} disabled={!categoryId || filteredSubCategories.length === 0} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer disabled:bg-zinc-50 disabled:text-zinc-400 disabled:cursor-not-allowed">
+                      <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><ChevronDown size={14} className="text-blue-400" /> Subcategoria</label>
+                      <select value={subCategoryId} onChange={(e) => setSubCategoryId(e.target.value)} disabled={!categoryId || filteredSubCategories.length === 0} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer disabled:bg-zinc-50 dark:disabled:bg-zinc-800/50 disabled:text-zinc-400 dark:disabled:text-zinc-500 disabled:cursor-not-allowed">
                         <option value="">Nenhuma</option>
                         {filteredSubCategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
@@ -1142,17 +1142,17 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-blue-400" /> Data</label>
-                    <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5" />
+                    <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-blue-400" /> Data</label>
+                    <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Tag size={14} className="text-blue-400" /> Tags</label>
-                    <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Ex: #viagem, Uber..." />
+                    <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Tag size={14} className="text-blue-400" /> Tags</label>
+                    <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500" placeholder="Ex: #viagem, Uber..." />
                   </div>
                 </div>
 
                 {type === TransactionType.INCOME && (
-                    <div className="space-y-3 pt-3 border-t border-zinc-200/80 mt-4">
+                    <div className="space-y-3 pt-3 border-t border-zinc-200/80 dark:border-zinc-700 mt-4">
                         <div className="flex items-center gap-2.5">
                             <input 
                                 type="checkbox" 
@@ -1161,7 +1161,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                 onChange={(e) => setUseCompetenceDate(e.target.checked)}
                                 className="w-4 h-4 text-blue-600 rounded border-zinc-300 focus:ring-blue-500/20 transition-all cursor-pointer"
                             />
-                            <label htmlFor="useCompetence" className="text-xs font-semibold text-zinc-700 cursor-pointer select-none">
+                            <label htmlFor="useCompetence" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
                                 Selecionar Mês de Referência (Competência)
                             </label>
                         </div>
@@ -1175,7 +1175,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                     type="month" 
                                     value={competenceMonth} 
                                     onChange={(e) => setCompetenceMonth(e.target.value)} 
-                                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-blue-900 shadow-sm shadow-zinc-200/5 transition-all"
+                                    className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-blue-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-blue-900 dark:text-blue-100 shadow-sm shadow-zinc-200/5 transition-all"
                                 />
                                 <p className="text-[10px] text-blue-500/80 mt-2 font-medium flex items-center gap-1.5">
                                     <Info size={12} /> Útil para salários recebidos no dia 5 referente ao mês anterior.
@@ -1187,10 +1187,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
                 {type === TransactionType.EXPENSE && (
                    <div className="space-y-5 pt-3">
-                        <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">Forma de Pagamento</label>
-                        <div className="flex bg-zinc-100/50 p-1 rounded-xl">
-                            <button type="button" onClick={() => { setPaymentMethod(PaymentMethod.DEBIT_CASH); setInstallments(1); setIsRecurringDebit(false); }} className={`flex-1 py-3 text-xs font-semibold rounded-2xl transition-all flex items-center justify-center gap-2 ${paymentMethod === PaymentMethod.DEBIT_CASH ? 'bg-white shadow-sm shadow-zinc-200/5 text-zinc-800' : 'text-zinc-500 hover:text-zinc-700'}`}><Banknote size={16} className={paymentMethod === PaymentMethod.DEBIT_CASH ? 'text-blue-500' : ''} /> Débito / Dinheiro</button>
-                            <button type="button" onClick={() => setPaymentMethod(PaymentMethod.CREDIT_CARD)} className={`flex-1 py-3 text-xs font-semibold rounded-2xl transition-all flex items-center justify-center gap-2 ${paymentMethod === PaymentMethod.CREDIT_CARD ? 'bg-white shadow-sm shadow-zinc-200/5 text-zinc-800' : 'text-zinc-500 hover:text-zinc-700'}`}><CardIcon size={16} className={paymentMethod === PaymentMethod.CREDIT_CARD ? 'text-blue-500' : ''} /> Cartão Crédito</button>
+                        <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">Forma de Pagamento</label>
+                        <div className="flex gap-2">
+                            <button type="button" onClick={() => { setPaymentMethod(PaymentMethod.DEBIT_CASH); setInstallments(1); setIsRecurringDebit(false); }} className={`flex-1 py-3 text-xs font-semibold rounded-full transition-all flex items-center justify-center gap-2 ${paymentMethod === PaymentMethod.DEBIT_CASH ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}><Banknote size={16} /> Débito / Dinheiro</button>
+                            <button type="button" onClick={() => setPaymentMethod(PaymentMethod.CREDIT_CARD)} className={`flex-1 py-3 text-xs font-semibold rounded-full transition-all flex items-center justify-center gap-2 ${paymentMethod === PaymentMethod.CREDIT_CARD ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}><CardIcon size={16} /> Cartão Crédito</button>
                         </div>
 
                         {paymentMethod === PaymentMethod.DEBIT_CASH && (
@@ -1202,7 +1202,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                     onChange={(e) => { setIsRecurringDebit(e.target.checked); setInstallments(1); }}
                                     className="w-4 h-4 text-blue-600 rounded border-zinc-300 focus:ring-blue-500/20 transition-all cursor-pointer"
                                 />
-                                <label htmlFor="recurring-debit" className="text-xs font-semibold text-zinc-700 cursor-pointer select-none">
+                                <label htmlFor="recurring-debit" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
                                     Repetir Lançamento? (Parcelar no Débito)
                                 </label>
                             </div>
@@ -1212,18 +1212,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 animate-in slide-in-from-top-2">
                                 {paymentMethod === PaymentMethod.CREDIT_CARD && (
                                     <div className="col-span-1">
-                                        <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">Cartão</label>
-                                        <select value={creditCardId} onChange={(e) => setCreditCardId(e.target.value)} required className="w-full px-4 py-3 border border-zinc-200/60 rounded-xl text-sm bg-white font-semibold text-zinc-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
+                                        <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">Cartão</label>
+                                        <select value={creditCardId} onChange={(e) => setCreditCardId(e.target.value)} required className="w-full px-4 py-3 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm bg-white dark:bg-zinc-900 font-semibold text-zinc-900 dark:text-zinc-50 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
                                             <option value="">Selecione...</option>
                                             {creditCards.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                         </select>
                                     </div>
                                 )}
                                 <div className={paymentMethod === PaymentMethod.CREDIT_CARD ? "col-span-1" : "col-span-1 sm:col-span-2"}>
-                                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">{isRecurringDebit ? 'Número de Vezes' : 'Parcelas'}</label>
+                                    <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">{isRecurringDebit ? 'Número de Vezes' : 'Parcelas'}</label>
                                     <div className="relative">
                                         <Repeat className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400" size={16} />
-                                        <input type="number" min="1" max="99" value={installments} onChange={(e) => setInstallments(parseInt(e.target.value) || 1)} className="w-full pl-11 pr-4 py-3 border border-zinc-200/60 rounded-xl text-sm bg-white font-semibold text-zinc-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5" />
+                                        <input type="number" min="1" max="99" value={installments} onChange={(e) => setInstallments(parseInt(e.target.value) || 1)} className="w-full pl-11 pr-4 py-3 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm bg-white dark:bg-zinc-900 font-semibold text-zinc-900 dark:text-zinc-50 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5" />
                                     </div>
                                 </div>
                             </div>
@@ -1234,13 +1234,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3">
                     {type === TransactionType.EXPENSE && (
                         <>
-                            <button type="button" onClick={() => setIsFixed(!isFixed)} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-semibold text-xs transition-all ${isFixed ? 'bg-amber-50 border-amber-200 text-amber-700 shadow-sm shadow-zinc-200/5' : 'bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50'}`}>
+                            <button type="button" onClick={() => setIsFixed(!isFixed)} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-semibold text-xs transition-all ${isFixed ? 'bg-amber-50 border-amber-200 text-amber-700 shadow-sm shadow-zinc-200/5' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'}`}>
                                 <Repeat size={16} className={isFixed ? 'text-amber-500' : ''} /> Despesa Fixa
                             </button>
-                            <button type="button" onClick={handleSharedChange} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-semibold text-xs transition-all ${isShared ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm shadow-zinc-200/5' : 'bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50'}`}>
+                            <button type="button" onClick={handleSharedChange} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-semibold text-xs transition-all ${isShared ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm shadow-zinc-200/5' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'}`}>
                                 <Users size={16} className={isShared ? 'text-blue-500' : ''} /> Dividir (50/50)
                             </button>
-                            <button type="button" onClick={() => setFundedByResgate(!fundedByResgate)} className={`col-span-2 flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-semibold text-xs transition-all ${fundedByResgate ? 'bg-purple-50 border-purple-200 text-purple-700 shadow-sm shadow-zinc-200/5' : 'bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50'}`}>
+                            <button type="button" onClick={() => setFundedByResgate(!fundedByResgate)} className={`col-span-2 flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-semibold text-xs transition-all ${fundedByResgate ? 'bg-purple-50 border-purple-200 text-purple-700 shadow-sm shadow-zinc-200/5' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'}`}>
                                 <ArrowDownRight size={16} className={fundedByResgate ? 'text-purple-500' : ''} /> Custeada por Resgate de Investimento
                             </button>
                         </>
@@ -1251,7 +1251,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                         </button>
                     )}
                     {type === TransactionType.INCOME && (
-                        <button type="button" onClick={() => setExcludeFromBudget(!excludeFromBudget)} className={`col-span-2 flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-semibold text-xs transition-all ${excludeFromBudget ? 'bg-rose-50 border-rose-200 text-rose-700 shadow-sm shadow-zinc-200/5' : 'bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50'}`}>
+                        <button type="button" onClick={() => setExcludeFromBudget(!excludeFromBudget)} className={`col-span-2 flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-semibold text-xs transition-all ${excludeFromBudget ? 'bg-rose-50 border-rose-200 text-rose-700 shadow-sm shadow-zinc-200/5' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'}`}>
                             <Target size={16} className={excludeFromBudget ? 'text-rose-500' : ''} /> {excludeFromBudget ? 'Fora do Cálculo da Meta' : 'Incluir no Cálculo da Meta'}
                         </button>
                     )}
@@ -1262,17 +1262,17 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           </form>
         </div>
 
-        <div className="p-6 border-t border-zinc-200/80 bg-zinc-50/50 flex justify-end gap-3 shrink-0 rounded-b-3xl">
-          <button type="button" onClick={onClose} className="px-6 py-3 text-sm font-semibold text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 rounded-2xl transition-colors">Cancelar</button>
+        <div className="p-6 border-t border-zinc-200/80 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/50 flex justify-end gap-3 shrink-0 rounded-b-3xl">
+          <button type="button" onClick={onClose} className="px-6 py-3 text-sm font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-2xl transition-colors">Cancelar</button>
           
           {!initialData && (
               <button 
                 id="save-new-btn"
                 type="button" 
                 onClick={(e) => handleProcessSubmit(e, false)} 
-                className="px-6 py-3 text-sm font-semibold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 rounded-2xl transition-all active:scale-95 flex items-center gap-2 shadow-sm shadow-zinc-200/5"
+                className="px-6 py-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:border-zinc-300 rounded-2xl transition-all active:scale-95 flex items-center gap-2 shadow-sm shadow-zinc-200/5"
               >
-                  <Save size={16} className="text-zinc-400" /> Salvar e Novo
+                  <Save size={16} className="text-zinc-400 dark:text-zinc-500" /> Salvar e Novo
               </button>
           )}
 

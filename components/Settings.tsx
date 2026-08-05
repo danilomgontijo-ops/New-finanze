@@ -662,7 +662,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
       const filtered = props.categories.filter(c => c.type === type);
       
       if (filtered.length === 0) {
-          return <p className="text-xs text-gray-500 italic p-2">Nenhuma categoria encontrada.</p>;
+          return <p className="text-xs text-gray-500 dark:text-zinc-400 italic p-2">Nenhuma categoria encontrada.</p>;
       }
 
       return (
@@ -672,12 +672,12 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                 const isEditing = editingCategory?.id === cat.id;
                 
                 return (
-                <div key={cat.id} className={`flex justify-between items-center p-3 rounded-lg border group transition-colors shadow-sm ${isEditing ? 'bg-gray-50 border-gray-200' : 'bg-white dark:bg-zinc-900 hover:bg-gray-50 border-gray-200'}`}>
+                <div key={cat.id} className={`flex justify-between items-center p-3 rounded-lg border group transition-colors shadow-sm ${isEditing ? 'bg-gray-50 dark:bg-zinc-800/50 border-gray-200 dark:border-zinc-700' : 'bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:bg-zinc-800/50 border-gray-200 dark:border-zinc-700'}`}>
                     <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${cat.type === TransactionType.INCOME ? 'bg-emerald-100 text-emerald-600' : (cat.type === TransactionType.INVESTMENT ? 'bg-blue-100 text-blue-600' : 'bg-rose-100 text-rose-600')}`}>
                             <IconComp size={16} />
                         </div>
-                        <span className={`text-sm font-semibold ${isEditing ? 'text-gray-800' : 'text-gray-800'}`}>
+                        <span className={`text-sm font-semibold ${isEditing ? 'text-gray-800 dark:text-zinc-200' : 'text-gray-800 dark:text-zinc-200'}`}>
                             {cat.name} {isEditing && '(Editando...)'}
                         </span>
                     </div>
@@ -687,20 +687,20 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
                                 <span className="text-[10px] text-rose-500 font-bold uppercase">Confirmar?</span>
                                 <button onClick={() => handleDeleteCategory(cat.id)} className="text-rose-600 hover:bg-rose-50 p-1 rounded"><Check size={16} /></button>
-                                <button onClick={() => setDeleteConfirmId(null)} className="text-gray-500 hover:bg-gray-100 p-1 rounded"><AlertCircle size={16} /></button>
+                                <button onClick={() => setDeleteConfirmId(null)} className="text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:bg-zinc-800 p-1 rounded"><AlertCircle size={16} /></button>
                             </div>
                         ) : (
                             <>
                                 <button 
                                     onClick={() => handleEditCategory(cat)}
-                                    className={`text-gray-700 hover:text-gray-700 transition-all p-1 ${isEditing ? 'text-gray-700' : 'opacity-0 group-hover:opacity-100'}`}
+                                    className={`text-gray-700 dark:text-zinc-300 hover:text-gray-700 dark:text-zinc-300 transition-all p-1 ${isEditing ? 'text-gray-700 dark:text-zinc-300' : 'opacity-0 group-hover:opacity-100'}`}
                                     title="Editar"
                                 >
                                     <Pencil size={16} />
                                 </button>
                                 <button 
                                     onClick={() => handleDeleteCategory(cat.id)}
-                                    className="text-gray-700 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all p-1"
+                                    className="text-gray-700 dark:text-zinc-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all p-1"
                                     title="Excluir"
                                 >
                                     <Trash2 size={16} />
@@ -717,8 +717,8 @@ export const Settings: React.FC<SettingsProps> = (props) => {
 
   const IconPicker = ({ currentIcon, setIcon, colorClass }: { currentIcon: string, setIcon: (s: string) => void, colorClass: string }) => (
     <div>
-        <span className="text-xs text-gray-500 block mb-2 font-medium">Ícone:</span>
-        <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 max-h-32 overflow-y-auto p-1 bg-white dark:bg-zinc-900 border border-gray-200 rounded-lg custom-scrollbar">
+        <span className="text-xs text-gray-500 dark:text-zinc-400 block mb-2 font-medium">Ícone:</span>
+        <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 max-h-32 overflow-y-auto p-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg custom-scrollbar">
             {AVAILABLE_ICONS.map(({ name, Comp }) => (
                 <button
                     key={name}
@@ -726,8 +726,8 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                     type="button"
                     className={`aspect-square rounded-lg flex items-center justify-center transition-all ${
                         currentIcon === name 
-                        ? `${colorClass} text-gray-900 shadow-md scale-105 ring-2 ring-offset-1` 
-                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                        ? `${colorClass} text-gray-900 dark:text-zinc-50 shadow-md scale-105 ring-2 ring-offset-1` 
+                        : 'text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:bg-zinc-800 hover:text-gray-700 dark:text-zinc-300'
                     }`}
                     title={name}
                 >
@@ -740,11 +740,13 @@ export const Settings: React.FC<SettingsProps> = (props) => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-wide">
-        <SettingsIcon className="text-zinc-700 dark:text-zinc-300" size={20} /> Configurações
-      </h2>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2.5">
+          <SettingsIcon className="text-blue-600 dark:text-blue-400" size={22} /> Configurações
+        </h2>
+      </div>
 
-      <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl shrink-0 overflow-x-auto w-fit max-w-full custom-scrollbar">
+      <div className="flex gap-1.5 shrink-0 overflow-x-auto w-fit max-w-full custom-scrollbar">
         {[
           { id: 'general', label: 'Geral & Metas' },
           { id: 'categories', label: 'Categorias' },
@@ -756,10 +758,10 @@ export const Settings: React.FC<SettingsProps> = (props) => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
-              activeTab === tab.id 
-                ? 'bg-emerald-600 text-white shadow-md' 
-                : 'bg-transparent text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-full transition-all whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-200/60 dark:shadow-none'
+                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
             }`}
           >
             {tab.icon && <tab.icon size={14} />}
@@ -768,13 +770,13 @@ export const Settings: React.FC<SettingsProps> = (props) => {
         ))}
       </div>
 
-      <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-6 shadow-lg border border-zinc-200/40 dark:border-zinc-800/60 shadow-zinc-200/5 min-h-[400px]">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl p-5 md:p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800/80 min-h-[400px]">
         {activeTab === 'assets' && (
             <div className="space-y-4 animate-in fade-in slide-in-from-left-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Eventos Corporativos</h3>
-                    <p className="text-sm text-gray-500">Busque desdobramentos, grupamentos e bonificações automaticamente com IA.</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-50">Eventos Corporativos</h3>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">Busque desdobramentos, grupamentos e bonificações automaticamente com IA.</p>
                   </div>
                   <button
                     onClick={handleFetchCorporateEvents}
@@ -789,7 +791,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                 {uniqueTickers.length > 0 && (
                   <div className="mt-4">
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-sm font-medium text-gray-700">Ativos para buscar:</label>
+                      <label className="text-sm font-medium text-gray-700 dark:text-zinc-300">Ativos para buscar:</label>
                       <button 
                         onClick={() => {
                           if (selectedAssetsToSearch.length === uniqueTickers.length) {
@@ -803,9 +805,9 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                         {selectedAssetsToSearch.length === uniqueTickers.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-gray-50 dark:bg-zinc-800/50">
                       {uniqueTickers.map(ticker => (
-                        <label key={ticker} className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-gray-200 text-xs cursor-pointer hover:bg-gray-50">
+                        <label key={ticker} className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 px-2 py-1 rounded border border-gray-200 dark:border-zinc-700 text-xs cursor-pointer hover:bg-gray-50 dark:bg-zinc-800/50">
                           <input 
                             type="checkbox" 
                             className="rounded text-emerald-600 focus:ring-emerald-500"
@@ -818,7 +820,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                               }
                             }}
                           />
-                          <span className="font-medium text-gray-700">{ticker}</span>
+                          <span className="font-medium text-gray-700 dark:text-zinc-300">{ticker}</span>
                         </label>
                       ))}
                     </div>
@@ -826,28 +828,28 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                 )}
                 
                 {eventsMessage && (
-                  <div className={`p-3 rounded-lg text-sm ${eventsMessage.includes('Erro') ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-800'}`}>
+                  <div className={`p-3 rounded-lg text-sm ${eventsMessage.includes('Erro') ? 'bg-red-50 text-red-600' : 'bg-gray-50 dark:bg-zinc-800/50 text-gray-800 dark:text-zinc-200'}`}>
                     {eventsMessage}
                   </div>
                 )}
 
                 {isReviewingEvents && pendingCorporateEvents.length > 0 && (
-                  <div className="mt-4 p-4 border border-gray-200 bg-gray-50/50 rounded-xl">
+                  <div className="mt-4 p-4 border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-zinc-800/30 rounded-xl">
                     <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-bold text-gray-900">Revisão de Eventos</h4>
+                      <h4 className="font-bold text-gray-900 dark:text-zinc-50">Revisão de Eventos</h4>
                       <button 
                         onClick={() => {
                           const allSelected = pendingCorporateEvents.every(e => e.selected);
                           setPendingCorporateEvents(pendingCorporateEvents.map(e => ({ ...e, selected: !allSelected })));
                         }}
-                        className="text-xs text-gray-700 font-medium hover:underline"
+                        className="text-xs text-gray-700 dark:text-zinc-300 font-medium hover:underline"
                       >
                         {pendingCorporateEvents.every(e => e.selected) ? 'Desmarcar Todos' : 'Selecionar Todos'}
                       </button>
                     </div>
                     <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
                       {pendingCorporateEvents.map((event, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-white dark:bg-zinc-900 p-3 rounded-lg border border-gray-200 text-sm">
+                        <div key={idx} className="flex justify-between items-center bg-white dark:bg-zinc-900 p-3 rounded-lg border border-gray-200 dark:border-zinc-700 text-sm">
                           <div className="flex items-center gap-3">
                             <button 
                               onClick={() => {
@@ -855,17 +857,17 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                 newEvents[idx].selected = !newEvents[idx].selected;
                                 setPendingCorporateEvents(newEvents);
                               }}
-                              className="text-gray-700"
+                              className="text-gray-700 dark:text-zinc-300"
                             >
                               {event.selected ? <CheckSquare size={18} /> : <Square size={18} />}
                             </button>
                             <span className={`px-2 py-1 rounded text-xs font-bold ${event.event === 'SPLIT' ? 'bg-emerald-100 text-emerald-700' : (event.event === 'BONUS' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700')}`}>
                               {event.event === 'SPLIT' ? 'Desdobramento' : (event.event === 'BONUS' ? 'Bonificação' : 'Grupamento')}
                             </span>
-                            <span className="font-bold text-gray-800">{event.ticker}</span>
-                            <span className="text-gray-500">{event.date}</span>
+                            <span className="font-bold text-gray-800 dark:text-zinc-200">{event.ticker}</span>
+                            <span className="text-gray-500 dark:text-zinc-400">{event.date}</span>
                           </div>
-                          <div className="font-medium text-gray-800">
+                          <div className="font-medium text-gray-800 dark:text-zinc-200">
                             Fator: {event.factor}
                           </div>
                         </div>
@@ -878,7 +880,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                           setIsReviewingEvents(false);
                           setEventsMessage('Busca cancelada.');
                         }}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-emerald-700 bg-gray-100 rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-emerald-700 bg-gray-100 dark:bg-zinc-800 rounded-lg transition-colors"
                       >
                         Cancelar
                       </button>
@@ -901,19 +903,19 @@ export const Settings: React.FC<SettingsProps> = (props) => {
              {/* ... general content ... */}
              <div>
                <div className="flex items-center gap-3 mb-4">
-                 <div className="bg-gray-100 p-2 rounded-lg text-gray-700">
+                 <div className="bg-gray-100 dark:bg-zinc-800 p-2 rounded-lg text-gray-700 dark:text-zinc-300">
                     <Target size={24} />
                  </div>
                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">Meta de Gastos</h3>
-                    <p className="text-sm text-gray-500">Defina quanto da sua receita mensal você deseja comprometer.</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-50">Meta de Gastos</h3>
+                    <p className="text-sm text-gray-500 dark:text-zinc-400">Defina quanto da sua receita mensal você deseja comprometer.</p>
                  </div>
                </div>
                
                <div className="space-y-4">
                  <div className="flex justify-between text-sm font-medium">
                    <span>Meta atual</span>
-                   <span className="text-gray-700">{props.settings.monthlyBudgetPercentage}% da receita</span>
+                   <span className="text-gray-700 dark:text-zinc-300">{props.settings.monthlyBudgetPercentage}% da receita</span>
                  </div>
                  <input 
                     type="range" 
@@ -926,7 +928,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                     }}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-600"
                  />
-                 <div className="flex justify-between text-xs text-gray-500">
+                 <div className="flex justify-between text-xs text-gray-500 dark:text-zinc-400">
                    <span>Poupar Tudo (1%)</span>
                    <span>Gastar Tudo (100%)</span>
                  </div>
@@ -937,19 +939,19 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                </div>
              </div>
 
-             <div className="border-t border-gray-200 pt-8">
+             <div className="border-t border-gray-200 dark:border-zinc-700 pt-8">
                  <div className="flex items-center gap-3 mb-4">
                      <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600">
                          <Calendar size={24} />
                      </div>
                      <div>
-                         <h3 className="text-lg font-bold text-gray-900">Dia do Mês Contábil (Salário)</h3>
-                         <p className="text-sm text-gray-500">Configure o dia do seu pagamento para organizar os meses.</p>
+                         <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-50">Dia do Mês Contábil (Salário)</h3>
+                         <p className="text-sm text-gray-500 dark:text-zinc-400">Configure o dia do seu pagamento para organizar os meses.</p>
                      </div>
                  </div>
                  <div className="space-y-4">
                      <div>
-                         <label className="block text-xs font-bold text-gray-500 mb-1">Dia do Pagamento</label>
+                         <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-1">Dia do Pagamento</label>
                          <div className="flex items-center gap-2">
                              <input 
                                 type="number" 
@@ -967,16 +969,16 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                     props.setSettings(newSettings);
                                     props.onSaveSettings(newSettings);
                                 }}
-                                className="w-20 px-3 py-2 border border-gray-200 rounded-lg text-center font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none"
+                                className="w-20 px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg text-center font-bold text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-emerald-500 outline-none"
                              />
-                             <span className="text-sm text-gray-700">de cada mês.</span>
+                             <span className="text-sm text-gray-700 dark:text-zinc-300">de cada mês.</span>
                          </div>
                      </div>
 
-                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                         <label className="block text-xs font-bold text-gray-500 mb-2">Este dia inicia os lançamentos de qual mês?</label>
+                     <div className="bg-gray-50 dark:bg-zinc-800/50 p-4 rounded-lg border border-gray-200 dark:border-zinc-700">
+                         <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-2">Este dia inicia os lançamentos de qual mês?</label>
                          <div className="flex flex-col gap-2">
-                             <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${props.settings.salaryShift === 1 ? 'bg-emerald-50 border-emerald-500' : 'bg-white dark:bg-zinc-900 border-gray-200 hover:border-gray-300'}`}>
+                             <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${props.settings.salaryShift === 1 ? 'bg-emerald-50 border-emerald-500' : 'bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700 hover:border-gray-300'}`}>
                                  <input 
                                     type="radio" 
                                     name="salaryShift"
@@ -989,15 +991,15 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                     className="mt-1"
                                  />
                                  <div>
-                                     <span className="block text-sm font-bold text-gray-900">Do Próximo Mês (Antecipação)</span>
-                                     <span className="text-xs text-gray-500">
+                                     <span className="block text-sm font-bold text-gray-900 dark:text-zinc-50">Do Próximo Mês (Antecipação)</span>
+                                     <span className="text-xs text-gray-500 dark:text-zinc-400">
                                          Ex: Recebo dia <strong>{props.settings.salaryDay || 1}/Nov</strong>, mas este salário paga as contas de <strong>Dezembro</strong>.
                                          <br/>Lançamentos a partir do dia {props.settings.salaryDay || 1} contam para o mês seguinte.
                                      </span>
                                  </div>
                              </label>
 
-                             <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${props.settings.salaryShift === 0 ? 'bg-emerald-50 border-emerald-500' : 'bg-white dark:bg-zinc-900 border-gray-200 hover:border-gray-300'}`}>
+                             <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${props.settings.salaryShift === 0 ? 'bg-emerald-50 border-emerald-500' : 'bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700 hover:border-gray-300'}`}>
                                  <input 
                                     type="radio" 
                                     name="salaryShift"
@@ -1010,8 +1012,8 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                     className="mt-1"
                                  />
                                  <div>
-                                     <span className="block text-sm font-bold text-gray-900">Do Próprio Mês (Vigente)</span>
-                                     <span className="text-xs text-gray-500">
+                                     <span className="block text-sm font-bold text-gray-900 dark:text-zinc-50">Do Próprio Mês (Vigente)</span>
+                                     <span className="text-xs text-gray-500 dark:text-zinc-400">
                                          Ex: Recebo dia <strong>{props.settings.salaryDay || 1}/Dez</strong> e este salário é para as contas de <strong>Dezembro</strong>.
                                          <br/>Lançamentos a partir do dia {props.settings.salaryDay || 1} contam para o próprio mês.
                                      </span>
@@ -1022,40 +1024,40 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                  </div>
              </div>
 
-             <div className="border-t border-gray-200 pt-8">
+             <div className="border-t border-gray-200 dark:border-zinc-700 pt-8">
                  <div className="flex items-center gap-3 mb-4">
-                     <div className="bg-gray-100 p-2 rounded-lg text-gray-700">
+                     <div className="bg-gray-100 dark:bg-zinc-800 p-2 rounded-lg text-gray-700 dark:text-zinc-300">
                          <Fingerprint size={24} />
                      </div>
                      <div>
-                         <h3 className="text-lg font-bold text-gray-900">Identificação do Usuário</h3>
-                         <p className="text-sm text-gray-500">Use este ID para recuperar dados no banco de dados.</p>
+                         <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-50">Identificação do Usuário</h3>
+                         <p className="text-sm text-gray-500 dark:text-zinc-400">Use este ID para recuperar dados no banco de dados.</p>
                      </div>
                  </div>
-                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col gap-2">
-                     <span className="text-xs font-bold text-gray-500 uppercase">Seu ID Atual</span>
-                     <code className="text-xs sm:text-sm font-mono bg-white dark:bg-zinc-900 p-2 rounded border border-gray-200 text-gray-800 break-all select-all">
+                 <div className="bg-gray-50 dark:bg-zinc-800/50 p-4 rounded-lg border border-gray-200 dark:border-zinc-700 flex flex-col gap-2">
+                     <span className="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase">Seu ID Atual</span>
+                     <code className="text-xs sm:text-sm font-mono bg-white dark:bg-zinc-900 p-2 rounded border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-zinc-200 break-all select-all">
                          {userId || "Carregando..."}
                      </code>
-                     <p className="text-xs text-gray-500 mt-1">
+                     <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
                          * O app mostra apenas transações que contenham o campo <strong>userId</strong> igual a este código.
                      </p>
                  </div>
              </div>
 
-             <div className="border-t border-gray-200 pt-8">
+             <div className="border-t border-gray-200 dark:border-zinc-700 pt-8">
                   <div className="flex items-center gap-3 mb-4">
                       <div className="bg-amber-100 p-2 rounded-lg text-amber-600">
                           <History size={24} />
                       </div>
                       <div>
-                          <h3 className="text-lg font-bold text-gray-900">Início do Histórico Mensal</h3>
-                          <p className="text-sm text-gray-500">Escolha a partir de qual mês o histórico detalhado deve ser mostrado.</p>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-50">Início do Histórico Mensal</h3>
+                          <p className="text-sm text-gray-500 dark:text-zinc-400">Escolha a partir de qual mês o histórico detalhado deve ser mostrado.</p>
                       </div>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+                  <div className="bg-gray-50 dark:bg-zinc-800/50 p-4 rounded-lg border border-gray-200 dark:border-zinc-700 space-y-4">
                       <div>
-                          <label className="block text-xs font-bold text-gray-500 mb-1">Mês Inicial</label>
+                          <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-1">Mês Inicial</label>
                           <div className="flex items-center gap-2">
                               <input 
                                  type="month" 
@@ -1069,7 +1071,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                      props.setSettings(newSettings);
                                      props.onSaveSettings(newSettings);
                                  }}
-                                 className="px-3 py-2 border border-gray-200 rounded-lg font-bold text-gray-900 focus:ring-2 focus:ring-amber-500 outline-none"
+                                 className="px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg font-bold text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-amber-500 outline-none"
                               />
                               {props.settings.historyStartDate && (
                                   <button 
@@ -1085,25 +1087,25 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                               )}
                           </div>
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">
                           * Se não definido, o app mostrará os últimos 12 meses por padrão.
                       </p>
                   </div>
               </div>
 
-              <div className="border-t border-gray-200 pt-8">
+              <div className="border-t border-gray-200 dark:border-zinc-700 pt-8">
                   <div className="flex items-center gap-3 mb-4">
                       <div className="bg-purple-100 p-2 rounded-lg text-purple-600">
                           <RefreshCcw size={24} />
                       </div>
                       <div>
-                          <h3 className="text-lg font-bold text-gray-900">Zerar Saldo de Resgates</h3>
-                          <p className="text-sm text-gray-500">Escolha a partir de qual mês e ano o saldo acumulado de resgates será zerado.</p>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-50">Zerar Saldo de Resgates</h3>
+                          <p className="text-sm text-gray-500 dark:text-zinc-400">Escolha a partir de qual mês e ano o saldo acumulado de resgates será zerado.</p>
                       </div>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+                  <div className="bg-gray-50 dark:bg-zinc-800/50 p-4 rounded-lg border border-gray-200 dark:border-zinc-700 space-y-4">
                       <div>
-                          <label className="block text-xs font-bold text-gray-500 mb-1">Mês de Zeramento</label>
+                          <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 mb-1">Mês de Zeramento</label>
                           <div className="flex items-center gap-2">
                               <input 
                                  type="month" 
@@ -1117,7 +1119,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                      props.setSettings(newSettings);
                                      props.onSaveSettings(newSettings);
                                  }}
-                                 className="px-3 py-2 border border-gray-200 rounded-lg font-bold text-gray-900 focus:ring-2 focus:ring-purple-500 outline-none"
+                                 className="px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg font-bold text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-purple-500 outline-none"
                               />
                               {props.settings.resgatesResetMonth && (
                                   <button 
@@ -1133,7 +1135,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                               )}
                           </div>
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">
                           * A partir do mês selecionado, o saldo acumulado de resgates de investimentos começará do zero.
                       </p>
                   </div>
@@ -1150,7 +1152,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                     <h3 className="font-bold text-rose-700">Despesas</h3>
                </div>
 
-               <div className="bg-rose-50/50 p-4 rounded-xl border border-rose-100 space-y-3">
+               <div className="bg-rose-50/50 dark:bg-rose-950/20 p-4 rounded-xl border border-rose-100 dark:border-rose-900/40 space-y-3">
                  <div className="flex justify-between items-center">
                     <h4 className="text-xs font-bold text-rose-600 uppercase tracking-wide">
                         {editingCategory && editingCategory.type === TransactionType.EXPENSE ? 'Editar Categoria' : 'Nova Categoria de Despesa'}
@@ -1165,7 +1167,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                     value={expCatName}
                     onChange={(e) => setExpCatName(e.target.value)}
                     placeholder="Nome da categoria..."
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-rose-500 outline-none text-gray-900"
+                    className="flex-1 border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-rose-500 outline-none text-gray-900 dark:text-zinc-50"
                     />
                  </div>
                  <IconPicker currentIcon={expCatIcon} setIcon={setExpCatIcon} colorClass="bg-rose-500 ring-rose-300" />
@@ -1182,24 +1184,24 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                    {renderCategoryList(TransactionType.EXPENSE)}
                </div>
 
-               <div className="pt-6 border-t border-gray-200 mt-6">
+               <div className="pt-6 border-t border-gray-200 dark:border-zinc-700 mt-6">
                     <div className="flex items-center gap-2 mb-4">
-                        <Layers size={18} className="text-gray-500 rotate-180"/>
-                        <h3 className="font-bold text-gray-800">Subcategorias</h3>
+                        <Layers size={18} className="text-gray-500 dark:text-zinc-400 rotate-180"/>
+                        <h3 className="font-bold text-gray-800 dark:text-zinc-200">Subcategorias</h3>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+                    <div className="bg-gray-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-gray-200 dark:border-zinc-700 space-y-3">
                         <div className="flex justify-between items-center">
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">
+                            <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-1">
                                 {editingSubCategory ? 'Editar Subcategoria' : 'Categoria Mãe (Despesa/Investimento)'}
                             </label>
                             {editingSubCategory && (
-                                <button onClick={cancelEditSubCategory} className="text-xs text-gray-500 hover:underline">Cancelar</button>
+                                <button onClick={cancelEditSubCategory} className="text-xs text-gray-500 dark:text-zinc-400 hover:underline">Cancelar</button>
                             )}
                         </div>
                         <select 
                         value={selectedCatForSub}
                         onChange={(e) => setSelectedCatForSub(e.target.value)}
-                        className="w-full bg-white dark:bg-zinc-900 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-500 text-gray-900"
+                        className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-500 text-gray-900 dark:text-zinc-50"
                         >
                         <option value="">Selecione...</option>
                         {/* Only Expense and Investment categories can have subcategories */}
@@ -1207,7 +1209,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                             <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                         </select>
-                        <p className="text-[10px] text-gray-500 mt-1 italic">* Receitas não possuem subcategorias.</p>
+                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 mt-1 italic">* Receitas não possuem subcategorias.</p>
                         
                         <div className="flex gap-2 mt-2">
                         <input 
@@ -1216,7 +1218,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                             onChange={(e) => setNewSubName(e.target.value)}
                             placeholder="Nome da subcategoria..."
                             disabled={!selectedCatForSub}
-                            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-500 outline-none disabled:bg-gray-100 text-gray-900"
+                            className="flex-1 border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-500 outline-none disabled:bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-50"
                         />
                         <button 
                             onClick={handleAddSubCategory}
@@ -1231,23 +1233,23 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                     <div className="mt-4 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                         {selectedCatForSub ? (
                             props.subCategories.filter(s => s.categoryId === selectedCatForSub).length === 0 ? (
-                                <p className="text-xs text-gray-500 text-center py-2 italic">Nenhuma subcategoria.</p>
+                                <p className="text-xs text-gray-500 dark:text-zinc-400 text-center py-2 italic">Nenhuma subcategoria.</p>
                             ) : (
                                 props.subCategories.filter(s => s.categoryId === selectedCatForSub).map(sub => {
                                     const isEditingSub = editingSubCategory?.id === sub.id;
                                     return (
-                                    <div key={sub.id} className={`flex justify-between items-center p-2 mb-1 rounded border group transition-colors shadow-sm ${isEditingSub ? 'bg-gray-50 border-gray-200' : 'bg-white dark:bg-zinc-900 hover:bg-gray-50 border-gray-200'}`}>
-                                        <span className={`text-sm font-medium ${isEditingSub ? 'text-gray-800' : 'text-gray-700'}`}>{sub.name}</span>
+                                    <div key={sub.id} className={`flex justify-between items-center p-2 mb-1 rounded border group transition-colors shadow-sm ${isEditingSub ? 'bg-gray-50 dark:bg-zinc-800/50 border-gray-200 dark:border-zinc-700' : 'bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:bg-zinc-800/50 border-gray-200 dark:border-zinc-700'}`}>
+                                        <span className={`text-sm font-medium ${isEditingSub ? 'text-gray-800 dark:text-zinc-200' : 'text-gray-700 dark:text-zinc-300'}`}>{sub.name}</span>
                                         <div className="flex items-center gap-1">
                                             <button 
                                                 onClick={() => handleEditSubCategory(sub)}
-                                                className={`text-gray-700 hover:text-gray-700 transition-all p-1 ${isEditingSub ? 'text-gray-700' : 'opacity-0 group-hover:opacity-100'}`}
+                                                className={`text-gray-700 dark:text-zinc-300 hover:text-gray-700 dark:text-zinc-300 transition-all p-1 ${isEditingSub ? 'text-gray-700 dark:text-zinc-300' : 'opacity-0 group-hover:opacity-100'}`}
                                             >
                                                 <Pencil size={14} />
                                             </button>
                                             <button 
                                                 onClick={() => handleDeleteSubCategory(sub.id)}
-                                                className="text-gray-700 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all p-1"
+                                                className="text-gray-700 dark:text-zinc-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all p-1"
                                             >
                                                 <Trash2 size={14} />
                                             </button>
@@ -1257,7 +1259,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                 })
                             )
                         ) : (
-                            <div className="text-center py-6 text-gray-500 text-xs">Selecione uma categoria acima para gerenciar.</div>
+                            <div className="text-center py-6 text-gray-500 dark:text-zinc-400 text-xs">Selecione uma categoria acima para gerenciar.</div>
                         )}
                     </div>
                </div>
@@ -1271,7 +1273,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                         <h3 className="font-bold text-emerald-700">Receitas</h3>
                     </div>
 
-                    <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 space-y-3">
+                    <div className="bg-emerald-50/50 dark:bg-emerald-950/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 space-y-3">
                         <div className="flex justify-between items-center">
                             <h4 className="text-xs font-bold text-emerald-600 uppercase tracking-wide">
                                 {editingCategory && editingCategory.type === TransactionType.INCOME ? 'Editar Categoria' : 'Nova Categoria de Receita'}
@@ -1286,7 +1288,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                             value={incCatName}
                             onChange={(e) => setIncCatName(e.target.value)}
                             placeholder="Nome da categoria..."
-                            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900"
+                            className="flex-1 border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-gray-900 dark:text-zinc-50"
                             />
                         </div>
                         <IconPicker currentIcon={incCatIcon} setIcon={setIncCatIcon} colorClass="bg-emerald-500 ring-emerald-300" />
@@ -1305,13 +1307,13 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                 </div>
 
                 {/* INVESTMENT SECTION */}
-                <div className="space-y-6 pt-6 border-t border-gray-200">
+                <div className="space-y-6 pt-6 border-t border-gray-200 dark:border-zinc-700">
                     <div className="flex items-center gap-2 pb-2 border-b border-blue-100">
                         <TrendingUp size={20} className="text-blue-500" />
                         <h3 className="font-bold text-blue-700">Investimentos</h3>
                     </div>
 
-                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-3">
+                    <div className="bg-blue-50/50 dark:bg-blue-950/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/40 space-y-3">
                         <div className="flex justify-between items-center">
                             <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wide">
                                 {editingCategory && editingCategory.type === TransactionType.INVESTMENT ? 'Editar Categoria' : 'Nova Categoria de Investimento'}
@@ -1326,7 +1328,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                             value={invCatName}
                             onChange={(e) => setInvCatName(e.target.value)}
                             placeholder="Nome da categoria..."
-                            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+                            className="flex-1 border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-50"
                             />
                         </div>
                         <IconPicker currentIcon={invCatIcon} setIcon={setInvCatIcon} colorClass="bg-blue-500 ring-blue-300" />
@@ -1363,15 +1365,15 @@ export const Settings: React.FC<SettingsProps> = (props) => {
 
         {activeTab === 'mappings' && (
             <div className="animate-in fade-in slide-in-from-left-4 space-y-8 max-w-4xl">
-                <div className="bg-gray-50 border border-gray-200 p-6 rounded-xl">
+                <div className="bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 p-6 rounded-xl">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                         <div className="flex items-center gap-3">
-                            <div className="bg-gray-100 p-2 rounded-lg text-gray-700">
+                            <div className="bg-gray-100 dark:bg-zinc-800 p-2 rounded-lg text-gray-700 dark:text-zinc-300">
                                 <Replace size={24} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900">Mapeamento Automático</h3>
-                                <p className="text-sm text-gray-500">Defina regras para renomear e categorizar transações automaticamente durante a importação.</p>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-50">Mapeamento Automático</h3>
+                                <p className="text-sm text-gray-500 dark:text-zinc-400">Defina regras para renomear e categorizar transações automaticamente durante a importação.</p>
                             </div>
                         </div>
                         <button
@@ -1386,7 +1388,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Contém no Original</label>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase mb-1">Contém no Original</label>
                                 <input 
                                     type="text" 
                                     value={mapOriginal}
@@ -1419,12 +1421,12 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                         if (mostFreqSubCat && !mapSubCategoryId) setMapSubCategoryId(mostFreqSubCat);
                                     }}
                                     placeholder="Ex: UBER DO BRASIL TECNOLOGIA"
-                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900"
+                                    className="w-full border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900"
                                 />
-                                <p className="text-[10px] text-gray-500 mt-1">Texto que aparece na fatura ou extrato.</p>
+                                <p className="text-[10px] text-gray-500 dark:text-zinc-400 mt-1">Texto que aparece na fatura ou extrato.</p>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Renomear Para (Descrição Final)</label>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase mb-1">Renomear Para (Descrição Final)</label>
                                 <input 
                                     type="text" 
                                     value={mapTarget}
@@ -1437,30 +1439,30 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                         }
                                     }}
                                     placeholder="Ex: Uber Viagem"
-                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900"
+                                    className="w-full border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900"
                                 />
                             </div>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Atribuir Categoria</label>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase mb-1">Atribuir Categoria</label>
                                 <select 
                                     value={mapCategoryId}
                                     onChange={(e) => { setMapCategoryId(e.target.value); setMapSubCategoryId(''); }}
-                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900"
+                                    className="w-full border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900"
                                 >
                                     <option value="">Selecione...</option>
                                     {props.categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Atribuir Subcategoria</label>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase mb-1">Atribuir Subcategoria</label>
                                 <select 
                                     value={mapSubCategoryId}
                                     onChange={(e) => setMapSubCategoryId(e.target.value)}
                                     disabled={!mapCategoryId}
-                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900 disabled:bg-gray-100"
+                                    className="w-full border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900 disabled:bg-gray-100 dark:bg-zinc-800"
                                 >
                                     <option value="">Selecione...</option>
                                     {props.subCategories.filter(s => s.categoryId === mapCategoryId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -1476,7 +1478,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                     setMapCategoryId('');
                                     setMapSubCategoryId('');
                                     setEditingMappingKey(null);
-                                }} className="mr-3 text-sm text-gray-500 hover:text-gray-800 font-bold">Cancelar</button>
+                                }} className="mr-3 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:text-zinc-200 font-bold">Cancelar</button>
                             )}
                             <button 
                                 onClick={handleSaveMapping}
@@ -1490,12 +1492,12 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                 </div>
 
                 <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row gap-3 justify-between items-end sm:items-center border-b border-gray-200 pb-2">
-                        <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Regras Ativas ({Object.keys(mappings).length})</h4>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-between items-end sm:items-center border-b border-gray-200 dark:border-zinc-700 pb-2">
+                        <h4 className="text-sm font-bold text-gray-800 dark:text-zinc-200 uppercase tracking-wide">Regras Ativas ({Object.keys(mappings).length})</h4>
                         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                             <div className="relative flex-1 sm:flex-none">
-                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"/>
-                                <input type="text" value={mappingSearch} onChange={(e) => setMappingSearch(e.target.value)} placeholder="Filtrar regras..." className="w-full bg-white dark:bg-zinc-900 border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-gray-500/20" />
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-zinc-400"/>
+                                <input type="text" value={mappingSearch} onChange={(e) => setMappingSearch(e.target.value)} placeholder="Filtrar regras..." className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg pl-9 pr-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-gray-500/20" />
                             </div>
                             <div className="flex-1 sm:flex-none">
                                 <select 
@@ -1504,7 +1506,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                         setMappingFilterCategory(e.target.value);
                                         setMappingFilterSubCategory('');
                                     }} 
-                                    className="w-full bg-white dark:bg-zinc-900 border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-gray-500/20"
+                                    className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-gray-500/20"
                                 >
                                     <option value="">Todas Categorias</option>
                                     {props.categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -1514,7 +1516,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                 <select 
                                     value={mappingFilterSubCategory} 
                                     onChange={(e) => setMappingFilterSubCategory(e.target.value)} 
-                                    className="w-full bg-white dark:bg-zinc-900 border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-gray-500/20 disabled:bg-gray-50"
+                                    className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-gray-500/20 disabled:bg-gray-50 dark:bg-zinc-800/50"
                                     disabled={!mappingFilterCategory}
                                 >
                                     <option value="">Todas Subcategorias</option>
@@ -1528,7 +1530,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                         setMappingFilterCategory('');
                                         setMappingFilterSubCategory('');
                                     }} 
-                                    className="p-1.5 hover:bg-gray-100 rounded text-gray-500"
+                                    className="p-1.5 hover:bg-gray-100 dark:bg-zinc-800 rounded text-gray-500 dark:text-zinc-400"
                                     title="Limpar filtros"
                                 >
                                     <X size={14}/>
@@ -1538,25 +1540,25 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                     </div>
 
                     {selectedMappingKeys.length > 0 && (
-                        <div className="bg-gray-50 p-2 rounded-lg flex items-center justify-between animate-in fade-in slide-in-from-top-1">
-                            <span className="text-xs font-bold text-gray-900 ml-2">{selectedMappingKeys.length} selecionados</span>
+                        <div className="bg-gray-50 dark:bg-zinc-800/50 p-2 rounded-lg flex items-center justify-between animate-in fade-in slide-in-from-top-1">
+                            <span className="text-xs font-bold text-gray-900 dark:text-zinc-50 ml-2">{selectedMappingKeys.length} selecionados</span>
                             <div className="flex gap-2">
                                 <button onClick={() => {
                                     setBatchMapTarget('');
                                     setBatchMapCategory('');
                                     setBatchMapSubCategory('');
                                     setIsBatchMapEditOpen(true);
-                                }} className="px-3 py-1 bg-white dark:bg-zinc-900 border border-gray-200 text-gray-800 rounded text-xs font-bold hover:bg-gray-50 transition-colors flex items-center gap-1"><Edit3 size={12}/> Alterar Regras</button>
+                                }} className="px-3 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-zinc-200 rounded text-xs font-bold hover:bg-gray-50 dark:bg-zinc-800/50 transition-colors flex items-center gap-1"><Edit3 size={12}/> Alterar Regras</button>
                                 <button onClick={handleBatchDeleteMapping} className="px-3 py-1 bg-white dark:bg-zinc-900 border border-rose-200 text-rose-600 rounded text-xs font-bold hover:bg-rose-50 transition-colors flex items-center gap-1"><Trash2 size={12}/> Excluir</button>
                             </div>
                         </div>
                     )}
 
-                    <div className="bg-gray-50 p-2 rounded-t-lg flex items-center gap-3 border-b border-gray-200">
-                        <button onClick={handleSelectAllMappings} className={`p-1 rounded transition-colors ${selectedMappingKeys.length > 0 && selectedMappingKeys.length === filteredMappings.length ? 'text-gray-700' : 'text-gray-700 hover:text-gray-500'}`}>
+                    <div className="bg-gray-50 dark:bg-zinc-800/50 p-2 rounded-t-lg flex items-center gap-3 border-b border-gray-200 dark:border-zinc-700">
+                        <button onClick={handleSelectAllMappings} className={`p-1 rounded transition-colors ${selectedMappingKeys.length > 0 && selectedMappingKeys.length === filteredMappings.length ? 'text-gray-700 dark:text-zinc-300' : 'text-gray-700 dark:text-zinc-300 hover:text-gray-500 dark:text-zinc-400'}`}>
                             {selectedMappingKeys.length > 0 && selectedMappingKeys.length === filteredMappings.length ? <CheckSquare size={16} /> : <Square size={16} />}
                         </button>
-                        <span className="text-[10px] font-bold text-gray-500 uppercase">Selecionar Todos Filtrados</span>
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase">Selecionar Todos Filtrados</span>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto custom-scrollbar">
@@ -1626,10 +1628,10 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                 };
 
                                 return (
-                                    <div key={groupKey} className="bg-white dark:bg-zinc-900 border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-all space-y-2">
+                                    <div key={groupKey} className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-3 hover:shadow-sm transition-all space-y-2">
                                         <div className="flex justify-between items-start">
                                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                <button onClick={handleSelectGroup} className={`p-1 rounded transition-colors shrink-0 ${isAllSelected ? 'text-gray-700' : isSomeSelected ? 'text-gray-500' : 'text-gray-400 hover:text-gray-600'}`}>
+                                                <button onClick={handleSelectGroup} className={`p-1 rounded transition-colors shrink-0 ${isAllSelected ? 'text-gray-700 dark:text-zinc-300' : isSomeSelected ? 'text-gray-500 dark:text-zinc-400' : 'text-gray-400 hover:text-gray-600'}`}>
                                                     {isAllSelected ? <CheckSquare size={16} /> : isSomeSelected ? <MinusSquare size={16} /> : <Square size={16} />}
                                                 </button>
                                                 <div 
@@ -1638,8 +1640,8 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                                 >
                                                     <div className="flex items-center gap-2">
                                                         {isExpanded ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
-                                                        <span className="font-bold text-gray-800 break-words">{group.targetDescription}</span>
-                                                        <span className="text-xs text-gray-400 bg-gray-100 px-1.5 rounded-full">{group.totalOriginals} {group.totalOriginals === 1 ? 'redação' : 'redações'}</span>
+                                                        <span className="font-bold text-gray-800 dark:text-zinc-200 break-words">{group.targetDescription}</span>
+                                                        <span className="text-xs text-gray-400 bg-gray-100 dark:bg-zinc-800 px-1.5 rounded-full">{group.totalOriginals} {group.totalOriginals === 1 ? 'redação' : 'redações'}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1660,7 +1662,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                                     
                                                     setIsBatchMapEditOpen(true);
                                                 }}
-                                                className="ml-2 px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 text-gray-600 rounded text-xs font-bold hover:bg-gray-50 hover:text-emerald-700 transition-colors flex items-center gap-1 shrink-0"
+                                                className="ml-2 px-2 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 text-gray-600 rounded text-xs font-bold hover:bg-gray-50 dark:bg-zinc-800/50 hover:text-emerald-700 transition-colors flex items-center gap-1 shrink-0"
                                             >
                                                 <Edit3 size={12}/> Editar Grupo
                                             </button>
@@ -1674,7 +1676,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                                     
                                                     return (
                                                         <div key={idx} className="space-y-1.5">
-                                                            <div className="flex items-center gap-2 text-[10px] uppercase font-bold text-gray-500">
+                                                            <div className="flex items-center gap-2 text-[10px] uppercase font-bold text-gray-500 dark:text-zinc-400">
                                                                 <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 whitespace-nowrap">{catName}</span>
                                                                 {subName && <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100 whitespace-nowrap">{subName}</span>}
                                                             </div>
@@ -1682,12 +1684,12 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                                                 {catGroup.originals.map(org => {
                                                                     const isSelected = selectedMappingKeys.includes(org);
                                                                     return (
-                                                                        <div key={org} className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border transition-colors group/item ${isSelected ? 'bg-gray-100 border-gray-300' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`}>
-                                                                            <button onClick={() => toggleMappingSelection(org)} className={`shrink-0 transition-colors ${isSelected ? 'text-gray-700' : 'text-gray-400 hover:text-gray-700'}`}>
+                                                                        <div key={org} className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border transition-colors group/item ${isSelected ? 'bg-gray-100 dark:bg-zinc-800 border-gray-300' : 'bg-gray-50 dark:bg-zinc-800/50 border-gray-200 dark:border-zinc-700 hover:border-gray-300'}`}>
+                                                                            <button onClick={() => toggleMappingSelection(org)} className={`shrink-0 transition-colors ${isSelected ? 'text-gray-700 dark:text-zinc-300' : 'text-gray-400 hover:text-gray-700 dark:text-zinc-300'}`}>
                                                                                 {isSelected ? <CheckSquare size={12} /> : <Square size={12} />}
                                                                             </button>
                                                                             <span className="font-mono text-gray-600 truncate max-w-[150px]" title={org}>{org}</span>
-                                                                            <div className="flex items-center ml-1 border-l pl-1.5 border-gray-200">
+                                                                            <div className="flex items-center ml-1 border-l pl-1.5 border-gray-200 dark:border-zinc-700">
                                                                                 <button onClick={() => handleEditMapping(org)} className="p-0.5 text-gray-400 hover:text-sky-600 transition-colors" title="Editar"><Pencil size={11}/></button>
                                                                                 <button onClick={() => handleDeleteMapping(org)} className="p-0.5 text-gray-400 hover:text-rose-600 transition-colors ml-0.5" title="Excluir"><Trash2 size={11}/></button>
                                                                             </div>
@@ -1705,7 +1707,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                             });
                         })()}
                         {filteredMappings.length === 0 && (
-                            <div className="text-center py-8 text-gray-500 italic text-sm">Nenhuma regra encontrada.</div>
+                            <div className="text-center py-8 text-gray-500 dark:text-zinc-400 italic text-sm">Nenhuma regra encontrada.</div>
                         )}
                     </div>
                 </div>
@@ -1715,20 +1717,20 @@ export const Settings: React.FC<SettingsProps> = (props) => {
         {activeTab === 'data' && (
             <div className="max-w-xl space-y-8 animate-in fade-in slide-in-from-left-4">
                 {/* ... data content ... */}
-                <div className="bg-gray-50 border border-gray-200 p-6 rounded-xl space-y-6">
+                <div className="bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 p-6 rounded-xl space-y-6">
                     <div className="flex items-center gap-3">
-                        <div className="bg-gray-100 p-2 rounded-lg text-gray-700">
+                        <div className="bg-gray-100 dark:bg-zinc-800 p-2 rounded-lg text-gray-700 dark:text-zinc-300">
                             <History size={24} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-gray-900">Zerar Saldo Acumulado</h3>
-                            <p className="text-sm text-gray-500">Defina uma data de corte para reiniciar a contagem do Saldo Acumulado Geral.</p>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-50">Zerar Saldo Acumulado</h3>
+                            <p className="text-sm text-gray-500 dark:text-zinc-400">Defina uma data de corte para reiniciar a contagem do Saldo Acumulado Geral.</p>
                         </div>
                     </div>
                     
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                            <Calendar size={16} className="text-gray-500" /> Reiniciar contagem a partir de:
+                        <label className="text-sm font-bold text-gray-800 dark:text-zinc-200 flex items-center gap-2">
+                            <Calendar size={16} className="text-gray-500 dark:text-zinc-400" /> Reiniciar contagem a partir de:
                         </label>
                         <div className="flex gap-2 items-center">
                             <input 
@@ -1741,7 +1743,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                     props.setSettings(newSettings);
                                     props.onSaveSettings(newSettings);
                                 }}
-                                className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900 w-full max-w-[200px]"
+                                className="border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-zinc-200 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900 w-full max-w-[200px]"
                             />
                             {props.settings.balanceResetDate && (
                                 <button 
@@ -1756,7 +1758,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                 </button>
                             )}
                         </div>
-                        <p className="text-[10px] text-gray-500">
+                        <p className="text-[10px] text-gray-500 dark:text-zinc-400">
                             Transações anteriores a esta data serão ignoradas no cálculo do "Acumulado Geral" no Dashboard.
                         </p>
                     </div>
@@ -1768,12 +1770,12 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                             <Download size={24} />
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-gray-900">Backup dos Dados</h3>
-                            <p className="text-[10px] text-gray-500 leading-tight mt-1">Baixe um arquivo JSON com todas as suas informações.</p>
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-zinc-50">Backup dos Dados</h3>
+                            <p className="text-[10px] text-gray-500 dark:text-zinc-400 leading-tight mt-1">Baixe um arquivo JSON com todas as suas informações.</p>
                         </div>
                         <button 
                             onClick={handleExportBackup} 
-                            className="w-full py-2 bg-sky-600 text-gray-900 text-xs font-bold rounded-lg hover:bg-sky-700 transition-colors shadow-sm mt-auto"
+                            className="w-full py-2 bg-sky-600 text-gray-900 dark:text-zinc-50 text-xs font-bold rounded-lg hover:bg-sky-700 transition-colors shadow-sm mt-auto"
                         >
                             Baixar Backup
                         </button>
@@ -1784,8 +1786,8 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                             {isRestoring ? <Loader2 size={24} className="animate-spin" /> : <UploadCloud size={24} />}
                         </div>
                         <div>
-                            <h3 className="text-sm font-bold text-gray-900">Restaurar</h3>
-                            <p className="text-[10px] text-gray-500 leading-tight mt-1">Carregue um backup para recuperar dados antigos.</p>
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-zinc-50">Restaurar</h3>
+                            <p className="text-[10px] text-gray-500 dark:text-zinc-400 leading-tight mt-1">Carregue um backup para recuperar dados antigos.</p>
                         </div>
                         <button 
                             onClick={() => fileInputRef.current?.click()} 
@@ -1804,38 +1806,38 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                     </div>
                 </div>
 
-                <div className="bg-rose-50/50 border border-rose-100 p-6 rounded-xl space-y-6">
+                <div className="bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 p-6 rounded-xl space-y-6">
                     <div className="flex items-center gap-3">
                         <div className="bg-rose-100 p-2 rounded-lg text-rose-600">
                             <Trash2 size={24} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-gray-900">Exclusão em Lote</h3>
-                            <p className="text-sm text-gray-500">Apague rapidamente transações de um mês e categoria específica.</p>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-50">Exclusão em Lote</h3>
+                            <p className="text-sm text-gray-500 dark:text-zinc-400">Apague rapidamente transações de um mês e categoria específica.</p>
                         </div>
                     </div>
 
                     <div>
-                        <label className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-2">
-                            <Calendar size={16} className="text-gray-500" /> Mês de Referência (Data da Compra)
+                        <label className="text-sm font-bold text-gray-800 dark:text-zinc-200 flex items-center gap-2 mb-2">
+                            <Calendar size={16} className="text-gray-500 dark:text-zinc-400" /> Mês de Referência (Data da Compra)
                         </label>
                         <input 
                             type="month" 
                             value={batchMonth}
                             onChange={(e) => setBatchMonth(e.target.value)}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900"
+                            className="w-full border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-zinc-200 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900"
                         />
-                        <p className="text-[10px] text-gray-500 mt-1">Serão apagadas transações cuja data original seja neste mês.</p>
+                        <p className="text-[10px] text-gray-500 dark:text-zinc-400 mt-1">Serão apagadas transações cuja data original seja neste mês.</p>
                     </div>
 
                     <div>
-                        <label className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-2">
-                            <Filter size={16} className="text-gray-500" /> Categoria
+                        <label className="text-sm font-bold text-gray-800 dark:text-zinc-200 flex items-center gap-2 mb-2">
+                            <Filter size={16} className="text-gray-500 dark:text-zinc-400" /> Categoria
                         </label>
                         <select
                             value={batchCategoryId}
                             onChange={(e) => setBatchCategoryId(e.target.value)}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900 font-medium"
+                            className="w-full border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-zinc-200 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900 font-medium"
                         >
                             <option value="">Selecione a categoria...</option>
                             {props.categories.map(c => (
@@ -1847,11 +1849,11 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                     {batchCategoryId && batchMonth && (
                         <div className="bg-white dark:bg-zinc-900 border border-rose-200 rounded-lg p-4 flex justify-between items-center animate-in zoom-in-95">
                             <div>
-                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Encontrados</span>
-                                <span className="text-lg font-bold text-gray-900">{transactionsToDelete.length} lançamentos</span>
+                                <span className="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider block mb-1">Encontrados</span>
+                                <span className="text-lg font-bold text-gray-900 dark:text-zinc-50">{transactionsToDelete.length} lançamentos</span>
                             </div>
                             <div className="text-right">
-                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Valor Total</span>
+                                <span className="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider block mb-1">Valor Total</span>
                                 <span className="text-lg font-bold text-rose-600">R$ {(totalValueToDelete || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                             </div>
                         </div>
@@ -1879,37 +1881,37 @@ export const Settings: React.FC<SettingsProps> = (props) => {
       {isBatchMapEditOpen && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
               <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95">
-                  <h3 className="font-bold text-lg text-gray-900 mb-4">Editar {selectedMappingKeys.length} Regras</h3>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-zinc-50 mb-4">Editar {selectedMappingKeys.length} Regras</h3>
                   
                   <div className="space-y-4">
                       <div>
-                          <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Novo Nome (Opcional)</label>
+                          <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase mb-1">Novo Nome (Opcional)</label>
                           <input 
                               type="text"
                               value={batchMapTarget}
                               onChange={(e) => setBatchMapTarget(e.target.value)}
                               placeholder="Mantenha vazio para não alterar"
-                              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900"
+                              className="w-full border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900"
                           />
                       </div>
                       <div>
-                          <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nova Categoria</label>
+                          <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase mb-1">Nova Categoria</label>
                           <select 
                               value={batchMapCategory}
                               onChange={(e) => { setBatchMapCategory(e.target.value); setBatchMapSubCategory(''); }}
-                              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900"
+                              className="w-full border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900"
                           >
                               <option value="">Selecione...</option>
                               {props.categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                           </select>
                       </div>
                       <div>
-                          <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nova Subcategoria</label>
+                          <label className="block text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase mb-1">Nova Subcategoria</label>
                           <select 
                               value={batchMapSubCategory}
                               onChange={(e) => setBatchMapSubCategory(e.target.value)}
                               disabled={!batchMapCategory}
-                              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900 disabled:bg-gray-100"
+                              className="w-full border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-gray-500 outline-none bg-white dark:bg-zinc-900 disabled:bg-gray-100 dark:bg-zinc-800"
                           >
                               <option value="">Selecione...</option>
                               {props.subCategories.filter(s => s.categoryId === batchMapCategory).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -1918,7 +1920,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                   </div>
 
                   <div className="flex gap-3 mt-6">
-                      <button onClick={() => setIsBatchMapEditOpen(false)} className="flex-1 py-2 text-gray-700 font-bold hover:bg-gray-100 rounded-lg">Cancelar</button>
+                      <button onClick={() => setIsBatchMapEditOpen(false)} className="flex-1 py-2 text-gray-700 dark:text-zinc-300 font-bold hover:bg-gray-100 dark:bg-zinc-800 rounded-lg">Cancelar</button>
                       <button onClick={handleBatchUpdateMapping} className="flex-1 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 shadow-sm flex items-center justify-center gap-2"><Save size={16}/> Salvar</button>
                   </div>
               </div>

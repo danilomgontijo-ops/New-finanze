@@ -156,28 +156,56 @@ const getYearMonthKey = (date: Date) => {
 };
 
 const KPICard = ({ title, value, icon: Icon, color, subtext, onClick }: { title: string, value: number, icon: any, color: 'emerald' | 'rose' | 'indigo' | 'blue' | 'zinc', subtext?: React.ReactNode, onClick?: () => void }) => {
+    // "indigo" is the bento hero variant: gradient card, reserved for the primary headline stat.
+    if (color === 'indigo') {
+        return (
+            <motion.div
+                whileHover={{ y: -2, scale: 1.01 }}
+                whileTap={onClick ? { scale: 0.98 } : {}}
+                onClick={onClick}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                className={`p-5 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 shadow-md shadow-blue-200/60 dark:shadow-none flex items-center gap-4 transition-all ${onClick ? 'cursor-pointer' : 'cursor-default'} relative overflow-hidden group`}
+            >
+                <div className="p-3 rounded-xl bg-white/15 text-white transition-transform group-hover:scale-105 group-hover:rotate-3">
+                    <Icon strokeWidth={1.5} size={20} />
+                </div>
+                <div className="relative z-10 flex-1">
+                    <p className="text-blue-100 text-[11px] font-semibold uppercase tracking-[0.15em] mb-1">{title}</p>
+                    <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-none overflow-hidden tabular-nums">
+                        R$ {(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </h3>
+                    {subtext && <div className="mt-1.5 transition-opacity group-hover:opacity-90 leading-tight">{subtext}</div>}
+                </div>
+                {onClick && (
+                    <div className="absolute top-5 right-5 text-white/50 group-hover:text-white transition-colors">
+                        <ArrowRight strokeWidth={1.5} size={18} />
+                    </div>
+                )}
+            </motion.div>
+        );
+    }
+
     const variants = {
-        emerald: { bg: 'bg-emerald-50/40', iconBg: 'bg-emerald-100 text-emerald-600 border border-emerald-200/50', border: 'border-emerald-100/50', shadow: 'shadow-sm shadow-emerald-100/20', valueText: 'text-emerald-950', titleText: 'text-emerald-700/80' },
-        rose: { bg: 'bg-rose-50/40', iconBg: 'bg-rose-100 text-rose-600 border border-rose-200/50', border: 'border-rose-100/50', shadow: 'shadow-sm shadow-rose-100/20', valueText: 'text-rose-950', titleText: 'text-rose-700/80' },
-        indigo: { bg: 'bg-blue-600', iconBg: 'bg-blue-50 dark:bg-blue-950/600 text-white shadow-inner shadow-blue-900/20 border border-blue-500', border: 'border-blue-500', shadow: 'shadow-lg shadow-blue-500/30', valueText: 'text-white', titleText: 'text-blue-200' },
-        blue: { bg: 'bg-blue-50/40', iconBg: 'bg-blue-100 text-blue-600 border border-blue-200/50', border: 'border-blue-100/50', shadow: 'shadow-sm shadow-blue-100/20', valueText: 'text-blue-950', titleText: 'text-blue-700/80' },
-        zinc: { bg: 'bg-white dark:bg-zinc-900', iconBg: 'bg-zinc-50 dark:bg-zinc-950 text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-zinc-800/60 dark:border-zinc-800/80', border: 'border-zinc-200 dark:border-zinc-800/60 dark:border-zinc-800/80', shadow: 'shadow-sm shadow-zinc-200/20', valueText: 'text-zinc-800 dark:text-zinc-200', titleText: 'text-zinc-400 dark:text-zinc-500' }
-    };
-    const v = variants[color];
+        emerald: { iconBg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400' },
+        rose: { iconBg: 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400' },
+        blue: { iconBg: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400' },
+        zinc: { iconBg: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400' }
+    } as const;
+    const v = variants[color as Exclude<typeof color, 'indigo'>];
     return (
-        <motion.div 
+        <motion.div
             whileHover={{ y: -2, scale: 1.01 }}
             whileTap={onClick ? { scale: 0.98 } : {}}
             onClick={onClick}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className={`p-5 rounded-2xl border ${v.border} ${v.bg} backdrop-blur-sm ${v.shadow} flex items-center gap-4 transition-all ${onClick ? 'cursor-pointer' : 'cursor-default'} relative overflow-hidden group`}
+            className={`p-5 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 shadow-sm flex items-center gap-4 transition-all ${onClick ? 'cursor-pointer' : 'cursor-default'} relative overflow-hidden group`}
         >
             <div className={`p-3 rounded-xl ${v.iconBg} transition-transform group-hover:scale-105 group-hover:rotate-3`}>
                 <Icon strokeWidth={1.5} size={20} />
             </div>
             <div className="relative z-10 flex-1">
-                <p className={`${v.titleText} text-[11px] font-medium uppercase tracking-[0.15em] mb-1`}>{title}</p>
-                <h3 className={`text-xl md:text-2xl font-semibold ${v.valueText} tracking-tight leading-none overflow-hidden`}>
+                <p className="text-zinc-500 dark:text-zinc-400 text-[11px] font-semibold uppercase tracking-[0.15em] mb-1">{title}</p>
+                <h3 className="text-xl md:text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight leading-none overflow-hidden tabular-nums">
                     R$ {(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </h3>
                 {subtext && <div className="mt-1.5 transition-opacity group-hover:opacity-90 leading-tight">{subtext}</div>}
@@ -187,7 +215,6 @@ const KPICard = ({ title, value, icon: Icon, color, subtext, onClick }: { title:
                     <ArrowRight strokeWidth={1.5} size={18} />
                 </div>
             )}
-            <div className={`absolute -right-6 -bottom-6 w-32 h-32 ${v.iconBg} opacity-[0.02] rounded-full blur-3xl group-hover:opacity-[0.04] transition-opacity`}></div>
         </motion.div>
     );
 };
@@ -1095,40 +1122,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 pb-20">
-      {/* HEADER: DATE NAV */}
-      <div className="flex flex-col md:flex-row justify-between items-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl p-5 px-6 rounded-3xl border border-zinc-200/40 dark:border-zinc-800/50 gap-6 sticky top-0 z-40 transition-all shadow-sm">
-          <div className="flex items-center gap-6">
-              <div className="p-3 bg-zinc-900 dark:bg-zinc-800 text-white dark:text-blue-400 rounded-2xl shadow-lg rotate-3 group-hover:rotate-0 transition-transform">
-                  <BarChart3 size={24} />
-              </div>
-              <div className="flex items-center gap-2">
-                  <button 
-                    onClick={handlePrevMonth} 
-                    className="p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:bg-zinc-800 rounded-2xl text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all active:scale-95"
-                  >
-                    <ChevronLeft size={24}/>
-                  </button>
-                  <div className="text-center min-w-[160px]">
-                      <span className="block text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.25em] mb-1">Visão Geral</span>
-                      <span className="block text-2xl font-bold text-zinc-900 dark:text-zinc-100 capitalize tracking-tight">{currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
-                  </div>
-                  <button 
-                    onClick={handleNextMonth} 
-                    className="p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:bg-zinc-800 rounded-2xl text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all active:scale-95"
-                  >
-                    <ChevronRight size={24}/>
-                  </button>
-              </div>
+      {/* HEADER: TOPBAR + DATE NAV PILL */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+              <h1 className="text-xl md:text-2xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">Visão Geral</h1>
+              <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mt-0.5">Resumo financeiro do período</p>
           </div>
 
           <div className="flex items-center gap-3">
-              <div className="hidden md:flex flex-col text-right mr-2">
-                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Saldo em Carteira</span>
-                  <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">R$ {(stats.balance || 0).toLocaleString('pt-BR')}</span>
+              <div className={`hidden lg:flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold ${stats.balance >= 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400'}`}>
+                  {stats.balance >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                  {(monthlyInvestmentsList.length)} ativos aportados
               </div>
-              <div className={`p-1.5 rounded-2xl ${stats.balance >= 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400'} flex items-center gap-2 px-4 shadow-inner`}>
-                  {stats.balance >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                  <span className="text-xs font-bold">{(monthlyInvestmentsList.length)} ativos aportados</span>
+              <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full pl-4 pr-1.5 py-1.5 shadow-sm">
+                  <Calendar size={14} className="text-blue-500 mr-1.5 shrink-0" />
+                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 capitalize whitespace-nowrap px-1">{currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
+                  <button
+                    onClick={handlePrevMonth}
+                    className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400 text-zinc-500 dark:text-zinc-400 flex items-center justify-center transition-colors active:scale-95"
+                  >
+                    <ChevronLeft size={15}/>
+                  </button>
+                  <button
+                    onClick={handleNextMonth}
+                    className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400 text-zinc-500 dark:text-zinc-400 flex items-center justify-center transition-colors active:scale-95"
+                  >
+                    <ChevronRight size={15}/>
+                  </button>
               </div>
           </div>
       </div>
@@ -1137,7 +1157,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="space-y-4">
           <div className="flex justify-between items-center px-2">
               <div>
-                  <h3 className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.2em]">Movimentação do Mês</h3>
+                  <h3 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Movimentação do Mês</h3>
                   <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">Fluxo de Caixa & Aportes</h2>
               </div>
               <div className="flex items-center gap-2">

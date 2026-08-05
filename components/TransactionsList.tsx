@@ -410,10 +410,10 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
                         <List size={16} className="text-zinc-900 dark:text-zinc-100" />
                         <h3 className="text-xs font-medium text-zinc-800 dark:text-zinc-200 uppercase tracking-wide">Detalhamento por Categoria</h3>
                     </div>
-                    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
-                        <button onClick={() => setViewType(TransactionType.EXPENSE)} className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${viewType === TransactionType.EXPENSE ? 'bg-white dark:bg-zinc-900 shadow text-red-600' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Despesas</button>
-                        <button onClick={() => setViewType(TransactionType.INCOME)} className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${viewType === TransactionType.INCOME ? 'bg-white dark:bg-zinc-900 shadow text-emerald-600' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Receitas</button>
-                        <button onClick={() => setViewType(TransactionType.INVESTMENT)} className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${viewType === TransactionType.INVESTMENT ? 'bg-white dark:bg-zinc-900 shadow text-blue-600' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Investimentos</button>
+                    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-full">
+                        <button onClick={() => setViewType(TransactionType.EXPENSE)} className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all ${viewType === TransactionType.EXPENSE ? 'bg-white dark:bg-zinc-900 shadow text-red-600' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Despesas</button>
+                        <button onClick={() => setViewType(TransactionType.INCOME)} className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all ${viewType === TransactionType.INCOME ? 'bg-white dark:bg-zinc-900 shadow text-emerald-600' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Receitas</button>
+                        <button onClick={() => setViewType(TransactionType.INVESTMENT)} className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all ${viewType === TransactionType.INVESTMENT ? 'bg-white dark:bg-zinc-900 shadow text-blue-600' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Investimentos</button>
                     </div>
                 </div>
                 <div className="overflow-x-auto custom-scrollbar">
@@ -917,22 +917,22 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
             <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
                 {/* View Switcher & Date */}
                 <div className="flex items-center gap-3 w-full lg:w-auto">
-                    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl shrink-0">
-                        <button onClick={() => setViewMode('monthly')} className={`px-4 py-2 text-xs font-medium rounded-lg transition-all ${viewMode === 'monthly' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Mês</button>
-                        <button onClick={() => setViewMode('yearly')} className={`px-4 py-2 text-xs font-medium rounded-lg transition-all ${viewMode === 'yearly' ? 'bg-white dark:bg-zinc-900 shadow text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Ano</button>
+                    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-full shrink-0">
+                        <button onClick={() => setViewMode('monthly')} className={`px-4 py-2 text-xs font-semibold rounded-full transition-all ${viewMode === 'monthly' ? 'bg-blue-600 text-white shadow' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Mês</button>
+                        <button onClick={() => setViewMode('yearly')} className={`px-4 py-2 text-xs font-semibold rounded-full transition-all ${viewMode === 'yearly' ? 'bg-blue-600 text-white shadow' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Ano</button>
                     </div>
-                    <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-950 px-2 py-1 rounded-xl border border-zinc-200 dark:border-zinc-800 flex-1 lg:flex-none justify-center">
+                    <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 px-2 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 shadow-sm flex-1 lg:flex-none justify-center">
                         {viewMode === 'monthly' ? (
                             <>
-                                <button onClick={handlePrevMonth} className="p-1.5 hover:bg-white dark:bg-zinc-900 rounded-lg text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 transition-colors"><ChevronLeft size={18}/></button>
+                                <button onClick={handlePrevMonth} className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 flex items-center justify-center text-zinc-500 dark:text-zinc-400 transition-colors"><ChevronLeft size={16}/></button>
                                 <span className="font-semibold text-zinc-900 dark:text-zinc-100 uppercase text-xs tracking-wide min-w-[100px] text-center">{currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
-                                <button onClick={handleNextMonth} className="p-1.5 hover:bg-white dark:bg-zinc-900 rounded-lg text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 transition-colors"><ChevronRight size={18}/></button>
+                                <button onClick={handleNextMonth} className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 flex items-center justify-center text-zinc-500 dark:text-zinc-400 transition-colors"><ChevronRight size={16}/></button>
                             </>
                         ) : (
                             <>
-                                <button onClick={() => setSelectedYear(y => y - 1)} className="p-1.5 hover:bg-white dark:bg-zinc-900 rounded-lg text-zinc-500 dark:text-zinc-400 dark:text-zinc-500"><ChevronLeft size={18}/></button>
+                                <button onClick={() => setSelectedYear(y => y - 1)} className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 flex items-center justify-center text-zinc-500 dark:text-zinc-400"><ChevronLeft size={16}/></button>
                                 <span className="font-semibold text-zinc-900 dark:text-zinc-100 min-w-[60px] text-center">{selectedYear}</span>
-                                <button onClick={() => setSelectedYear(y => y + 1)} className="p-1.5 hover:bg-white dark:bg-zinc-900 rounded-lg text-zinc-500 dark:text-zinc-400 dark:text-zinc-500"><ChevronRight size={18}/></button>
+                                <button onClick={() => setSelectedYear(y => y + 1)} className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 flex items-center justify-center text-zinc-500 dark:text-zinc-400"><ChevronRight size={16}/></button>
                             </>
                         )}
                     </div>
@@ -967,8 +967,8 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                         type="text" 
                         value={filterTag} 
                         onChange={(e) => setFilterTag(e.target.value)} 
-                        placeholder="Buscar..." 
-                        className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-gray-900/20 outline-none"
+                        placeholder="Buscar..."
+                        className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-full text-xs font-semibold focus:ring-2 focus:ring-blue-600/30 outline-none"
                     />
                 </div>
                 
@@ -976,7 +976,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                     <div className="relative">
                         <button 
                             onClick={() => setIsFilterOpen(!isFilterOpen)} 
-                            className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-xs font-medium whitespace-nowrap transition-all ${categoryFilter.length > 0 ? 'bg-white dark:bg-zinc-900 border-zinc-900 text-zinc-900 dark:text-zinc-100' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}
+                            className={`flex items-center gap-2 px-3.5 py-2 border rounded-full text-xs font-semibold whitespace-nowrap transition-all ${categoryFilter.length > 0 ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}
                         >
                             <Filter size={14} /> {categoryFilter.length > 0 ? `${categoryFilter.length} Categorias` : 'Categorias'}
                         </button>
@@ -1004,7 +1004,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                     <div className="relative">
                         <button 
                             onClick={() => setIsCardFilterOpen(!isCardFilterOpen)} 
-                            className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-xs font-medium whitespace-nowrap transition-all ${creditCardFilter.length > 0 ? 'bg-white dark:bg-zinc-900 border-zinc-900 text-zinc-900 dark:text-zinc-100' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}
+                            className={`flex items-center gap-2 px-3.5 py-2 border rounded-full text-xs font-semibold whitespace-nowrap transition-all ${creditCardFilter.length > 0 ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}
                         >
                             <CardIcon size={14} /> {creditCardFilter.length > 0 ? `${creditCardFilter.length} Cartões` : 'Cartões'}
                         </button>
@@ -1029,44 +1029,44 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                         )}
                     </div>
 
-                    <button 
-                        onClick={() => setFilterOnlyInstallments(!filterOnlyInstallments)} 
-                        className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-xs font-medium whitespace-nowrap transition-all ${filterOnlyInstallments ? 'bg-purple-50 border-purple-200 text-purple-700' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}
+                    <button
+                        onClick={() => setFilterOnlyInstallments(!filterOnlyInstallments)}
+                        className={`flex items-center gap-2 px-3.5 py-2 border rounded-full text-xs font-semibold whitespace-nowrap transition-all ${filterOnlyInstallments ? 'bg-purple-50 border-purple-200 text-purple-700' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}
                     >
                         <Repeat size={14} /> Parcelados
                     </button>
-                    
-                    <button 
-                        onClick={() => setFilterOnlyShared(!filterOnlyShared)} 
-                        className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-xs font-medium whitespace-nowrap transition-all ${filterOnlyShared ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}
+
+                    <button
+                        onClick={() => setFilterOnlyShared(!filterOnlyShared)}
+                        className={`flex items-center gap-2 px-3.5 py-2 border rounded-full text-xs font-semibold whitespace-nowrap transition-all ${filterOnlyShared ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}
                     >
                         <Users size={14} /> Divididos
                     </button>
 
                     <div className="flex items-center gap-1.5 w-full sm:w-auto mt-2 sm:mt-0">
                         <div className="relative flex-1 sm:flex-none">
-                            <input 
-                                type="date" 
-                                value={filterStartDate} 
-                                onChange={(e) => setFilterStartDate(e.target.value)} 
-                                className="w-full px-2 py-2 border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-gray-900/20 outline-none text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" 
-                                title="Data Inicial" 
+                            <input
+                                type="date"
+                                value={filterStartDate}
+                                onChange={(e) => setFilterStartDate(e.target.value)}
+                                className="w-full px-3 py-2 border rounded-full text-xs font-semibold focus:ring-2 focus:ring-blue-600/30 outline-none text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                                title="Data Inicial"
                             />
                         </div>
                         <span className="text-zinc-400 dark:text-zinc-500 text-xs hidden sm:inline">até</span>
                         <div className="relative flex-1 sm:flex-none">
-                            <input 
-                                type="date" 
-                                value={filterEndDate} 
-                                onChange={(e) => setFilterEndDate(e.target.value)} 
-                                className="w-full px-2 py-2 border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-gray-900/20 outline-none text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" 
-                                title="Data Final" 
+                            <input
+                                type="date"
+                                value={filterEndDate}
+                                onChange={(e) => setFilterEndDate(e.target.value)}
+                                className="w-full px-3 py-2 border rounded-full text-xs font-semibold focus:ring-2 focus:ring-blue-600/30 outline-none text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                                title="Data Final"
                             />
                         </div>
                     </div>
 
                     {(activeFilterCount > 0) && (
-                        <button onClick={clearFilter} className="px-3 py-2 text-xs font-medium text-red-500 hover:bg-red-50 rounded-xl transition-colors whitespace-nowrap">
+                        <button onClick={clearFilter} className="px-3.5 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 rounded-full transition-colors whitespace-nowrap">
                             Limpar
                         </button>
                     )}
@@ -1076,10 +1076,10 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
             {/* PAYMENT METHOD SUMMARY WIDGET */}
             {paymentMethodSummary.length > 0 && (
                 <div className="pt-4 mt-2 border-t border-zinc-100 dark:border-zinc-800 pb-1">
-                    <h4 className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3">Resumo por Forma de Pagamento</h4>
+                    <h4 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Resumo por Forma de Pagamento</h4>
                     <div className="flex flex-wrap gap-3">
                         {paymentMethodSummary.map(([method, total]) => (
-                            <div key={method} className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 rounded-xl px-4 py-2 flex items-center justify-between min-w-[140px] flex-1 sm:flex-none">
+                            <div key={method} className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-4 py-2 flex items-center justify-between min-w-[140px] flex-1 sm:flex-none">
                                 <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 dark:text-zinc-500 line-clamp-1 mr-3" title={method}>{method}</span>
                                 <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{formatCurrency(total)}</span>
                             </div>
