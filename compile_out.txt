@@ -1,0 +1,1 @@
+components/Dashboard.tsx(425,62): error TS2304: Cannot find name 'usePortfolioData'.

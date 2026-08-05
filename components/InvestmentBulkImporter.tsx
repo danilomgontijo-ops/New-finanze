@@ -51,7 +51,9 @@ export const InvestmentBulkImporter: React.FC<InvestmentBulkImporterProps> = ({ 
     const startIdx = lines[0].toLowerCase().includes('ativo') ? 1 : 0;
 
     for (let i = startIdx; i < lines.length; i++) {
-      const columns = lines[i].split('\t');
+      let columns = lines[i].split('\t');
+      if (columns.length < 5) columns = lines[i].split('|');
+      if (columns.length < 5) columns = lines[i].split(';');
       if (columns.length < 5) continue;
 
       try {
@@ -59,10 +61,28 @@ export const InvestmentBulkImporter: React.FC<InvestmentBulkImporterProps> = ({ 
         const rawDate = columns[1]?.trim() || '';
         let rawEvent = columns[2]?.trim().toUpperCase() || 'C';
         
-        // Limpeza de números: remove pontos de milhar e converte vírgula decimal
+        // Limpeza de números inteligente: suporta formato BR (1.000,00) e formato US (1000.00)
         const cleanNum = (val: string) => {
           if (!val) return "0";
-          return val.replace(/\./g, '').replace(',', '.').replace(/[R$\s]/g, '');
+          let clean = val.replace(/[R$\s]/g, '').trim();
+          // Se tiver vírgula e ponto, assumimos que o último é o decimal
+          const lastComma = clean.lastIndexOf(',');
+          const lastDot = clean.lastIndexOf('.');
+          
+          if (lastComma > lastDot) {
+              // Formato BR: 1.000,00
+              clean = clean.replace(/\./g, '').replace(',', '.');
+          } else if (lastDot > lastComma) {
+              // Formato US: 1,000.00
+              clean = clean.replace(/,/g, '');
+          } else if (lastComma !== -1) {
+              // Apenas vírgula: 1000,00
+              clean = clean.replace(',', '.');
+          }
+          // Se tiver apenas ponto, e tiver mais de 2 casas decimais após ele (ex: 1.000), pode ser milhar.
+          // Mas normalmente assumimos que é decimal se tiver apenas 1 ponto.
+          
+          return clean;
         };
 
         const rawQtyStr = cleanNum(columns[3]);

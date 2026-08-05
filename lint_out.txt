@@ -1,0 +1,9 @@
+
+> copy-of-copy-of-finanze@0.0.0 lint
+> tsc --noEmit
+
+App.tsx(15,30): error TS2307: Cannot find module './services/api' or its corresponding type declarations.
+components/Dashboard.tsx(195,3): error TS2300: Duplicate identifier 'cdiHistory'.
+components/Dashboard.tsx(221,10): error TS2300: Duplicate identifier 'cdiHistory'.
+components/Dashboard.tsx(226,14): error TS2307: Cannot find module '../services/api' or its corresponding type declarations.
+components/Dashboard.tsx(437,62): error TS2304: Cannot find name 'usePortfolioData'.

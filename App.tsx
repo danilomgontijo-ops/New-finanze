@@ -12,6 +12,8 @@ import { Analytics } from './components/Analytics';
 import { ReportGenerator } from './components/ReportGenerator';
 import { TransactionsList } from './components/TransactionsList';
 import { Investments } from './components/Investments';
+import { DividendForm } from './components/DividendForm';
+import { BrapiService } from './services/brapiService';
 import { InvestmentBulkImporter } from './components/InvestmentBulkImporter';
 import { 
   LayoutDashboard, 
@@ -61,6 +63,25 @@ const App: React.FC = () => {
   const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
   const [assetPrices, setAssetPrices] = useState<AssetPrice[]>([]); // New state for prices
   const [assetHistory, setAssetHistory] = useState<Record<string, AssetHistory>>({}); // New state for asset history
+  const [cdiHistory, setCdiHistory] = useState<{ date: string; value: number }[]>([]);
+  const [ipcaHistory, setIpcaHistory] = useState<{ date: string; value: number }[]>([]);
+  const [ibovHistory, setIbovHistory] = useState<{ date: string; value: number }[]>([]);
+  const [hasFetchedCdi, setHasFetchedCdi] = useState(false);
+
+  useEffect(() => {
+    if (!hasFetchedCdi) {
+      Promise.all([
+        BrapiService.fetchCdiHistory(),
+        BrapiService.fetchIpcaHistory(),
+        BrapiService.fetchIbovHistory()
+      ]).then(([cdiData, ipcaData, ibovData]) => {
+        setCdiHistory(cdiData);
+        setIpcaHistory(ipcaData);
+        setIbovHistory(ibovData);
+        setHasFetchedCdi(true);
+      })
+    }
+  }, [hasFetchedCdi]);
   const [settings, setSettings] = useState<UserSettings>({
     monthlyBudgetPercentage: 80,
     salaryDay: 1,
@@ -73,7 +94,19 @@ const App: React.FC = () => {
   // UI State
   const [currentView, setCurrentView] = useState<'dashboard' | 'transactions' | 'analytics' | 'investments' | 'settings'>('dashboard');
   const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
+  const [isDividendFormOpen, setIsDividendFormOpen] = useState(false);
+  const [editingDividend, setEditingDividend] = useState<Transaction | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
+  const handleEditTransaction = (t: Transaction) => {
+    if (t.type === TransactionType.INVESTMENT && t.investmentDetails?.event && ['DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(t.investmentDetails.event)) {
+      setEditingDividend(t);
+      setIsDividendFormOpen(true);
+    } else {
+      setEditingTransaction(t);
+      setIsTransactionFormOpen(true);
+    }
+  };
   const [isImporterOpen, setIsImporterOpen] = useState(false);
   const [isBulkInvOpen, setIsBulkInvOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -348,8 +381,8 @@ const App: React.FC = () => {
        </aside>
        
        {/* Main Content Pane - Framed to support floating island sidebar perfectly */}
-       <main className="flex-1 p-4 pb-28 md:pb-8 md:p-8 overflow-y-auto h-screen bg-transparent custom-scrollbar relative z-10">
-           <div className="max-w-6xl mx-auto">
+       <main className="flex-1 p-3 sm:p-5 md:p-8 pb-28 md:pb-8 overflow-y-auto min-h-screen md:h-screen w-full min-w-0 bg-transparent custom-scrollbar relative z-10">
+           <div className="w-full max-w-[1600px] mx-auto min-w-0">
                
                {/* Floating Icon permanante para adicionar novo lançamento */}
                <button 
@@ -380,6 +413,7 @@ const App: React.FC = () => {
                    >
                        {currentView === 'dashboard' && (
                    <Dashboard 
+                     cdiHistory={cdiHistory}
                      transactions={transactions}
                      categories={categories}
                      subCategories={subCategories}
@@ -388,7 +422,7 @@ const App: React.FC = () => {
                      settings={settings}
                      currentDate={currentDate}
                      onDateChange={setCurrentDate}
-                     onEditTransaction={(t) => { setEditingTransaction(t); setIsTransactionFormOpen(true); }}
+                     onEditTransaction={handleEditTransaction}
                      onDeleteTransaction={(id, mode) => StorageService.deleteTransaction(id, mode)}
                    />
                )}
@@ -402,7 +436,7 @@ const App: React.FC = () => {
                      settings={settings}
                      currentDate={currentDate}
                      onDateChange={setCurrentDate}
-                     onEditTransaction={(t) => { setEditingTransaction(t); setIsTransactionFormOpen(true); }}
+                     onEditTransaction={handleEditTransaction}
                      onDeleteTransaction={(id, mode) => StorageService.deleteTransaction(id, mode)}
                    />
                )}
@@ -420,7 +454,10 @@ const App: React.FC = () => {
                )}
 
                {currentView === 'investments' && (
-                   <Investments 
+                   <Investments
+                     cdiHistory={cdiHistory}
+                     ipcaHistory={ipcaHistory}
+                     ibovHistory={ibovHistory}
                      transactions={transactions}
                      categories={categories}
                      subCategories={subCategories}
@@ -429,7 +466,7 @@ const App: React.FC = () => {
                      currentDate={currentDate}
                      assetPrices={assetPrices}
                      onDateChange={setCurrentDate}
-                     onEditTransaction={(t) => { setEditingTransaction(t); setIsTransactionFormOpen(true); }}
+                     onEditTransaction={handleEditTransaction}
                      onDeleteTransaction={(id, mode) => StorageService.deleteTransaction(id, mode)}
                      onOpenBulkImport={() => setIsBulkInvOpen(true)}
                    />
@@ -517,6 +554,16 @@ const App: React.FC = () => {
        </nav>
 
        {/* Modals */}
+       {isDividendFormOpen && (
+          <DividendForm
+            transactionToEdit={editingDividend}
+            categories={categories}
+            subCategories={subCategories}
+            transactions={transactions}
+            onSave={handleSaveTransaction}
+            onClose={() => { setIsDividendFormOpen(false); setEditingDividend(null); }}
+          />
+       )}
        {isTransactionFormOpen && (
            <TransactionForm 
              onClose={() => { setIsTransactionFormOpen(false); setEditingTransaction(null); }}

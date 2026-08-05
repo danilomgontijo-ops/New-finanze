@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Category, SubCategory, CreditCard, TransactionType, UserSettings, Transaction, DescriptionMap, PaymentMethod } from '../types';
 import { CreditCardManager } from './CreditCardManager';
-import { Settings as SettingsIcon, Trash2, Plus, Check, Target, Layers, AlertCircle, Pencil, X,
+import { Settings as SettingsIcon, LayoutGrid, Trash2, Plus, Check, Target, Layers, AlertCircle, Pencil, X,
   Utensils, Car, Home, Gamepad, Activity, User, Dog, Banknote, TrendingUp, Circle, ShoppingBag, Coffee, Smartphone, Hammer, Plane, Music, Gift, Wifi, Zap, Book, Briefcase, Shirt,
   Landmark, CreditCard as CreditCardIcon, Wallet, DollarSign, Euro, Bitcoin, Gem, Rocket, Star, Heart, Shield, Lock, Key, Globe, Map as MapIcon, Navigation, Flag, Crown, Trophy, Award, ShoppingCart, Truck, Package, Ghost, Smile, ThumbsUp, ArrowDownCircle, ArrowUpCircle, Fingerprint, Calendar, ArrowRightCircle, Database, Filter, History, Download, UploadCloud, Loader2, Replace, ArrowRight, Search, CheckSquare, Square, MinusSquare, Edit3, Save, Sparkles, RefreshCcw, ChevronDown, ChevronUp, ChevronRight
 } from 'lucide-react';
@@ -746,25 +746,25 @@ export const Settings: React.FC<SettingsProps> = (props) => {
         </h2>
       </div>
 
-      <div className="flex gap-1.5 shrink-0 overflow-x-auto w-fit max-w-full custom-scrollbar">
+      <div className="flex gap-2 overflow-x-auto w-full pb-2 hide-scrollbar">
         {[
-          { id: 'general', label: 'Geral & Metas' },
-          { id: 'categories', label: 'Categorias' },
-          { id: 'cards', label: 'Cartões' },
+          { id: 'general', label: 'Geral', icon: SettingsIcon },
+          { id: 'categories', label: 'Categorias', icon: LayoutGrid },
+          { id: 'cards', label: 'Cartões', icon: CreditCardIcon },
           { id: 'mappings', label: 'Mapeamento', icon: Replace },
           { id: 'data', label: 'Dados', icon: Database },
-          { id: 'assets', label: 'Ativos', icon: TrendingUp }
+          { id: 'assets', label: 'Eventos', icon: TrendingUp }
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-full transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-2xl transition-all whitespace-nowrap ${
               activeTab === tab.id
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-200/60 dark:shadow-none'
-                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                ? 'bg-zinc-900 text-white shadow-sm dark:bg-white dark:text-zinc-900'
+                : 'bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800'
             }`}
           >
-            {tab.icon && <tab.icon size={14} />}
+            {tab.icon && <tab.icon size={16} />}
             {tab.label}
           </button>
         ))}
@@ -933,9 +933,37 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                    <span>Gastar Tudo (100%)</span>
                  </div>
                </div>
-               
-               <div className="mt-6 bg-blue-50 p-4 rounded-lg text-sm text-blue-700">
+
+               <div className="mt-6 bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg text-sm text-blue-700 dark:text-blue-300">
                   💡 A regra 50/30/20 sugere gastar no máximo 80% (50% essencial + 30% lazer) e investir 20%.
+               </div>
+
+               <div className="mt-6 pt-6 border-t border-gray-100 dark:border-zinc-800">
+                 <label className="block text-sm font-bold text-gray-900 dark:text-zinc-100 mb-1">
+                   Meta Fixa de Aporte Mensal (R$)
+                 </label>
+                 <p className="text-xs text-gray-500 dark:text-zinc-400 mb-2">
+                   Defina um valor em R$ que você deseja aportar do seu próprio bolso todos os meses (se não preenchido, será calculado automaticamente com base no % de poupança da sua receita).
+                 </p>
+                 <div className="flex items-center gap-2">
+                   <span className="text-sm font-bold text-gray-500 dark:text-zinc-400">R$</span>
+                   <input 
+                     type="number" 
+                     step="100"
+                     placeholder="Ex: 2000"
+                     value={props.settings.monthlySavingsGoal || ''}
+                     onChange={(e) => {
+                       const val = parseFloat(e.target.value);
+                       const newSettings = { 
+                         ...props.settings, 
+                         monthlySavingsGoal: isNaN(val) || val <= 0 ? undefined : val 
+                       };
+                       props.setSettings(newSettings);
+                       props.onSaveSettings(newSettings);
+                     }}
+                     className="w-48 px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg font-bold text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-violet-500 outline-none bg-white dark:bg-zinc-900"
+                   />
+                 </div>
                </div>
              </div>
 
@@ -969,7 +997,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                     props.setSettings(newSettings);
                                     props.onSaveSettings(newSettings);
                                 }}
-                                className="w-20 px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg text-center font-bold text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-emerald-500 outline-none"
+                                className="w-20 px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg text-center font-bold text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-emerald-500 outline-none bg-white dark:bg-zinc-900"
                              />
                              <span className="text-sm text-gray-700 dark:text-zinc-300">de cada mês.</span>
                          </div>
@@ -1071,7 +1099,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                      props.setSettings(newSettings);
                                      props.onSaveSettings(newSettings);
                                  }}
-                                 className="px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg font-bold text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-amber-500 outline-none"
+                                 className="px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg font-bold text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-amber-500 outline-none bg-white dark:bg-zinc-900"
                               />
                               {props.settings.historyStartDate && (
                                   <button 
@@ -1119,7 +1147,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                                      props.setSettings(newSettings);
                                      props.onSaveSettings(newSettings);
                                  }}
-                                 className="px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg font-bold text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-purple-500 outline-none"
+                                 className="px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg font-bold text-gray-900 dark:text-zinc-50 focus:ring-2 focus:ring-purple-500 outline-none bg-white dark:bg-zinc-900"
                               />
                               {props.settings.resgatesResetMonth && (
                                   <button 

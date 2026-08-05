@@ -98,14 +98,32 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       StorageService.getMappings().then(setMappings);
   }, []);
 
-  // Detect Fixed Income Category
+  // Detect Fixed Income Category or Ticker
   const isFixedIncome = useMemo(() => {
+      if (invTicker) {
+          const tickUpper = invTicker.toUpperCase();
+          if (
+              tickUpper.includes('CDB') ||
+              tickUpper.includes('LCI') ||
+              tickUpper.includes('LCA') ||
+              tickUpper.includes('CRI') ||
+              tickUpper.includes('CRA') ||
+              tickUpper.includes('DEB') ||
+              tickUpper.includes('INTER') ||
+              tickUpper.includes('TESOURO') ||
+              tickUpper.startsWith('TD:') ||
+              tickUpper.includes('CDI') ||
+              tickUpper.includes('100%')
+          ) {
+              return true;
+          }
+      }
       if (!categoryId) return false;
       const cat = categories.find(c => c.id === categoryId);
       if (!cat) return false;
       const name = cat.name.toLowerCase();
-      return name.includes('renda fixa') || name.includes('tesouro') || name.includes('cdb') || name.includes('lci') || name.includes('lca') || name.includes('título');
-  }, [categoryId, categories]);
+      return name.includes('renda fixa') || name.includes('tesouro') || name.includes('cdb') || name.includes('lci') || name.includes('lca') || name.includes('título') || name.includes('poupança');
+  }, [categoryId, categories, invTicker]);
 
   // Update yield rate when builder changes
   useEffect(() => {
@@ -840,15 +858,15 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     >
                         <option value="BUY">Compra (Aplicação)</option>
                         <option value="SELL">Venda (Resgate)</option>
-                        <option value="DIVIDEND">Dividendos</option>
-                        <option value="JCP">JCP</option>
-                        <option value="RENDIMENTO">Rendimento (FII)</option>
+                        
+                        
+                        
                         <option value="AMORTIZACAO">Amortização</option>
                         <option value="BONUS">Bonificação</option>
                         <option value="SPLIT">Desdobramento (S)</option>
                         <option value="MERGE">Grupamento (I)</option>
                         <option value="TICKER_UPDATE">Atualização Ticker</option>
-                        <option value="REEMBOLSO">Reembolso</option>
+                        
                     </select>
                   </div>
                 </div>

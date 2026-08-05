@@ -318,7 +318,7 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
             if (val > avg * 1.05) icon = <ArrowUp size={isSub ? 8 : 10} className={viewType === TransactionType.INCOME ? "text-emerald-500 shrink-0" : "text-red-500 shrink-0"} strokeWidth={3} />; 
             else if (val < avg * 0.95) icon = <ArrowDown size={isSub ? 8 : 10} className={viewType === TransactionType.INCOME ? "text-red-500 shrink-0" : "text-emerald-500 shrink-0"} strokeWidth={3} />; 
         }
-        return (<div className="flex items-center justify-end gap-1 w-full">{icon}<span className={isSub ? "" : "font-medium"}>{(Number(val) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span></div>);
+        return (<div className="flex items-center justify-end gap-1 w-full">{icon}<span className={isSub ? "" : "font-medium"}>{(Number(val) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>);
     };
 
     return (
@@ -349,7 +349,7 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
                                 </td>
                                 {yearlySummary.map((m, i) => (
                                     <td key={i} className="px-1 py-2.5 text-center text-emerald-600 font-medium">
-                                        {m.income > 0 ? (m.income || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '-'}
+                                        {m.income > 0 ? (m.income || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
                                     </td>
                                 ))}
                             </tr>
@@ -364,7 +364,7 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
                                 </td>
                                 {yearlySummary.map((m, i) => (
                                     <td key={i} className="px-1 py-2.5 text-center text-red-600 font-medium">
-                                        {m.expense > 0 ? (m.expense || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '-'}
+                                        {m.expense > 0 ? (m.expense || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
                                     </td>
                                 ))}
                             </tr>
@@ -379,7 +379,7 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
                                 </td>
                                 {yearlySummary.map((m, i) => (
                                     <td key={i} className="px-1 py-2.5 text-center text-blue-600 font-medium">
-                                        {m.investment > 0 ? (m.investment || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '-'}
+                                        {m.investment > 0 ? (m.investment || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
                                     </td>
                                 ))}
                             </tr>
@@ -394,7 +394,7 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
                                 </td>
                                 {yearlySummary.map((m, i) => (
                                     <td key={i} className={`px-1 py-2.5 text-center ${m.balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                        {m.balance !== 0 ? (m.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '-'}
+                                        {m.balance !== 0 ? (m.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
                                     </td>
                                 ))}
                             </tr>
@@ -420,7 +420,7 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
                     <table className="w-full text-xs">
                         <thead><tr className="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 font-medium"><th className="px-2 py-2 text-left w-40 sticky left-0 bg-zinc-50 dark:bg-zinc-950 z-10 shadow-[1px_0_2px_rgba(0,0,0,0.05)]">Categoria</th><th className="px-2 py-2 text-right bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-medium min-w-[70px]">Total</th>{MONTHS.map(m => (<th key={m} className="px-1 py-2 text-center min-w-[60px]">{m}</th>))}</tr></thead>
                         <tbody>
-                            <tr className="bg-zinc-50 dark:bg-zinc-950 font-semibold text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-800"><td className="px-2 py-2 sticky left-0 bg-zinc-50 dark:bg-zinc-950 z-10 shadow-[1px_0_2px_rgba(0,0,0,0.05)]">TOTAL</td><td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100 truncate">{(Number(matrix.items.reduce((acc: number, item: any) => acc + item.total, 0)) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>{matrix.monthlyTotals.map((val: number, i: number) => (<td key={i} className="px-1 py-2 text-center text-[10px]">{val > 0 ? (Number(val) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '-'}</td>))}</tr>
+                            <tr className="bg-zinc-50 dark:bg-zinc-950 font-semibold text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-800"><td className="px-2 py-2 sticky left-0 bg-zinc-50 dark:bg-zinc-950 z-10 shadow-[1px_0_2px_rgba(0,0,0,0.05)]">TOTAL</td><td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100 truncate">{(Number(matrix.items.reduce((acc: number, item: any) => acc + item.total, 0)) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>{matrix.monthlyTotals.map((val: number, i: number) => (<td key={i} className="px-1 py-2 text-center text-[10px]">{val > 0 ? (Number(val) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>))}</tr>
                             {(matrix.items as any[]).map(cat => (
                                 <React.Fragment key={cat.id}>
                                     <tr className="border-b border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950 cursor-pointer transition-colors group" onClick={() => toggleCat(cat.id)}>
@@ -760,7 +760,17 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
           const totalItems = allCredits.filter(t => t.creditCardId === card.id);
           if (items.length === 0 && totalItems.length === 0) return null;
           const totalInvoice = totalItems.reduce((sum, t) => sum + (estimatedFixedExpenses[t.id] !== undefined ? estimatedFixedExpenses[t.id] : t.amount), 0);
-          const myPart = totalItems.reduce((sum, t) => { const isNathy = (nathyCategoryId && t.categoryId === nathyCategoryId) || t.description.toLowerCase().includes('(parte nathy)'); return sum + (isNathy ? 0 : (estimatedFixedExpenses[t.id] !== undefined ? estimatedFixedExpenses[t.id] : t.amount)); }, 0);
+          const myPart = totalItems.reduce((sum, t) => { 
+              const isNathy = (nathyCategoryId && t.categoryId === nathyCategoryId) || t.description.toLowerCase().includes('(parte nathy)'); 
+              const amountToUse = estimatedFixedExpenses[t.id] !== undefined ? estimatedFixedExpenses[t.id] : t.amount;
+              if (t.isShared) {
+                  return sum + (amountToUse / 2);
+              } else if (isNathy) {
+                  return sum;
+              } else {
+                  return sum + amountToUse;
+              }
+          }, 0);
           return { id: card.id, name: card.name, color: card.color, total: totalInvoice, myTotal: myPart, items: items.sort(sortTransactions) };
       }).filter(Boolean) as { id: string, name: string, color: string, total: number, myTotal: number, items: Transaction[] }[];
       

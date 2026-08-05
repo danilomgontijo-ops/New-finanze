@@ -19,7 +19,7 @@ async function startServer() {
       const { ticker } = req.params;
       const { dividends, range, interval } = req.query;
       
-      let url = `https://brapi.dev/api/quote/${ticker}?token=${BRAPI_TOKEN}`;
+      let url = `https://brapi.dev/api/quote/${encodeURIComponent(ticker)}?token=${BRAPI_TOKEN}`;
       if (dividends === 'true') {
         url += '&dividends=true';
       }
@@ -158,7 +158,35 @@ async function startServer() {
     }
   });
 
-  // BCB PTAX Proxy
+  // BCB IPCA Proxy
+  app.get("/api/bcb/ipca", async (req, res) => {
+    try {
+      const url = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json";
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json, text/plain, */*',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        redirect: 'follow'
+      });
+      const text = await response.text();
+      if (!response.ok) {
+        return res.status(response.status).json({ error: "Failed to fetch from BCB" });
+      }
+      try {
+        const data = JSON.parse(text);
+        return res.json(data);
+      } catch (parseErr) {
+        return res.status(500).json({ error: "Invalid JSON from BCB", textSnippet: text.substring(0, 100) });
+      }
+    } catch (e) {
+      console.error("IPCA proxy error:", e);
+      res.status(500).json({ error: "Server error" });
+    }
+  });
+
   app.get("/api/bcb/ptax", async (req, res) => {
     try {
         const { url } = req.query;
@@ -286,7 +314,7 @@ async function startServer() {
             const text = await response.text();
 
             if (!response.ok) {
-              console.warn(`BCB CDI returned error/warning ${response.status}. Serving generated CDI database.`);
+              // console.warn(`BCB CDI returned error/warning ${response.status}. Serving generated CDI database.`);
               return res.json(generateSgsCdiHistory());
             }
 

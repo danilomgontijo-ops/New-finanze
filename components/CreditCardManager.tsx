@@ -272,7 +272,7 @@ export const CreditCardManager: React.FC<CreditCardManagerProps> = ({ cards, tra
              }}
         >
             {/* Bank Logo */}
-            <div className="absolute top-6 left-6 w-12 h-12 rounded-xl flex items-center justify-center z-10 shadow-lg bg-gray-50 backdrop-blur-md border border-gray-200">
+            <div className="absolute top-6 left-6 w-12 h-12 rounded-xl flex items-center justify-center z-10 shadow-lg bg-gray-50 dark:bg-zinc-800\/50 dark:bg-zinc-800/50 backdrop-blur-md border border-gray-200 dark:border-zinc-700">
                 <BankLogo bankId={cardData.icon || 'generic'} className="w-8 h-8" />
             </div>
 
@@ -301,7 +301,7 @@ export const CreditCardManager: React.FC<CreditCardManagerProps> = ({ cards, tra
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Meus Cartões</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-zinc-50">Meus Cartões</h2>
         {!showForm && (
             <button
             onClick={() => { setCardForm(initialCardState); setShowForm(true); }}
@@ -313,77 +313,77 @@ export const CreditCardManager: React.FC<CreditCardManagerProps> = ({ cards, tra
       </div>
 
       {showForm && (
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl shadow-sm border border-gray-200 animate-in fade-in slide-in-from-top-2">
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-700 animate-in fade-in slide-in-from-top-2">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-gray-900 text-lg">{editingId ? 'Editar Cartão' : 'Novo Cartão'}</h3>
-            <button onClick={cancelForm} className="text-gray-500 hover:text-gray-700"><X size={20}/></button>
+            <h3 className="font-bold text-gray-900 dark:text-zinc-50 text-lg">{editingId ? 'Editar Cartão' : 'Novo Cartão'}</h3>
+            <button onClick={cancelForm} className="text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:text-zinc-300"><X size={20}/></button>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
              {/* Left Column: Form */}
              <form onSubmit={handleSubmit} className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Nome do Cartão (Apelido)</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">Nome do Cartão (Apelido)</label>
                     <input 
                         type="text" 
                         required
                         value={cardForm.name}
                         onChange={e => setCardForm({...cardForm, name: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-gray-500 outline-none"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 dark:border-zinc-600 rounded-lg text-sm text-gray-900 dark:text-zinc-50 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-gray-500 outline-none"
                         placeholder="Ex: Nubank Principal, Itaú Black"
                     />
                 </div>
                 
                 <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Bandeira (Visa/Master...)</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">Bandeira (Visa/Master...)</label>
                     <select 
                         value={cardForm.brand}
                         onChange={e => setCardForm({...cardForm, brand: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-gray-500 outline-none"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 dark:border-zinc-600 rounded-lg text-sm text-gray-900 dark:text-zinc-50 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-gray-500 outline-none"
                     >
                         {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Limite</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">Limite</label>
                     <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">R$</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-zinc-400 text-xs font-bold">R$</span>
                         <input 
                             type="number" 
                             required
                             value={cardForm.limit}
                             onChange={e => setCardForm({...cardForm, limit: Number(e.target.value)})}
-                            className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-gray-500 outline-none"
+                            className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-zinc-600 dark:border-zinc-600 rounded-lg text-sm text-gray-900 dark:text-zinc-50 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-gray-500 outline-none"
                         />
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Fechamento (Dia)</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">Fechamento (Dia)</label>
                     <input 
                         type="number" min="1" max="31"
                         required
                         value={cardForm.closingDay}
                         onChange={e => setCardForm({...cardForm, closingDay: Number(e.target.value)})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-gray-500 outline-none"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 dark:border-zinc-600 rounded-lg text-sm text-gray-900 dark:text-zinc-50 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-gray-500 outline-none"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Vencimento (Dia)</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">Vencimento (Dia)</label>
                     <input 
                         type="number" min="1" max="31"
                         required
                         value={cardForm.dueDay}
                         onChange={e => setCardForm({...cardForm, dueDay: Number(e.target.value)})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-gray-500 outline-none"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 dark:border-zinc-600 rounded-lg text-sm text-gray-900 dark:text-zinc-50 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-gray-500 outline-none"
                     />
                 </div>
 
                 <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-500 mb-2">Instituição Financeira (Banco)</label>
-                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 max-h-48 overflow-y-auto p-2 bg-gray-50 border border-gray-200 rounded-lg">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-zinc-400 mb-2">Instituição Financeira (Banco)</label>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 max-h-48 overflow-y-auto p-2 bg-gray-50 dark:bg-zinc-800\/50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-lg">
                         {BANKS.map((bank) => (
                             <button
                                 key={bank.id}
@@ -391,20 +391,20 @@ export const CreditCardManager: React.FC<CreditCardManagerProps> = ({ cards, tra
                                 onClick={() => setCardForm({...cardForm, icon: bank.id})}
                                 className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all border ${
                                     cardForm.icon === bank.id 
-                                    ? 'bg-white dark:bg-zinc-900 border-gray-500 shadow-md ring-1 ring-gray-500' 
-                                    : 'bg-white dark:bg-zinc-900 border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                                    ? 'bg-white dark:bg-zinc-900 border-gray-500 dark:border-zinc-500 shadow-md ring-1 ring-gray-500' 
+                                    : 'bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:border-zinc-600 dark:border-zinc-600 hover:shadow-sm'
                                 }`}
                                 title={bank.name}
                             >
                                 <BankLogo bankId={bank.id} className="w-8 h-8 rounded-md shadow-sm" />
-                                <span className="text-[10px] font-medium text-gray-700 truncate w-full text-center">{bank.name}</span>
+                                <span className="text-[10px] font-medium text-gray-700 dark:text-zinc-300 truncate w-full text-center">{bank.name}</span>
                             </button>
                         ))}
                     </div>
                 </div>
 
                 <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-500 mb-2">Cor do Cartão</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-zinc-400 mb-2">Cor do Cartão</label>
                     <div className="flex flex-wrap gap-2">
                         {CARD_COLORS.map(color => (
                             <button
@@ -427,9 +427,9 @@ export const CreditCardManager: React.FC<CreditCardManagerProps> = ({ cards, tra
 
              {/* Right Column: Preview */}
              <div className="flex flex-col items-center justify-start pt-2">
-                 <span className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Pré-visualização</span>
+                 <span className="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-widest mb-4">Pré-visualização</span>
                  {renderCardPreview(cardForm)}
-                 <p className="text-center text-xs text-gray-500 mt-4 max-w-xs">
+                 <p className="text-center text-xs text-gray-500 dark:text-zinc-400 mt-4 max-w-xs">
                     O cartão exibe o logo do banco e a bandeira selecionada.
                  </p>
              </div>
@@ -453,7 +453,7 @@ export const CreditCardManager: React.FC<CreditCardManagerProps> = ({ cards, tra
             >
               
               {/* Bank Logo */}
-              <div className="absolute top-6 left-6 w-12 h-12 rounded-xl flex items-center justify-center z-10 shadow-lg bg-gray-50 backdrop-blur-md border border-gray-200">
+              <div className="absolute top-6 left-6 w-12 h-12 rounded-xl flex items-center justify-center z-10 shadow-lg bg-gray-50 dark:bg-zinc-800\/50 dark:bg-zinc-800/50 backdrop-blur-md border border-gray-200 dark:border-zinc-700">
                   <BankLogo bankId={card.icon || 'generic'} className="w-8 h-8" />
               </div>
 
@@ -474,7 +474,7 @@ export const CreditCardManager: React.FC<CreditCardManagerProps> = ({ cards, tra
                         </button>
                         <button 
                             onClick={() => setDeleteConfirmId(null)} 
-                            className="p-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                            className="p-1 bg-gray-200 text-gray-700 dark:text-zinc-300 rounded hover:bg-gray-300 transition-colors"
                         >
                             <X size={14} />
                         </button>
@@ -483,7 +483,7 @@ export const CreditCardManager: React.FC<CreditCardManagerProps> = ({ cards, tra
                     <div className="flex gap-2">
                         <button 
                         onClick={() => startEditing(card)} 
-                        className="p-2 bg-white dark:bg-zinc-900 text-gray-900 rounded-full hover:bg-gray-50 shadow-md transition-all border border-transparent hover:scale-105"
+                        className="p-2 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-50 rounded-full hover:bg-gray-50 dark:bg-zinc-800\/50 dark:bg-zinc-800/50 shadow-md transition-all border border-transparent hover:scale-105"
                         title="Editar Cartão"
                         >
                         <Pencil size={14} />
@@ -530,7 +530,7 @@ export const CreditCardManager: React.FC<CreditCardManagerProps> = ({ cards, tra
         })}
         
         {cards.length === 0 && !showForm && (
-            <div className="col-span-full text-center py-12 bg-white dark:bg-zinc-900 border border-dashed border-gray-300 rounded-xl text-gray-500">
+            <div className="col-span-full text-center py-12 bg-white dark:bg-zinc-900 border border-dashed border-gray-300 dark:border-zinc-600 dark:border-zinc-600 rounded-xl text-gray-500 dark:text-zinc-400">
                 <CardIcon size={48} className="mx-auto mb-4 opacity-20" />
                 <p>Nenhum cartão cadastrado. Adicione seu primeiro cartão!</p>
             </div>

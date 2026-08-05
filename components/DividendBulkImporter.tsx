@@ -48,6 +48,7 @@ export const DividendBulkImporter: React.FC<DividendBulkImporterProps> = ({ isOp
     for (let i = startIdx; i < lines.length; i++) {
         // Tenta separar por Tabulação ou Ponto e Vírgula
         let columns = lines[i].split('\t');
+        if (columns.length < 4) columns = lines[i].split('|');
         if (columns.length < 4) columns = lines[i].split(';');
         
         if (columns.length < 4) continue;

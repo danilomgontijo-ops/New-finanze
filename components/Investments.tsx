@@ -14,7 +14,6 @@ import { StorageService, AssetHistory } from "../services/storageService";
 import { GeminiService } from "../services/geminiService";
 import { BrapiService } from "../services/brapiService";
 import { SheetsService } from "../services/sheetsService";
-import { DividendForm } from "./DividendForm";
 import { DividendBulkImporter } from "./DividendBulkImporter";
 import { AiDividendRadar } from "./AiDividendRadar";
 import {
@@ -99,6 +98,9 @@ import {
 } from "lucide-react";
 
 interface InvestmentsProps {
+  cdiHistory?: { date: string; value: number }[];
+  ipcaHistory?: { date: string; value: number }[];
+  ibovHistory?: { date: string; value: number }[];
   transactions: Transaction[];
   categories: Category[];
   subCategories: SubCategory[];
@@ -110,6 +112,7 @@ interface InvestmentsProps {
   onEditTransaction: (t: Transaction) => void;
   onDeleteTransaction: (id: string, mode?: "single" | "future" | "all") => void;
   onOpenBulkImport: () => void;
+  onOpenDividendForm: () => void;
 }
 
 interface PortfolioItem {
@@ -223,6 +226,33 @@ const getAssetIcon = (ticker: string, category: string = "") => {
 };
 
 // Fixed Income Logic
+const toIsoDateStr = (input: string | Date | undefined): string => {
+  if (!input) return new Date().toISOString().split("T")[0];
+  if (input instanceof Date) {
+    if (isNaN(input.getTime())) return new Date().toISOString().split("T")[0];
+    return input.toISOString().split("T")[0];
+  }
+  const str = String(input).trim();
+  if (str.includes("T")) {
+    return str.split("T")[0];
+  }
+  if (/^\d{1,2}[\/-]\d{1,2}[\/-]\d{4}/.test(str)) {
+    const parts = str.split(/[\/-]/);
+    const day = parts[0].padStart(2, "0");
+    const month = parts[1].padStart(2, "0");
+    const year = parts[2].substring(0, 4);
+    return `${year}-${month}-${day}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    return str.substring(0, 10);
+  }
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    return d.toISOString().split("T")[0];
+  }
+  return new Date().toISOString().split("T")[0];
+};
+
 const calculateRealFixedIncome = (
   principal: number,
   startDateInput: string | Date,
@@ -230,37 +260,54 @@ const calculateRealFixedIncome = (
   cdiData: { date: string; value: number }[],
   endDateInput?: string | Date,
 ): number => {
-  const startDateStr =
-    startDateInput instanceof Date
-      ? startDateInput.toISOString()
-      : startDateInput;
-  const endDateStr = endDateInput
-    ? endDateInput instanceof Date
-      ? endDateInput.toISOString()
-      : endDateInput
-    : undefined;
+  if (!principal || principal <= 0) return 0;
+  if (!rateStr || typeof rateStr !== "string") rateStr = "100% CDI";
 
-  const cleanRate = rateStr.toUpperCase().replace(",", ".").replace("%", "");
+  const startIso = toIsoDateStr(startDateInput);
+  const endIso = toIsoDateStr(endDateInput);
+
+  const upperStr = rateStr.toUpperCase().trim();
   let pctCDI = 0;
   let isCDI = false;
   let fixedRate = 0;
 
-  if (cleanRate.includes("CDI")) {
+  const numbers = upperStr.match(/(\d+(?:[.,]\d+)?)/g);
+
+  const hasCdiExplicit =
+    upperStr.includes("CDI") ||
+    upperStr.includes("INTER") ||
+    upperStr.includes("CDB") ||
+    upperStr.includes("LCI") ||
+    upperStr.includes("LCA") ||
+    upperStr.includes("CRI") ||
+    upperStr.includes("CRA") ||
+    upperStr.includes("POUPA") ||
+    upperStr.includes("DO CDI");
+
+  if (hasCdiExplicit) {
     isCDI = true;
-    const numStr = cleanRate.replace("CDI", "").trim();
-    pctCDI = numStr ? parseFloat(numStr) : 100;
-    if (isNaN(pctCDI)) pctCDI = 100;
+    if (upperStr.includes("POUPA")) {
+      pctCDI = numbers && numbers.length > 0 ? parseFloat(numbers[0].replace(",", ".")) : 70;
+    } else if (numbers && numbers.length > 0) {
+      pctCDI = parseFloat(numbers[0].replace(",", "."));
+    } else {
+      pctCDI = 100;
+    }
+  } else if (numbers && numbers.length > 0) {
+    const val = parseFloat(numbers[0].replace(",", "."));
+    if (val >= 50 && !upperStr.includes("IPCA")) {
+      isCDI = true;
+      pctCDI = val;
+    } else {
+      fixedRate = val;
+    }
   } else {
-    fixedRate = parseFloat(cleanRate);
-    if (isNaN(fixedRate)) fixedRate = 0;
+    isCDI = true;
+    pctCDI = 100;
   }
 
   if (isCDI) {
-    if (cdiData.length === 0) return principal;
-    const startIso = startDateStr.split("T")[0];
-    const endIso = endDateStr
-      ? endDateStr.split("T")[0]
-      : new Date().toISOString().split("T")[0];
+    if (!cdiData || cdiData.length === 0) return principal;
 
     const relevantRates = cdiData.filter(
       (d) => d.date >= startIso && d.date <= endIso,
@@ -272,11 +319,9 @@ const calculateRealFixedIncome = (
     }
     return principal * accumulatedFactor;
   } else {
-    const start = new Date(startDateStr);
-    const end = endDateStr ? new Date(endDateStr) : new Date();
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const years = diffDays / 365.25;
+    const relevantRates = cdiData ? cdiData.filter((d) => d.date >= startIso && d.date <= endIso) : [];
+    const businessDays = relevantRates.length > 0 ? relevantRates.length : Math.ceil(Math.abs(new Date(endIso).getTime() - new Date(startIso).getTime()) / (1000 * 60 * 60 * 24)) * (252 / 365);
+    const years = businessDays / 252;
     if (fixedRate > 0) return principal * Math.pow(1 + fixedRate / 100, years);
   }
   return principal;
@@ -332,6 +377,9 @@ const MultiSelect = ({ options, selected, onChange, placeholder }: any) => {
 };
 
 export const Investments: React.FC<InvestmentsProps> = ({
+  cdiHistory = [],
+  ipcaHistory = [],
+  ibovHistory = [],
   transactions,
   categories,
   subCategories = [],
@@ -343,25 +391,28 @@ export const Investments: React.FC<InvestmentsProps> = ({
   onEditTransaction,
   onDeleteTransaction,
   onOpenBulkImport,
+  onOpenDividendForm,
 }) => {
+  const [selectedBenchmarks, setSelectedBenchmarks] = useState<string[]>(['cdiAccum', 'ipcaAccum', 'ibovAccum']);
   const [activeTab, setActiveTab] = useState<
     "overview" | "portfolio" | "history" | "proventos" | "tax"
   >("overview");
   const [showDetailedReport, setShowDetailedReport] = useState(false);
   const [loadingOnline, setLoadingOnline] = useState(false);
   const [syncStatus, setSyncStatus] = useState("");
-  const [cdiHistory, setCdiHistory] = useState<
-    { date: string; value: number }[]
-  >([]);
-  const [hasFetchedCdi, setHasFetchedCdi] = useState(false);
 
-  const [portfolioSearchTerm, setPortfolioSearchTerm] = useState("");
-  const [portfolioCategoryFilters, setPortfolioCategoryFilters] = useState<
-    string[]
-  >([]);
-  const [portfolioSubCategoryFilters, setPortfolioSubCategoryFilters] =
-    useState<string[]>([]);
-  const [historySearchTerm, setHistorySearchTerm] = useState("");
+
+  const [globalSearchTerm, setGlobalSearchTerm] = useState("");
+  const [globalCategoryFilters, setGlobalCategoryFilters] = useState<string[]>([]);
+  const [globalSubCategoryFilters, setGlobalSubCategoryFilters] = useState<string[]>([]);
+  const portfolioSearchTerm = globalSearchTerm;
+  const setPortfolioSearchTerm = setGlobalSearchTerm;
+  const portfolioCategoryFilters = globalCategoryFilters;
+  const setPortfolioCategoryFilters = setGlobalCategoryFilters;
+  const portfolioSubCategoryFilters = globalSubCategoryFilters;
+  const setPortfolioSubCategoryFilters = setGlobalSubCategoryFilters;
+  const historySearchTerm = globalSearchTerm;
+  const setHistorySearchTerm = setGlobalSearchTerm;
 
   const [historyViewMode, setHistoryViewMode] = useState<
     "grouped" | "operations" | "dividends"
@@ -375,21 +426,22 @@ export const Investments: React.FC<InvestmentsProps> = ({
   >(new Set());
   const [historyStart, setHistoryStart] = useState("");
   const [historyEnd, setHistoryEnd] = useState("");
-  const [historyFilterCategory, setHistoryFilterCategory] = useState("");
-  const [historyFilterSubCategory, setHistoryFilterSubCategory] = useState("");
+  const historyFilterCategory = globalCategoryFilters[0] || "";
+  const setHistoryFilterCategory = (val: string) => setGlobalCategoryFilters(val ? [val] : []);
+  const historyFilterSubCategory = globalSubCategoryFilters[0] || "";
+  const setHistoryFilterSubCategory = (val: string) => setGlobalSubCategoryFilters(val ? [val] : []);
 
-  const [overviewFilterCategory, setOverviewFilterCategory] = useState("");
-  const [overviewFilterSubCategory, setOverviewFilterSubCategory] =
     useState("");
-  const [overviewSearchTerm, setOverviewSearchTerm] = useState("");
+  const overviewSearchTerm = globalSearchTerm;
+  const setOverviewSearchTerm = setGlobalSearchTerm;
   const [overviewFilterDate, setOverviewFilterDate] = useState<string | null>(
     null,
   );
-  const [overviewFilterTicker, setOverviewFilterTicker] = useState("");
 
-  const [proventosSearch, setProventosSearch] = useState("");
+  const proventosSearch = globalSearchTerm;
+  const setProventosSearch = setGlobalSearchTerm;
 
-  const [isDividendFormOpen, setIsDividendFormOpen] = useState(false);
+  
   const [isDivBulkOpen, setIsDivBulkOpen] = useState(false);
   const [isAiRadarOpen, setIsAiRadarOpen] = useState(false);
   const [assetHistory, setAssetHistory] = useState<
@@ -432,8 +484,10 @@ export const Investments: React.FC<InvestmentsProps> = ({
   const [proventosYearFilter, setProventosYearFilter] = useState(
     new Date().getFullYear().toString(),
   );
-  const [proventosTickerFilter, setProventosTickerFilter] = useState("");
-  const [proventosCategoryFilter, setProventosCategoryFilter] = useState("");
+  const proventosTickerFilter = globalSearchTerm;
+  const setProventosTickerFilter = setGlobalSearchTerm;
+  const proventosCategoryFilter = globalCategoryFilters[0] || "";
+  const setProventosCategoryFilter = (val: string) => setGlobalCategoryFilters(val ? [val] : []);
 
   const [taxViewMode, setTaxViewMode] = useState<"darf" | "dirf">("darf");
   const [taxYearFilter, setTaxYearFilter] = useState(
@@ -444,14 +498,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [selectedMonthDetails, setSelectedMonthDetails] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (!hasFetchedCdi) {
-      BrapiService.fetchCdiHistory().then((data) => {
-        setCdiHistory(data);
-        setHasFetchedCdi(true);
-      });
-    }
-  }, [hasFetchedCdi]);
+
 
   const isNathyTransaction = (t: Transaction) => {
     const nathyCategory = categories.find(
@@ -556,19 +603,29 @@ export const Investments: React.FC<InvestmentsProps> = ({
         a.historicalCost += t.amount;
         a.cashFlows.push({ date: tDate, amount: -t.amount });
         // Add to FIFO Lots
+        const rateForLot = yieldRate || a.yieldRate;
         a.lots.push({
           date: tDate,
           q: quantity,
           cost: t.amount,
-          yieldRate: a.yieldRate,
+          yieldRate: rateForLot,
         });
         if (yieldRate) a.yieldRate = yieldRate;
       } else if (event === "SELL") {
+        const tickerUpper = ticker.toUpperCase();
         const isFixed =
           !!a.yieldRate ||
-          ticker.startsWith("TD:") ||
-          ticker.includes("TESOURO") ||
-          ticker.includes("CDB");
+          tickerUpper.startsWith("TD:") ||
+          tickerUpper.includes("TESOURO") ||
+          tickerUpper.includes("CDB") ||
+          tickerUpper.includes("INTER") ||
+          tickerUpper.includes("LCI") ||
+          tickerUpper.includes("LCA") ||
+          tickerUpper.includes("CRI") ||
+          tickerUpper.includes("CRA") ||
+          tickerUpper.includes("DEBENTURE") ||
+          tickerUpper.includes("CDI") ||
+          tickerUpper.includes("100%");
         let costOfSold = 0;
         const fees = t.investmentDetails.fees || 0;
         const tax = t.investmentDetails.tax || 0;
@@ -580,18 +637,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
           false;
 
         if (isFixed) {
-          // Para Renda Fixa, se a quantidade for 1 (padrão) mas o valor de venda for muito menor que o custo,
-          // NÃO é uma venda total, mesmo que quantity == a.quantity.
-          if (
-            quantity === 1 &&
-            a.quantity === 1 &&
-            t.amount < a.totalCost * 0.95
-          ) {
-            isFullSale = false;
-          }
-
-          // Por outro lado, se o valor da venda for muito próximo ou maior que o valor estimado total,
-          // É uma venda total, mesmo que a quantidade não bata.
           let estimatedTotalValue = 0;
           a.lots.forEach((lot: any) => {
             estimatedTotalValue += calculateRealFixedIncome(
@@ -604,8 +649,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
           });
           if (estimatedTotalValue === 0) estimatedTotalValue = a.totalCost;
 
-          if (t.amount + fees + tax >= estimatedTotalValue * 0.98) {
+          if (
+            t.investmentDetails.isTotalRedemption ||
+            t.amount + fees + tax >= estimatedTotalValue * 0.98
+          ) {
             isFullSale = true;
+          } else if (t.amount + fees + tax < estimatedTotalValue * 0.95) {
+            isFullSale = false;
           }
         }
 
@@ -649,10 +699,17 @@ export const Investments: React.FC<InvestmentsProps> = ({
               calculatedQtySold += lot.q;
               tempLots.shift();
             } else {
-              const ratio = remainingGrossAmountToSell / lotCurrentValue;
-              calculatedCostOfSold += lot.cost * ratio;
-              calculatedQtySold += lot.q * ratio;
+              const ratio = Math.min(1, remainingGrossAmountToSell / lotCurrentValue);
+              const lotCostSold = lot.cost * ratio;
+              const lotQtySold = lot.q * ratio;
+              calculatedCostOfSold += lotCostSold;
+              calculatedQtySold += lotQtySold;
+              lot.cost -= lotCostSold;
+              lot.q -= lotQtySold;
               remainingGrossAmountToSell = 0;
+              if (lot.cost <= 0.0001) {
+                tempLots.shift();
+              }
             }
           }
           costOfSold = calculatedCostOfSold;
@@ -797,6 +854,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
           !portfolioSubCategoryFilters.includes(a.subCategoryId)
         )
           return false;
+        if (portfolioSearchTerm) {
+          const searchTerms = portfolioSearchTerm.split(',').map(s => s.trim().toUpperCase()).filter(s => s);
+          if (searchTerms.length > 0) {
+            const matches = searchTerms.some(term => a.ticker.toUpperCase().includes(term));
+            if (!matches) return false;
+          }
+        }
         return true;
       })
       .map((a: any) => {
@@ -812,24 +876,30 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
         const catName = a.category?.toLowerCase() || "";
         const subCatName = a.subCategory?.toLowerCase() || "";
+        const tickerUpper = a.ticker.toUpperCase();
         const isFixedType =
           catName.includes("renda fixa") ||
           subCatName.includes("renda fixa") ||
           catName.includes("poupança") ||
           subCatName.includes("poupança") ||
-          a.ticker.toUpperCase().includes("CDB") ||
-          a.ticker.toUpperCase().includes("LCI") ||
-          a.ticker.toUpperCase().includes("LCA") ||
-          a.ticker.toUpperCase().includes("CRI") ||
-          a.ticker.toUpperCase().includes("CRA") ||
-          a.ticker.toUpperCase().includes("DEBENTURE");
+          tickerUpper.includes("CDB") ||
+          tickerUpper.includes("LCI") ||
+          tickerUpper.includes("LCA") ||
+          tickerUpper.includes("CRI") ||
+          tickerUpper.includes("CRA") ||
+          tickerUpper.includes("DEBENTURE") ||
+          tickerUpper.includes("INTER") ||
+          tickerUpper.includes("TESOURO") ||
+          tickerUpper.includes("TD:") ||
+          tickerUpper.includes("CDI") ||
+          tickerUpper.includes("100%") ||
+          !!a.yieldRate;
 
         if (!a.yieldRate && isFixedType && !isTesouro) {
           a.yieldRate =
-            a.ticker.toUpperCase().includes("POUPA") ||
-            catName.includes("poupança")
+            tickerUpper.includes("POUPA") || catName.includes("poupança")
               ? "70% CDI"
-              : "100% CDI";
+              : a.ticker;
         }
 
         if (
@@ -843,69 +913,70 @@ export const Investments: React.FC<InvestmentsProps> = ({
         ) {
           isFixedIncome = true;
           // Optimization: If quantity is 0, don't run expensive calculations
-          if (a.quantity <= 0.000001) {
+          if (a.quantity <= 0.000001 && (!a.lots || a.lots.length === 0)) {
             currentTotal = 0;
+            calculatedBalanceYesterday = 0;
           } else {
-            let calculatedBalance = 0;
+            let calcBal = 0;
+            let calcYesterday = 0;
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayStr = yesterday.toISOString();
-            const todayStr = new Date().toISOString().split("T")[0];
 
-            const assetTxs = investmentTransactions.filter(
-              (t) => t.investmentDetails?.ticker === a.ticker,
-            );
-            assetTxs.forEach((t) => {
-              const ev = t.investmentDetails?.event;
-              const amt = t.amount;
-              const date = t.date;
-              const isTodayTx = date.split("T")[0] === todayStr;
-              if (ev === "BUY" || ev === "BONUS") {
-                calculatedBalance += calculateRealFixedIncome(
-                  amt,
-                  date,
-                  a.yieldRate,
+            if (a.lots && a.lots.length > 0) {
+              let totalLotCost = 0;
+              a.lots.forEach((lot: any) => {
+                totalLotCost += lot.cost;
+                const rateToUse = a.yieldRate || lot.yieldRate || "100% CDI";
+                const curVal = calculateRealFixedIncome(
+                  lot.cost,
+                  lot.date,
+                  rateToUse,
                   cdiHistory,
                 );
-                if (date <= yesterdayStr) {
-                  calculatedBalanceYesterday += calculateRealFixedIncome(
-                    amt,
-                    date,
-                    a.yieldRate,
+                calcBal += curVal;
+
+                const lotDateStr =
+                  lot.date instanceof Date
+                    ? lot.date.toISOString()
+                    : String(lot.date);
+                if (lotDateStr <= yesterdayStr) {
+                  calcYesterday += calculateRealFixedIncome(
+                    lot.cost,
+                    lot.date,
+                    rateToUse,
                     cdiHistory,
                     yesterdayStr,
                   );
-                } else if (isTodayTx) {
-                  todayNetFlow += amt;
+                } else {
+                  todayNetFlow += lot.cost;
                 }
-              } else if (ev === "SELL" || ev === "AMORTIZACAO") {
-                calculatedBalance -= calculateRealFixedIncome(
-                  amt,
-                  date,
-                  a.yieldRate,
-                  cdiHistory,
-                );
-                if (date <= yesterdayStr) {
-                  calculatedBalanceYesterday -= calculateRealFixedIncome(
-                    amt,
-                    date,
-                    a.yieldRate,
-                    cdiHistory,
-                    yesterdayStr,
-                  );
-                } else if (isTodayTx) {
-                  todayNetFlow -= amt;
-                }
-              }
-            });
-            if (calculatedBalance < 0.01 && a.totalCost > 0)
-              calculatedBalance = a.totalCost;
-            if (
-              calculatedBalanceYesterday <= 0.01 &&
-              a.totalCost - todayNetFlow > 0
-            )
-              calculatedBalanceYesterday = a.totalCost - todayNetFlow;
-            currentTotal = calculatedBalance;
+              });
+              if (totalLotCost > 0) a.totalCost = totalLotCost;
+            } else if (a.totalCost > 0) {
+              const rateToUse = a.yieldRate || "100% CDI";
+              const startDate = a.earliestDate || new Date();
+              calcBal = calculateRealFixedIncome(
+                a.totalCost,
+                startDate,
+                rateToUse,
+                cdiHistory,
+              );
+              calcYesterday = calculateRealFixedIncome(
+                a.totalCost,
+                startDate,
+                rateToUse,
+                cdiHistory,
+                yesterdayStr,
+              );
+            }
+
+            if (calcBal < 0.01 && a.totalCost > 0) calcBal = a.totalCost;
+            if (calcYesterday <= 0.01 && a.totalCost - todayNetFlow > 0)
+              calcYesterday = a.totalCost - todayNetFlow;
+
+            currentTotal = calcBal;
+            calculatedBalanceYesterday = calcYesterday;
           }
           rawQuote = currentTotal;
         } else {
@@ -1107,6 +1178,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
         !portfolioSubCategoryFilters.includes(a.subCategoryId)
       )
         return;
+      if (portfolioSearchTerm) {
+        const searchTerms = portfolioSearchTerm.split(',').map(s => s.trim().toUpperCase()).filter(s => s);
+        if (searchTerms.length > 0) {
+          const matches = searchTerms.some(term => a.ticker.toUpperCase().includes(term));
+          if (!matches) return;
+        }
+      }
       summary.realizedProfit += a.realizedProfit;
       summary.proventosTotal += a.totalProventos;
       summary.proventos12mTotal += a.totalProventos12m;
@@ -1121,25 +1199,23 @@ export const Investments: React.FC<InvestmentsProps> = ({
     cdiHistory,
     portfolioCategoryFilters,
     portfolioSubCategoryFilters,
+    portfolioSearchTerm,
   ]);
 
   const overviewData = useMemo(() => {
     let filteredTxs = [...investmentTransactions];
-    if (overviewFilterCategory) {
+
+    if (globalCategoryFilters.length > 0) {
       filteredTxs = filteredTxs.filter(
-        (t) => t.categoryId === overviewFilterCategory,
+        (t) => globalCategoryFilters.includes(t.categoryId),
       );
     }
-    if (overviewFilterSubCategory) {
+    if (globalSubCategoryFilters.length > 0) {
       filteredTxs = filteredTxs.filter(
-        (t) => t.subCategoryId === overviewFilterSubCategory,
+        (t) => globalSubCategoryFilters.includes(t.subCategoryId || ""),
       );
     }
-    if (overviewFilterTicker) {
-      filteredTxs = filteredTxs.filter(
-        (t) => t.investmentDetails?.ticker === overviewFilterTicker,
-      );
-    }
+
     if (overviewSearchTerm) {
       const term = overviewSearchTerm.trim().toUpperCase();
       filteredTxs = filteredTxs.filter((t) =>
@@ -1825,13 +1901,28 @@ export const Investments: React.FC<InvestmentsProps> = ({
         cdiMonthFactor *= 1 + d.value / 100;
       });
       const cdiMonthPct = cdiMonthFactor - 1;
-
+      const ipcaMonthObj = ipcaHistory.find(d => d.date.startsWith(monthKey));
+      const ipcaMonthPct = ipcaMonthObj ? ipcaMonthObj.value / 100 : 0;
+      
+      const ibovMonthRates = ibovHistory.filter(d => d.date.startsWith(monthKey)).sort((a,b) => a.date.localeCompare(b.date));
+      let ibovMonthPct = 0;
+      if (ibovMonthRates.length > 0) {
+        const first = ibovMonthRates[0];
+        const last = ibovMonthRates[ibovMonthRates.length - 1];
+        ibovMonthPct = (last.value / first.value) - 1;
+      }
       const prevTwrAccum =
         chartData.length > 0
           ? chartData[chartData.length - 1].twrAccum / 100
           : 0;
       const currentTwrAccum = (1 + prevTwrAccum) * (1 + monthlyReturnPct) - 1;
       cdiIndex = cdiIndex * (1 + cdiMonthPct);
+      
+      const prevChartPoint = chartData.length > 0 ? chartData[chartData.length - 1] : null;
+      let ibovIndex = prevChartPoint ? (prevChartPoint.ibovAccum + 100) : 100;
+      ibovIndex = ibovIndex * (1 + ibovMonthPct);
+      let ipcaIndex = prevChartPoint ? (prevChartPoint.ipcaAccum + 100) : 100;
+      ipcaIndex = ipcaIndex * (1 + ipcaMonthPct);
 
       const displayDate = new Date(y, m - 1, 2).toLocaleDateString("pt-BR", {
         month: "short",
@@ -1905,11 +1996,15 @@ export const Investments: React.FC<InvestmentsProps> = ({
         xtirMonthly: monthXtirMonthly,
         cdiAccum: cdiIndex - 100,
         cdiMonthly: cdiMonthPct * 100,
+        ibovAccum: ibovIndex - 100,
+        ibovMonthly: ibovMonthPct * 100,
+        ipcaAccum: ipcaIndex - 100,
+        ipcaMonthly: ipcaMonthPct * 100,
         assetDetails: monthAssetDetails.sort((a, b) => b.endValue - a.endValue),
         strategyAllocation,
       };
 
-      chartData.push(dataPoint);
+      console.log("dataPoint", {date: dataPoint.date, ibovAccum: dataPoint.ibovAccum, ipcaAccum: dataPoint.ipcaAccum, ibovMonthly: dataPoint.ibovMonthly}); chartData.push(dataPoint);
       tableData.unshift(dataPoint);
       previousMarketValue = monthMarketValue;
     });
@@ -2349,9 +2444,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
     assetPrices,
     portfolioData,
     assetHistory,
-    overviewFilterCategory,
-    overviewFilterSubCategory,
-    overviewFilterTicker,
+    globalCategoryFilters,
+    globalSubCategoryFilters,
     overviewSearchTerm,
     categories,
     subCategories,
@@ -3024,9 +3118,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
     }
   };
 
-  const handleSaveDividend = async (data: Partial<Transaction>) => {
-    await StorageService.addTransaction(data as Transaction);
-  };
   const handleBulkDividendImport = async (data: any[]) => {
     for (const t of data) await StorageService.addTransaction(t);
   };
@@ -3040,7 +3131,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
     const allSelected = allIds.every((id) => selectedIds.includes(id));
     if (allSelected)
       setSelectedIds((prev) => prev.filter((id) => !allIds.includes(id)));
-    else setSelectedIds((prev) => [...new Set([...prev, ...allIds])]);
+    else setSelectedIds((prev) => Array.from(new Set([...prev, ...allIds])));
   };
   const handleBatchEdit = async () => {
     if (selectedIds.length === 0) return;
@@ -3669,48 +3760,9 @@ export const Investments: React.FC<InvestmentsProps> = ({
     return grouped;
   }, [investmentTransactions, taxYearFilter, categories, subCategories]);
 
-  const proventosChartData = useMemo(() => {
-    const data: Record<string, number> = {};
-    investmentTransactions
-      .filter((t) =>
-        ["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(
-          t.investmentDetails?.event || "",
-        ),
-      )
-      .forEach((t) => {
-        const key = t.date.slice(0, 7);
-        data[key] = (data[key] || 0) + t.amount;
-      });
-    return Object.entries(data)
-      .sort()
-      .map(([date, amount]) => ({ date, amount }));
-  }, [investmentTransactions]);
-
-  const topPayers = useMemo(() => {
-    const data: Record<string, number> = {};
-    investmentTransactions
-      .filter((t) =>
-        ["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(
-          t.investmentDetails?.event || "",
-        ),
-      )
-      .forEach((t) => {
-        const ticker = t.investmentDetails?.ticker || "Outros";
-        data[ticker] = (data[ticker] || 0) + t.amount;
-      });
-    return Object.entries(data)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
-  }, [investmentTransactions]);
-
-  const monthlyDividendsTable = useMemo(() => {
-    const grouped: Record<
-      string,
-      { date: string; total: number; items: Transaction[] }
-    > = {};
-
-    investmentTransactions
+  
+    const filteredDividendsList = useMemo(() => {
+    return investmentTransactions
       .filter((t) =>
         ["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(
           t.investmentDetails?.event || "",
@@ -3719,32 +3771,86 @@ export const Investments: React.FC<InvestmentsProps> = ({
       .filter((t) => {
         if (proventosYearFilter && !t.date.startsWith(proventosYearFilter))
           return false;
-        if (
-          proventosTickerFilter &&
-          !t.investmentDetails?.ticker.includes(
-            proventosTickerFilter.toUpperCase(),
-          )
-        )
-          return false;
+        if (proventosTickerFilter) {
+          const searchTerms = proventosTickerFilter.split(',').map(s => s.trim().toUpperCase()).filter(s => s);
+          if (searchTerms.length > 0) {
+            const matches = searchTerms.some(term => t.investmentDetails?.ticker.includes(term));
+            if (!matches) return false;
+          }
+        }
         if (proventosCategoryFilter && t.categoryId !== proventosCategoryFilter)
           return false;
         return true;
-      })
-      .forEach((t) => {
-        const monthKey = t.date.slice(0, 7); // YYYY-MM
-        if (!grouped[monthKey])
-          grouped[monthKey] = { date: monthKey, total: 0, items: [] };
-        grouped[monthKey].total += t.amount;
-        grouped[monthKey].items.push(t);
       });
+  }, [investmentTransactions, proventosYearFilter, proventosTickerFilter, proventosCategoryFilter]);
 
+  const filteredProventosSummary = useMemo(() => {
+    let total = 0;
+    let total12m = 0;
+    const oneYearAgoStr = new Date();
+    oneYearAgoStr.setFullYear(oneYearAgoStr.getFullYear() - 1);
+    const oneYearAgo = oneYearAgoStr.toISOString();
+
+    filteredDividendsList.forEach((t) => {
+      total += t.amount;
+      if (t.date >= oneYearAgo) {
+        total12m += t.amount;
+      }
+    });
+
+    let investedValue = 0;
+    portfolioData.list.forEach((asset: any) => {
+      if (proventosTickerFilter) {
+        const searchTerms = proventosTickerFilter.split(',').map(s => s.trim().toUpperCase()).filter(s => s);
+        if (searchTerms.length > 0) {
+          const matches = searchTerms.some(term => asset.ticker.toUpperCase().includes(term));
+          if (!matches) return;
+        }
+      }
+      if (proventosCategoryFilter && asset.categoryId !== proventosCategoryFilter) return;
+      investedValue += asset.totalCost;
+    });
+
+    return { total, total12m, investedValue };
+  }, [filteredDividendsList, portfolioData, proventosTickerFilter, proventosCategoryFilter]);
+
+  const proventosChartData = useMemo(() => {
+    const data: Record<string, number> = {};
+    filteredDividendsList.forEach((t) => {
+      const key = t.date.slice(0, 7);
+      data[key] = (data[key] || 0) + t.amount;
+    });
+    return Object.entries(data)
+      .sort()
+      .map(([date, amount]) => ({ date, amount }));
+  }, [filteredDividendsList]);
+
+  const topPayers = useMemo(() => {
+    const data: Record<string, number> = {};
+    filteredDividendsList.forEach((t) => {
+      const ticker = t.investmentDetails?.ticker || "Outros";
+      data[ticker] = (data[ticker] || 0) + t.amount;
+    });
+    return Object.entries(data)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10);
+  }, [filteredDividendsList]);
+
+  const monthlyDividendsTable = useMemo(() => {
+    const grouped: Record<
+      string,
+      { date: string; total: number; items: Transaction[] }
+    > = {};
+    filteredDividendsList.forEach((t) => {
+      const monthKey = t.date.slice(0, 7);
+      if (!grouped[monthKey])
+        grouped[monthKey] = { date: monthKey, total: 0, items: [] };
+      grouped[monthKey].total += t.amount;
+      grouped[monthKey].items.push(t);
+    });
     return Object.values(grouped).sort((a, b) => b.date.localeCompare(a.date));
-  }, [
-    investmentTransactions,
-    proventosYearFilter,
-    proventosTickerFilter,
-    proventosCategoryFilter,
-  ]);
+  }, [filteredDividendsList]);
 
   return (
     <div className="space-y-4 animate-in fade-in pb-24">
@@ -3772,35 +3878,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
           ))}
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto border-t md:border-t-0 border-zinc-100 dark:border-zinc-800/40 pt-2 md:pt-0">
-          <div className="relative flex-1 md:w-64">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-              size={14}
-            />
-            <input
-              type="text"
-              value={
-                activeTab === "portfolio"
-                  ? portfolioSearchTerm
-                  : activeTab === "history"
-                    ? historySearchTerm
-                    : activeTab === "overview"
-                      ? overviewSearchTerm
-                      : proventosSearch
-              }
-              onChange={(e) => {
-                if (activeTab === "portfolio")
-                  setPortfolioSearchTerm(e.target.value);
-                else if (activeTab === "history")
-                  setHistorySearchTerm(e.target.value);
-                else if (activeTab === "overview")
-                  setOverviewSearchTerm(e.target.value);
-                else setProventosSearch(e.target.value);
-              }}
-              className="w-full pl-9 pr-4 py-2 text-xs border border-zinc-200 dark:border-zinc-800 rounded-full outline-none focus:ring-2 focus:ring-blue-600 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-800 dark:text-zinc-200"
-              placeholder="Filtrar por ticker..."
-            />
-          </div>
           <button
             onClick={() => setIsManualHistoryOpen(true)}
             className="p-2 bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 rounded-full hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-all"
@@ -3815,6 +3892,48 @@ export const Investments: React.FC<InvestmentsProps> = ({
           >
             <Upload size={18} />
           </button>
+        </div>
+      </div>
+
+
+      {/* GLOBAL FILTERS BAR */}
+      <div className="bg-white dark:bg-zinc-900 p-3 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm flex flex-col md:flex-row items-center gap-4 z-20 relative">
+        <div className="flex items-center gap-2">
+          <Filter size={16} className="text-zinc-400" />
+          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Filtros</span>
+        </div>
+        <div className="flex-1 flex flex-col md:flex-row items-center gap-3 w-full">
+          <MultiSelect
+            options={categories.filter(
+              (c) => c.type === TransactionType.INVESTMENT,
+            )}
+            selected={globalCategoryFilters}
+            onChange={setGlobalCategoryFilters}
+            placeholder="Todas as Categorias"
+          />
+          <MultiSelect
+            options={subCategories.filter(
+              (s) =>
+                categories.find((c) => c.id === s.categoryId)?.type ===
+                TransactionType.INVESTMENT,
+            )}
+            selected={globalSubCategoryFilters}
+            onChange={setGlobalSubCategoryFilters}
+            placeholder="Todas as Subcategorias"
+          />
+          <div className="relative flex-1 md:w-64">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
+              size={14}
+            />
+            <input
+              type="text"
+              value={globalSearchTerm}
+              onChange={(e) => setGlobalSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-xs border border-zinc-200 dark:border-zinc-800 rounded-full outline-none focus:ring-2 focus:ring-blue-600 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-800 dark:text-zinc-200"
+              placeholder="Buscar ativos (ex: ITSA4)..."
+            />
+          </div>
         </div>
       </div>
 
@@ -3863,7 +3982,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
             {activeTab === "history"
               ? "No período selecionado"
-              : `YoC a.a.: ${calculateYoC(portfolioData.summary.proventos12mTotal, portfolioData.summary.investedValue).toFixed(2)}% | a.m.: ${convertAnnualToMonthlyCompound(calculateYoC(portfolioData.summary.proventos12mTotal, portfolioData.summary.investedValue)).toFixed(2)}%`}
+              : `YoC a.a.: ${calculateYoC(filteredProventosSummary.total12m, filteredProventosSummary.investedValue).toFixed(2)}% | a.m.: ${convertAnnualToMonthlyCompound(calculateYoC(filteredProventosSummary.total12m, filteredProventosSummary.investedValue)).toFixed(2)}%`}
           </p>
         </div>
         <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm text-zinc-900 dark:text-zinc-100">
@@ -3904,71 +4023,11 @@ export const Investments: React.FC<InvestmentsProps> = ({
         <div className="space-y-6 animate-in fade-in">
           <div className="bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm flex flex-wrap gap-4 items-center">
             <div className="flex items-center gap-2">
-              <Filter size={14} className="text-gray-600" />
+              <Calendar size={14} className="text-gray-600" />
               <span className="text-xs font-bold text-slate-600 uppercase">
-                Filtros:
+                Período:
               </span>
             </div>
-            <select
-              value={overviewFilterCategory}
-              onChange={(e) => {
-                setOverviewFilterCategory(e.target.value);
-                setOverviewFilterSubCategory("");
-              }}
-              className="bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px] truncate"
-            >
-              <option value="">Todas Categorias</option>
-              {categories
-                .filter((c) => c.type === TransactionType.INVESTMENT)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-            </select>
-            <select
-              value={overviewFilterSubCategory}
-              onChange={(e) => setOverviewFilterSubCategory(e.target.value)}
-              className="bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px] truncate"
-            >
-              <option value="">Todas Subcategorias</option>
-              {subCategories
-                .filter((s) => {
-                  const isInvestment =
-                    categories.find((c) => c.id === s.categoryId)?.type ===
-                    TransactionType.INVESTMENT;
-                  return (
-                    isInvestment &&
-                    (!overviewFilterCategory ||
-                      s.categoryId === overviewFilterCategory)
-                  );
-                })
-                .map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-            </select>
-            <select
-              value={overviewFilterTicker}
-              onChange={(e) => setOverviewFilterTicker(e.target.value)}
-              className="bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px] truncate"
-            >
-              <option value="">Todos Ativos</option>
-              {Array.from(
-                new Set(
-                  investmentTransactions
-                    .map((t) => t.investmentDetails?.ticker)
-                    .filter(Boolean),
-                ),
-              )
-                .sort()
-                .map((ticker) => (
-                  <option key={ticker} value={ticker}>
-                    {ticker}
-                  </option>
-                ))}
-            </select>
             <input
               type="month"
               value={
@@ -4203,7 +4262,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                       {overviewData.report.lastMonthData.assetDetails.filter(
                         (d: any) => d.dividends > 0,
                       ).length === 0 && (
-                        <div className="text-[10px] text-gray-600 italic">
+                        <div className="text-[10px] text-zinc-500 dark:text-zinc-400 italic">
                           Nenhum provento no mês.
                         </div>
                       )}
@@ -4749,10 +4808,26 @@ export const Investments: React.FC<InvestmentsProps> = ({
               </div>
 
               <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm h-[350px]">
-                <h3 className="text-sm font-bold text-slate-700 uppercase mb-4 flex items-center gap-2">
-                  <TrendingUp size={16} className="text-emerald-500" />{" "}
-                  Rentabilidade Acumulada (TWR vs Benchmarks)
-                </h3>
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
+                  <h3 className="text-sm font-bold text-slate-700 uppercase flex items-center gap-2">
+                    <TrendingUp size={16} className="text-emerald-500" />{" "}
+                    Rentabilidade Acumulada (TWR vs Benchmarks)
+                  </h3>
+                  <div className="flex gap-3 text-[10px] font-bold">
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input type="checkbox" checked={selectedBenchmarks.includes('cdiAccum')} onChange={() => setSelectedBenchmarks(prev => prev.includes('cdiAccum') ? prev.filter(x => x !== 'cdiAccum') : [...prev, 'cdiAccum'])} className="accent-slate-700" />
+                      CDI
+                    </label>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input type="checkbox" checked={selectedBenchmarks.includes('ipcaAccum')} onChange={() => setSelectedBenchmarks(prev => prev.includes('ipcaAccum') ? prev.filter(x => x !== 'ipcaAccum') : [...prev, 'ipcaAccum'])} className="accent-rose-500" />
+                      IPCA
+                    </label>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input type="checkbox" checked={selectedBenchmarks.includes('ibovAccum')} onChange={() => setSelectedBenchmarks(prev => prev.includes('ibovAccum') ? prev.filter(x => x !== 'ibovAccum') : [...prev, 'ibovAccum'])} className="accent-blue-500" />
+                      IBOV
+                    </label>
+                  </div>
+                </div>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={overviewData.chartData}>
                     <CartesianGrid
@@ -4780,15 +4855,39 @@ export const Investments: React.FC<InvestmentsProps> = ({
                       dot={{ r: 0 }}
                       activeDot={{ r: 6 }}
                     />
-                    <Line
-                      type="monotone"
-                      dataKey="cdiAccum"
-                      name="CDI Acumulado"
-                      stroke="#334155"
-                      strokeWidth={2}
-                      strokeDasharray="3 3"
-                      dot={{ r: 0 }}
-                    />
+                    {selectedBenchmarks.includes('cdiAccum') && (
+                      <Line
+                        type="monotone"
+                        dataKey="cdiAccum"
+                        name="CDI Acumulado"
+                        stroke="#334155"
+                        strokeWidth={2}
+                        strokeDasharray="3 3"
+                        dot={{ r: 0 }}
+                      />
+                    )}
+                    {selectedBenchmarks.includes('ipcaAccum') && (
+                      <Line
+                        type="monotone"
+                        dataKey="ipcaAccum"
+                        name="IPCA Acumulado"
+                        stroke="#f43f5e"
+                        strokeWidth={2}
+                        strokeDasharray="3 3"
+                        dot={{ r: 0 }}
+                      />
+                    )}
+                    {selectedBenchmarks.includes('ibovAccum') && (
+                      <Line
+                        type="monotone"
+                        dataKey="ibovAccum"
+                        name="IBOV Acumulado"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        strokeDasharray="3 3"
+                        dot={{ r: 0 }}
+                      />
+                    )}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -4909,7 +5008,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                   {overviewData.tableData.map((row: any, idx: number) => {
                     const isExpanded = expandedTickerHistory === row.date;
                     return (
@@ -5213,47 +5312,41 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <div
                   key={cls.name}
                   onClick={() => setExpandedClass(isExpanded ? null : cls.name)}
-                  className={`bg-white dark:bg-zinc-900 p-3 rounded-xl border shadow-sm transition-all cursor-pointer ${isExpanded ? "border-blue-200 ring-2 ring-blue-500/10" : "border-slate-100 hover:shadow-md"}`}
+                  className={`bg-white dark:bg-zinc-900 p-4 rounded-2xl border shadow-sm transition-all cursor-pointer ${isExpanded ? "border-blue-300 dark:border-blue-500/50 ring-4 ring-blue-500/10 dark:ring-blue-500/20" : "border-zinc-200/80 dark:border-zinc-800 hover:border-blue-200 dark:hover:border-blue-800 hover:shadow-md dark:shadow-none"}`}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs font-bold text-slate-800 uppercase truncate pr-2 flex items-center gap-1">
+                  <div className="flex justify-between items-start mb-2.5">
+                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase truncate pr-2 flex items-center gap-1">
                       {cls.name}
                       {isExpanded ? (
-                        <ChevronUp size={10} className="text-gray-600" />
+                        <ChevronUp size={12} className="text-zinc-400 dark:text-zinc-500" />
                       ) : (
-                        <ChevronDown size={10} className="text-gray-600" />
+                        <ChevronDown size={12} className="text-zinc-400 dark:text-zinc-500" />
                       )}
                     </span>
-                    <span className="text-[10px] font-bold text-gray-600">
+                    <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md">
                       {share.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-baseline gap-1 flex-wrap">
-                      <span className="text-lg font-bold text-slate-700">
+                  <div className="space-y-2">
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                      <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
                         {formatCurrency(cls.market)}
                       </span>
                       <span
-                        className={`text-[10px] font-bold ${cls.dailyProfit >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                        className={`text-[10px] font-bold px-1 py-0.5 rounded-sm ${cls.dailyProfit >= 0 ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10" : "text-rose-700 bg-rose-50 dark:text-rose-400 dark:bg-rose-500/10"}`}
                       >
-                        ({cls.dailyProfit >= 0 ? "+" : ""}
-                        {dailyProfitPct.toFixed(2)}%)
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold ${totalProfitPct >= 0 ? "text-emerald-600" : "text-rose-600"}`}
-                      >
-                        ({totalProfitPct >= 0 ? "+" : ""}
-                        {totalProfitPct.toFixed(1)}%)
+                        {cls.dailyProfit >= 0 ? "+" : ""}
+                        {dailyProfitPct.toFixed(2)}%
                       </span>
                     </div>
-                    <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-blue-500 transition-all duration-1000"
+                        className="h-full bg-blue-500 dark:bg-blue-600 transition-all duration-1000"
                         style={{ width: `${share}%` }}
                       ></div>
                     </div>
                     {isExpanded ? (
-                      <div className="pt-2 mt-2 border-t border-slate-100 space-y-2 animate-in slide-in-from-top-2">
+                      <div className="pt-3 mt-3 border-t border-zinc-100 dark:border-zinc-800/80 space-y-3 animate-in slide-in-from-top-2">
                         {subcats.map((sub: any) => {
                           const subTotalProfitPct =
                             sub.invested > 0
@@ -5268,13 +5361,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
                           return (
                             <div
                               key={sub.name}
-                              className="flex flex-col gap-0.5"
+                              className="flex flex-col gap-1 bg-zinc-50 dark:bg-zinc-800/30 p-2 rounded-lg"
                             >
-                              <div className="flex justify-between text-[10px]">
-                                <span className="text-gray-900 font-bold truncate pr-2">
+                              <div className="flex justify-between text-[11px]">
+                                <span className="text-zinc-700 dark:text-zinc-300 font-bold truncate pr-2">
                                   {sub.name}
-                                </span>
-                                <span className="text-slate-700 font-mono">
+                               </span>
+                                <span className="text-zinc-900 dark:text-zinc-100 font-mono font-medium">
                                   {formatCurrency(sub.value)}
                                 </span>
                               </div>
@@ -5282,8 +5375,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                 <span
                                   className={
                                     sub.dailyProfit >= 0
-                                      ? "text-emerald-500"
-                                      : "text-rose-500"
+                                      ? "text-emerald-600 dark:text-emerald-400"
+                                      : "text-rose-600 dark:text-rose-400"
                                   }
                                 >
                                   Dia: {formatCurrency(sub.dailyProfit)} (
@@ -5293,8 +5386,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                 <span
                                   className={
                                     sub.totalProfit >= 0
-                                      ? "text-emerald-600"
-                                      : "text-rose-600"
+                                      ? "text-emerald-600 dark:text-emerald-400"
+                                      : "text-rose-600 dark:text-rose-400"
                                   }
                                 >
                                   Total: {formatCurrency(sub.totalProfit)} (
@@ -5307,14 +5400,14 @@ export const Investments: React.FC<InvestmentsProps> = ({
                         })}
                       </div>
                     ) : (
-                      <div className="flex justify-between text-[10px] font-medium text-gray-600">
-                        <span>
+                      <div className="flex justify-between text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+                        <span className="flex gap-1">
                           Dia:{" "}
                           <span
                             className={
                               cls.dailyProfit >= 0
-                                ? "text-emerald-500"
-                                : "text-rose-500"
+                                ? "text-emerald-600 dark:text-emerald-400 font-bold"
+                                : "text-rose-600 dark:text-rose-400 font-bold"
                             }
                           >
                             {cls.dailyProfit >= 0 ? "+" : ""}
@@ -5331,30 +5424,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
           </div>
 
           <div className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm overflow-hidden">
-            <div className="p-3 border-b border-slate-100 bg-slate-50/50 flex flex-wrap gap-2 justify-between items-center">
-              <h3 className="font-bold text-slate-700 text-xs uppercase flex items-center gap-2">
+            <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 flex flex-wrap gap-3 justify-between items-center">
+              <h3 className="font-bold text-zinc-700 dark:text-zinc-300 text-xs uppercase flex items-center gap-2 tracking-wider">
                 <LayoutList size={14} className="text-blue-500" /> Posição
                 Detalhada
               </h3>
               <div className="flex items-center gap-2">
-                <MultiSelect
-                  options={categories.filter(
-                    (c) => c.type === TransactionType.INVESTMENT,
-                  )}
-                  selected={portfolioCategoryFilters}
-                  onChange={setPortfolioCategoryFilters}
-                  placeholder="Categorias"
-                />
-                <MultiSelect
-                  options={subCategories.filter(
-                    (s) =>
-                      categories.find((c) => c.id === s.categoryId)?.type ===
-                      TransactionType.INVESTMENT,
-                  )}
-                  selected={portfolioSubCategoryFilters}
-                  onChange={setPortfolioSubCategoryFilters}
-                  placeholder="Subcategorias"
-                />
+                
                 {syncStatus && (
                   <span className="text-[10px] font-bold text-blue-600 animate-pulse bg-blue-50 dark:bg-blue-950/60 px-2 py-1 rounded">
                     {syncStatus}
@@ -5376,7 +5452,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             </div>
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-[11px] text-left table-fixed min-w-[1000px]">
-                <thead className="bg-slate-50/80 text-gray-900 font-bold uppercase text-[10px] border-b">
+                <thead className="bg-zinc-50/80 dark:bg-zinc-900/80 text-zinc-900 dark:text-zinc-100 font-bold uppercase text-[10px] border-b border-zinc-200 dark:border-zinc-800">
                   <tr>
                     <th className="px-4 py-3 w-[18%]">Ativo / Empresa</th>
                     <th className="px-3 py-3 w-[8%] text-right">Quantidade</th>
@@ -5419,10 +5495,10 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
                     return (
                       <React.Fragment key={catName}>
-                        <tr className="bg-slate-100/50">
+                        <tr className="bg-zinc-100/50 dark:bg-zinc-800/50">
                           <td
                             colSpan={9}
-                            className="px-4 py-1.5 font-bold text-slate-600 uppercase text-[10px] tracking-widest border-b border-slate-100"
+                            className="px-4 py-1.5 font-bold text-zinc-600 dark:text-zinc-400 uppercase text-[10px] tracking-widest border-b border-zinc-100 dark:border-zinc-800"
                           >
                             {catName}
                           </td>
@@ -5431,17 +5507,17 @@ export const Investments: React.FC<InvestmentsProps> = ({
                           ([subName, subAssets]: [string, PortfolioItem[]]) => (
                             <React.Fragment key={subName}>
                               {subName !== "Geral" && (
-                                <tr className="bg-blue-50 dark:bg-blue-950/60/20">
+                                <tr className="bg-blue-50/50 dark:bg-blue-900/10">
                                   <td
                                     colSpan={9}
-                                    className="px-4 py-2 border-l-4 border-l-blue-400 bg-blue-50 dark:bg-blue-950/60/30"
+                                    className="px-4 py-2 border-l-4 border-l-blue-400 bg-blue-50 dark:bg-blue-950/20"
                                   >
                                     <div className="flex items-center gap-2">
                                       <Layers
                                         size={12}
                                         className="text-blue-500"
                                       />
-                                      <span className="font-bold text-blue-900 text-[10px] uppercase tracking-wider">
+                                      <span className="font-bold text-blue-900 dark:text-blue-300 text-[10px] uppercase tracking-wider">
                                         {subName}
                                       </span>
                                     </div>
@@ -5462,12 +5538,12 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                   return (
                                     <tr
                                       key={item.ticker}
-                                      className="hover:bg-slate-50/80 transition-colors group border-b border-slate-50 last:border-0"
+                                      className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group border-b border-zinc-100 dark:border-zinc-800 last:border-0"
                                     >
                                       {/* ... (Row content) ... */}
                                       <td className="px-4 py-2.5">
                                         <div className="flex items-center gap-2.5">
-                                          <div className="w-7 h-7 rounded bg-white dark:bg-zinc-900 border border-slate-100 flex items-center justify-center p-1 shadow-sm shrink-0 overflow-hidden">
+                                          <div className="w-7 h-7 rounded bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center p-1 shadow-sm shrink-0 overflow-hidden">
                                             <img
                                               src={getAssetIcon(
                                                 item.ticker,
@@ -5484,13 +5560,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                           <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-1.5">
                                               <p
-                                                className="font-bold text-slate-800 text-sm leading-none mb-0.5 truncate"
+                                                className="font-bold text-zinc-900 dark:text-zinc-100 text-sm leading-none mb-0.5 truncate"
                                                 title={item.ticker}
                                               >
                                                 {item.ticker}
                                               </p>
                                               {item.yieldRate ? (
-                                                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 rounded font-bold border border-emerald-200 flex items-center gap-0.5">
+                                                <span className="text-[10px] bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-1.5 rounded font-bold border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-0.5">
                                                   <Calculator size={8} />{" "}
                                                   {item.isFixedIncome
                                                     ? "CDI"
@@ -5503,7 +5579,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                                       item.ticker,
                                                     )
                                                   }
-                                                  className="text-gray-700 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                  className="text-zinc-500 dark:text-zinc-400 hover:text-blue-500 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
                                                   title="Atualizar Cotação Individual"
                                                 >
                                                   <RefreshCw size={10} />
@@ -5511,14 +5587,14 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                               )}
                                             </div>
                                             <p
-                                              className="text-[10px] text-gray-600 truncate leading-tight font-medium"
+                                              className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate leading-tight font-medium"
                                               title={item.longName}
                                             >
                                               {item.longName}
                                             </p>
                                             {item.yieldRate && (
                                               <span
-                                                className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-gray-900 font-bold border border-zinc-200/60 dark:border-zinc-800/80 inline-block mt-0.5"
+                                                className="text-[10px] bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-900 dark:text-zinc-100 font-bold border border-zinc-200 dark:border-zinc-700 inline-block mt-0.5"
                                                 title="Rentabilidade Contratada"
                                               >
                                                 {item.yieldRate}
@@ -5527,7 +5603,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                           </div>
                                         </div>
                                       </td>
-                                      <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-600">
+                                      <td className="px-3 py-2.5 text-right font-mono font-bold text-zinc-600 dark:text-zinc-400">
                                         {item.isFixedIncome &&
                                         !item.ticker.startsWith("TD:") &&
                                         !item.ticker.startsWith("TESOURO")
@@ -5541,13 +5617,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                         {item.isFixedIncome &&
                                         !item.ticker.startsWith("TD:") &&
                                         !item.ticker.startsWith("TESOURO") ? (
-                                          <span className="text-[10px] text-gray-600 italic">
+                                          <span className="text-[10px] text-zinc-500 dark:text-zinc-400 italic">
                                             N/A
                                           </span>
                                         ) : (
                                           <>
                                             <div
-                                              className="font-semibold text-slate-700"
+                                              className="font-semibold text-zinc-700 dark:text-zinc-300"
                                               title="PM Fiscal (Para IR)"
                                             >
                                               {formatCurrency(
@@ -5566,12 +5642,12 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                           </>
                                         )}
                                       </td>
-                                      <td className="px-3 py-2.5 text-right font-medium text-slate-600">
+                                      <td className="px-3 py-2.5 text-right font-medium text-zinc-600 dark:text-zinc-400">
                                         {formatCurrency(item.totalCost)}
                                       </td>
                                       <td className="px-3 py-2.5 text-right">
                                         <>
-                                          <div className="font-bold text-slate-800">
+                                          <div className="font-bold text-zinc-800 dark:text-zinc-200">
                                             {formatCurrency(
                                               item.currentQuote,
                                               item.currency,
@@ -5588,7 +5664,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                           </div>
                                         </>
                                       </td>
-                                      <td className="px-3 py-2.5 text-right font-bold text-slate-900 bg-slate-50/20">
+                                      <td className="px-3 py-2.5 text-right font-bold text-zinc-900 dark:text-zinc-100 bg-zinc-50/20 dark:bg-zinc-800/20">
                                         {formatCurrency(item.currentTotal)}
                                       </td>
                                       <td className="px-3 py-2.5 text-right">
@@ -6311,7 +6387,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 Total Recebido (Histórico)
               </span>
               <div className="text-2xl font-bold text-emerald-600">
-                {formatCurrency(portfolioData.summary.proventosTotal)}
+                {formatCurrency(filteredProventosSummary.total)}
               </div>
             </div>
             <div className="bg-white dark:bg-zinc-900 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm">
@@ -6319,7 +6395,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 Média Mensal (12m)
               </span>
               <div className="text-2xl font-bold text-blue-600">
-                {formatCurrency(portfolioData.summary.proventos12mTotal / 12)}
+                {formatCurrency(filteredProventosSummary.total12m / 12)}
               </div>
             </div>
             <div className="bg-white dark:bg-zinc-900 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm">
@@ -6327,7 +6403,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 Yield on Cost (Global)
               </span>
               <div className="text-2xl font-bold text-blue-600">
-                {calculateYoC(portfolioData.summary.proventos12mTotal, portfolioData.summary.investedValue).toFixed(2)}%
+                {calculateYoC(filteredProventosSummary.total12m, filteredProventosSummary.investedValue).toFixed(2)}%
               </div>
             </div>
           </div>
@@ -6407,7 +6483,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           {/* Actions */}
           <div className="flex gap-3 justify-end">
             <button
-              onClick={() => setIsDividendFormOpen(true)}
+              onClick={() => onOpenDividendForm()}
               className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-emerald-700 shadow-md flex items-center gap-2 text-xs"
             >
               <Plus size={14} /> Novo Provento
@@ -6433,20 +6509,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <Gift size={14} /> Histórico Detalhado
               </div>
               <div className="flex gap-2">
-                <select
-                  value={proventosCategoryFilter}
-                  onChange={(e) => setProventosCategoryFilter(e.target.value)}
-                  className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-500 max-w-[120px] truncate"
-                >
-                  <option value="">Todas Categorias</option>
-                  {categories
-                    .filter((c) => c.type === TransactionType.INVESTMENT)
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                </select>
+                
                 <select
                   value={proventosYearFilter}
                   onChange={(e) => setProventosYearFilter(e.target.value)}
@@ -6466,13 +6529,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                       </option>
                     ))}
                 </select>
-                <input
-                  type="text"
-                  placeholder="Filtrar Ticker..."
-                  value={proventosTickerFilter}
-                  onChange={(e) => setProventosTickerFilter(e.target.value)}
-                  className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1 w-24 outline-none focus:ring-2 focus:ring-emerald-500 uppercase"
-                />
+                
               </div>
             </div>
 
@@ -6982,15 +7039,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
       )}
 
       {/* Modals are rendered here */}
-      {isDividendFormOpen && (
-        <DividendForm
-          categories={categories}
-          subCategories={subCategories}
-          transactions={transactions}
-          onSave={handleSaveDividend}
-          onClose={() => setIsDividendFormOpen(false)}
-        />
-      )}
+      
       {isDivBulkOpen && (
         <DividendBulkImporter
           isOpen={isDivBulkOpen}
@@ -7094,7 +7143,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                 }}
                               />
                             </div>
-                            <span className="font-bold text-slate-800">
+                            <span className="font-bold text-zinc-800 dark:text-zinc-200">
                               {asset.ticker}
                             </span>
                           </div>

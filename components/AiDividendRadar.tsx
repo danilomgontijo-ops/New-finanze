@@ -242,6 +242,10 @@ export const AiDividendRadar: React.FC<AiDividendRadarProps> = ({ isOpen, onClos
                   // US Law: 30% tax on dividends for non-residents
                   taxUnit = grossUnit * 0.30;
                   netUnit = grossUnit - taxUnit;
+              } else if (div.type === 'JCP') {
+                  // JCP (Juros sobre Capital Próprio) in Brazil has 15% IRRF (Imposto de Renda Retido na Fonte)
+                  taxUnit = grossUnit * 0.15;
+                  netUnit = grossUnit - taxUnit;
               }
 
               // Calculate Totals in BRL
@@ -351,7 +355,7 @@ export const AiDividendRadar: React.FC<AiDividendRadarProps> = ({ isOpen, onClos
               <div className="p-2 bg-gray-100 rounded-lg text-gray-700"><Sparkles size={20} /></div>
               <div>
                   <h2 className="text-lg font-bold text-gray-900">Radar de Proventos IA</h2>
-                  <p className="text-xs text-gray-700 font-medium">Busca automática com regras tributárias (30% EUA)</p>
+                  <p className="text-xs text-gray-700 font-medium">Busca automática com regras tributárias (30% EUA, 15% JCP BR)</p>
               </div>
           </div>
           <button onClick={onClose} className="p-2 text-gray-700 hover:bg-gray-100 rounded-full transition-colors"><X size={20} /></button>
@@ -446,7 +450,7 @@ export const AiDividendRadar: React.FC<AiDividendRadarProps> = ({ isOpen, onClos
                     </div>
                     <div>
                         <h3 className="text-xl font-bold text-gray-900">Analisando o Mercado...</h3>
-                        <p className="text-sm text-gray-500 max-w-xs mx-auto mt-2">A IA está consultando fontes oficiais, calculando impostos (30% EUA) e buscando o PTAX para <strong>{selectedTickers.length} ativos</strong>.</p>
+                        <p className="text-sm text-gray-500 max-w-xs mx-auto mt-2">A IA está consultando fontes oficiais, calculando impostos (30% EUA, 15% JCP BR) e buscando o PTAX para <strong>{selectedTickers.length} ativos</strong>.</p>
                     </div>
                 </div>
             )}

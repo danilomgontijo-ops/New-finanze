@@ -56,6 +56,7 @@ export interface InvestmentDetails {
   maturityDate?: string; // ISO Date string
   profitabilityType?: 'PRE' | 'POS' | 'INDEXED';
   isTotalRedemption?: boolean;
+  sourceType?: 'POCKET' | 'PROVENTO' | 'RESGATE';
 }
 
 export interface AssetPrice {
@@ -125,6 +126,8 @@ export interface UserSettings {
   balanceResetDate?: string; // ISO Date string. Transactions before this date are ignored in Accumulated Balance.
   historyStartDate?: string; // ISO Date string. Starting date for detailed monthly history.
   resgatesResetMonth?: string; // YYYY-MM string. Month from which resgates pool is reset to 0.
+  monthlySavingsGoal?: number; // Target monthly savings/aporte goal
+  patrimonioTarget?: number; // Target total net worth goal
 }
 
 export interface DescriptionMap {
