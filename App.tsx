@@ -266,18 +266,18 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'dark bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900'} font-sans flex flex-col md:flex-row selection:bg-indigo-100 selection:text-indigo-900 transition-all duration-300 relative overflow-hidden`}>
+    <div className={`min-h-screen ${isDarkMode ? 'dark bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900'} font-sans flex flex-col md:flex-row selection:bg-blue-100 selection:text-blue-900 transition-all duration-300 relative overflow-hidden`}>
        {/* Ambient glow mesh overlay for elite fintech aesthetics */}
        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-           <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-indigo-200/20 dark:bg-indigo-500/4 blur-[120px] transition-all duration-700" />
+           <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-blue-200/20 dark:bg-blue-500/4 blur-[120px] transition-all duration-700" />
            <div className="absolute top-[30%] -left-40 w-[500px] h-[500px] rounded-full bg-emerald-200/10 dark:bg-emerald-500/3 blur-[120px] transition-all duration-700" />
-           <div className="absolute -bottom-40 right-20 w-[400px] h-[400px] rounded-full bg-violet-200/10 dark:bg-indigo-500/2 blur-[100px] transition-all duration-700" />
+           <div className="absolute -bottom-40 right-20 w-[400px] h-[400px] rounded-full bg-teal-200/10 dark:bg-blue-500/2 blur-[100px] transition-all duration-700" />
        </div>
 
        {/* Mobile Header */}
        <div className="md:hidden bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md p-4 border-b border-zinc-200/50 dark:border-zinc-800/60 flex justify-between items-center sticky top-0 z-20">
            <div className="flex items-center gap-3">
-               <div className="w-8 h-8 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg flex items-center justify-center shadow-sm">
+               <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 text-white rounded-lg flex items-center justify-center shadow-sm">
                    <Wallet size={16} strokeWidth={2.5} />
                </div>
                <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">FinanZe</h1>
@@ -298,7 +298,7 @@ const App: React.FC = () => {
        {/* Top/Side Navigation - Floating Glassmorphic Workspace Dock */}
        <aside className={`hidden md:flex md:m-4 md:mr-0 md:rounded-3xl z-30 w-64 backdrop-blur-xl bg-white/60 dark:bg-zinc-900/60 text-zinc-600 dark:text-zinc-400 transform transition-all duration-300 ease-in-out md:relative md:translate-x-0 flex-col shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-zinc-200/50 dark:border-zinc-800/40`}>
            <div className="p-6 flex flex-col items-center border-b border-zinc-100/80 dark:border-zinc-800/80">
-               <div className="w-12 h-12 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl flex items-center justify-center mb-3 shadow-md shadow-indigo-200/50 dark:shadow-indigo-950/20">
+               <div className="w-12 h-12 bg-blue-600 dark:bg-blue-500 text-white rounded-xl flex items-center justify-center mb-3 shadow-md shadow-blue-200/50 dark:shadow-blue-950/20">
                    <Wallet size={24} strokeWidth={2} />
                </div>
                <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-0.5 tracking-tight">FinanZe</h1>
@@ -308,58 +308,58 @@ const App: React.FC = () => {
            <nav className="flex-1 mt-6 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
                <button 
                 onClick={() => { setCurrentView('dashboard'); setIsSidebarOpen(false); }}
-                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'dashboard' ? 'text-indigo-700 dark:text-indigo-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'dashboard' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
                >
                    {currentView === 'dashboard' && (
-                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl z-0 ring-1 ring-indigo-100/50 dark:ring-indigo-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl z-0 ring-1 ring-blue-100/50 dark:ring-blue-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                    )}
-                   <LayoutDashboard size={18} className={`relative z-10 ${currentView === 'dashboard' ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+                   <LayoutDashboard size={18} className={`relative z-10 ${currentView === 'dashboard' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
                    <span className="relative z-10">Dashboard</span>
                </button>
                <button 
                 onClick={() => { setCurrentView('transactions'); setIsSidebarOpen(false); }}
-                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'transactions' ? 'text-indigo-700 dark:text-indigo-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'transactions' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
                >
                    {currentView === 'transactions' && (
-                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl z-0 ring-1 ring-indigo-100/50 dark:ring-indigo-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl z-0 ring-1 ring-blue-100/50 dark:ring-blue-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                    )}
-                   <List size={18} className={`relative z-10 ${currentView === 'transactions' ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+                   <List size={18} className={`relative z-10 ${currentView === 'transactions' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
                    <span className="relative z-10">Lançamentos</span>
                </button>
                <button 
                 onClick={() => { setCurrentView('analytics'); setIsSidebarOpen(false); }}
-                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'analytics' ? 'text-indigo-700 dark:text-indigo-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'analytics' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
                >
                    {currentView === 'analytics' && (
-                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl z-0 ring-1 ring-indigo-100/50 dark:ring-indigo-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl z-0 ring-1 ring-blue-100/50 dark:ring-blue-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                    )}
-                   <PieChart size={18} className={`relative z-10 ${currentView === 'analytics' ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+                   <PieChart size={18} className={`relative z-10 ${currentView === 'analytics' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
                    <span className="relative z-10">Análises</span>
                </button>
                <button 
                 onClick={() => { setCurrentView('investments'); setIsSidebarOpen(false); }}
-                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'investments' ? 'text-indigo-700 dark:text-indigo-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'investments' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
                >
                    {currentView === 'investments' && (
-                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl z-0 ring-1 ring-indigo-100/50 dark:ring-indigo-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl z-0 ring-1 ring-blue-100/50 dark:ring-blue-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                    )}
-                   <TrendingUp size={18} className={`relative z-10 ${currentView === 'investments' ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+                   <TrendingUp size={18} className={`relative z-10 ${currentView === 'investments' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
                    <span className="relative z-10">Investimentos</span>
                </button>
                <button 
                 onClick={() => { setCurrentView('settings'); setIsSidebarOpen(false); }}
-                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'settings' ? 'text-indigo-700 dark:text-indigo-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-semibold ${currentView === 'settings' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
                >
                    {currentView === 'settings' && (
-                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl z-0 ring-1 ring-indigo-100/50 dark:ring-indigo-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                       <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl z-0 ring-1 ring-blue-100/50 dark:ring-blue-900/50" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                    )}
-                   <SettingsIcon size={18} className={`relative z-10 ${currentView === 'settings' ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+                   <SettingsIcon size={18} className={`relative z-10 ${currentView === 'settings' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
                    <span className="relative z-10">Configurações</span>
                </button>
            </nav>
 
            <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
-               <button onClick={() => setIsDarkMode(!isDarkMode)} className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all"><span className="flex items-center gap-3">{isDarkMode ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} className="text-indigo-500" />}{isDarkMode ? "Tema Claro" : "Tema Escuro"}</span><span className="text-[9px] bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">{isDarkMode ? "Dark" : "Light"}</span></button>
+               <button onClick={() => setIsDarkMode(!isDarkMode)} className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all"><span className="flex items-center gap-3">{isDarkMode ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} className="text-blue-500" />}{isDarkMode ? "Tema Claro" : "Tema Escuro"}</span><span className="text-[9px] bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">{isDarkMode ? "Dark" : "Light"}</span></button>
               <div className="space-y-1">
                   <button 
                    onClick={() => { setIsReportOpen(true); setIsSidebarOpen(false); }}
@@ -388,7 +388,7 @@ const App: React.FC = () => {
                {/* Floating Icon permanante para adicionar novo lançamento */}
                <button 
                 onClick={() => { setEditingTransaction(null); setIsTransactionFormOpen(true); }}
-                className="fixed bottom-24 md:bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-xl shadow-indigo-200 flex items-center justify-center z-40 hover:scale-105 hover:bg-indigo-700 transition-all ring-4 ring-white group"
+                className="fixed bottom-24 md:bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl shadow-blue-200 flex items-center justify-center z-40 hover:scale-105 hover:bg-blue-700 transition-all ring-4 ring-white group"
                 title="Novo Lançamento"
                >
                    <Plus size={28} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform duration-300" />
@@ -398,7 +398,7 @@ const App: React.FC = () => {
                <div className="hidden md:flex justify-end mb-8">
                    <button 
                     onClick={() => { setEditingTransaction(null); setIsTransactionFormOpen(true); }}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-md shadow-indigo-200 transition-all flex items-center gap-2"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-md shadow-blue-200 transition-all flex items-center gap-2"
                    >
                        <Plus size={18} /> Nova Transação
                    </button>
@@ -500,52 +500,52 @@ const App: React.FC = () => {
        <nav className="md:hidden fixed bottom-5 left-4 right-4 mx-auto max-w-[480px] rounded-[1.75rem] border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-lg bg-white/75 dark:bg-zinc-950/70 z-30 flex justify-around p-1.5 shadow-[0_10px_30px_rgba(24,24,27,0.08)] dark:shadow-none">
            <button 
                onClick={() => setCurrentView('dashboard')}
-               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'dashboard' ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'dashboard' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
            >
                {currentView === 'dashboard' && (
-                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-indigo-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-blue-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                )}
-               <LayoutDashboard size={20} className={`relative z-10 ${currentView === 'dashboard' ? 'svg-solid text-indigo-600' : 'text-zinc-400'}`} />
+               <LayoutDashboard size={20} className={`relative z-10 ${currentView === 'dashboard' ? 'svg-solid text-blue-600' : 'text-zinc-400'}`} />
                <span className="text-[9px] uppercase tracking-wide relative z-10">Início</span>
            </button>
            <button 
                onClick={() => setCurrentView('transactions')}
-               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'transactions' ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'transactions' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
            >
                {currentView === 'transactions' && (
-                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-indigo-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-blue-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                )}
-               <List size={20} className={`relative z-10 ${currentView === 'transactions' ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+               <List size={20} className={`relative z-10 ${currentView === 'transactions' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
                <span className="text-[9px] uppercase tracking-wide relative z-10">Lanç.<span className="hidden sm:inline">amentos</span></span>
            </button>
            <button 
                onClick={() => setCurrentView('analytics')}
-               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'analytics' ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'analytics' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
            >
                {currentView === 'analytics' && (
-                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-indigo-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-blue-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                )}
-               <PieChart size={20} className={`relative z-10 ${currentView === 'analytics' ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+               <PieChart size={20} className={`relative z-10 ${currentView === 'analytics' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
                <span className="text-[9px] uppercase tracking-wide relative z-10">Análises</span>
            </button>
            <button 
                onClick={() => setCurrentView('investments')}
-               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'investments' ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'investments' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
            >
                {currentView === 'investments' && (
-                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-indigo-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-blue-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                )}
-               <TrendingUp size={20} className={`relative z-10 ${currentView === 'investments' ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+               <TrendingUp size={20} className={`relative z-10 ${currentView === 'investments' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
                <span className="text-[9px] uppercase tracking-wide relative z-10">Invest.<span className="hidden sm:inline">imentos</span></span>
            </button>
            <button 
                onClick={() => setCurrentView('settings')}
-               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'settings' ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'settings' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
            >
                {currentView === 'settings' && (
-                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-indigo-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-blue-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                )}
-               <SettingsIcon size={20} className={`relative z-10 ${currentView === 'settings' ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+               <SettingsIcon size={20} className={`relative z-10 ${currentView === 'settings' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
                <span className="text-[9px] uppercase tracking-wide relative z-10">Ajustes</span>
            </button>
        </nav>

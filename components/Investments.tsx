@@ -3761,12 +3761,12 @@ export const Investments: React.FC<InvestmentsProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap border ${activeTab === tab.id ? "bg-indigo-50/75 dark:bg-indigo-950/40 border-indigo-200/50 dark:border-indigo-800/30 text-indigo-700 dark:text-indigo-300" : "bg-transparent border-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 text-zinc-900 dark:text-zinc-100"}`}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap border ${activeTab === tab.id ? "bg-blue-50/75 dark:bg-blue-950/40 border-blue-200/50 dark:border-blue-800/30 text-blue-700 dark:text-blue-300" : "bg-transparent border-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 text-zinc-900 dark:text-zinc-100"}`}
             >
               <tab.icon
                 size={14}
                 className={
-                  activeTab === tab.id ? "text-indigo-600 dark:text-indigo-400" : "text-zinc-500 dark:text-zinc-400"
+                  activeTab === tab.id ? "text-blue-600 dark:text-blue-400" : "text-zinc-500 dark:text-zinc-400"
                 }
               />
               {tab.label}
@@ -3812,7 +3812,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           </button>
           <button
             onClick={onOpenBulkImport}
-            className="p-2 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-100/50 dark:hover:bg-indigo-950/40 transition-all border border-indigo-100 dark:border-indigo-900/30"
+            className="p-2 bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100/50 dark:hover:bg-blue-950/40 transition-all border border-blue-100 dark:border-blue-900/30"
             title="Importar Dados"
           >
             <Upload size={18} />
@@ -3867,7 +3867,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block mb-1">
             Proventos {activeTab === "history" ? "(Filtro)" : "Acumulados"}
           </span>
-          <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
             {formatCurrency(
               activeTab === "history"
                 ? historySummary.proventos
@@ -3998,7 +3998,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             />
             <button
               onClick={() => setShowDetailedReport(!showDetailedReport)}
-              className={`ml-auto flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${showDetailedReport ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-zinc-900 text-indigo-600 border-indigo-200 hover:bg-indigo-50 dark:bg-indigo-950/60"}`}
+              className={`ml-auto flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${showDetailedReport ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-zinc-900 text-blue-600 border-blue-200 hover:bg-blue-50 dark:bg-blue-950/60"}`}
             >
               <FileText size={14} />
               {showDetailedReport
@@ -4017,13 +4017,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <div className="flex flex-wrap gap-4 mt-2 text-[10px] font-bold text-gray-900 uppercase tracking-wider">
                   <span>
                     Mês de Referência:{" "}
-                    <span className="text-indigo-600">
+                    <span className="text-blue-600">
                       {overviewData.report.identification.reference}
                     </span>
                   </span>
                   <span>
                     Período:{" "}
-                    <span className="text-indigo-600">
+                    <span className="text-blue-600">
                       {overviewData.report.identification.period}
                     </span>
                   </span>
@@ -4036,7 +4036,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
               {/* 2. Resumo Executivo */}
               <div>
                 <h3 className="text-xs font-bold text-slate-700 uppercase mb-4 flex items-center gap-2">
-                  <div className="w-1 h-4 bg-indigo-50 dark:bg-indigo-950/600 rounded-full"></div>
+                  <div className="w-1 h-4 bg-blue-50 dark:bg-blue-950/600 rounded-full"></div>
                   Resumo Executivo da Carteira
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -4114,7 +4114,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                       </div>
                     </div>
                     <div className="flex items-baseline gap-2">
-                       <div className="text-lg font-bold text-indigo-600">
+                       <div className="text-lg font-bold text-blue-600">
                          {overviewData.report.executiveSummary.returns.month.toFixed(
                            2,
                          )}
@@ -4140,7 +4140,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                       </div>
                     </div>
                     <div className="flex items-baseline gap-2">
-                       <div className="text-lg font-bold text-indigo-600">
+                       <div className="text-lg font-bold text-blue-600">
                          {overviewData.report.executiveSummary.returns.xtirMonthly.toFixed(
                            2,
                          )}
@@ -4170,8 +4170,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
                         </div>
                         <div className="text-right">
                             <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Meses vs CDI</div>
-                            <div className="text-xl font-bold text-indigo-700 dark:text-indigo-300">
-                                {overviewData.report.riskReturn.monthsAboveCDI} <span className="text-sm font-medium text-indigo-400">VITÓRIAS</span>
+                            <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
+                                {overviewData.report.riskReturn.monthsAboveCDI} <span className="text-sm font-medium text-blue-400">VITÓRIAS</span>
                             </div>
                         </div>
                     </div>
@@ -4232,7 +4232,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                         <span className="text-slate-600">
                           Aportes Realizados
                         </span>
-                        <span className="text-indigo-600 font-bold">
+                        <span className="text-blue-600 font-bold">
                           {formatCurrency(
                             overviewData.report.executiveSummary.applications,
                           )}
@@ -4465,26 +4465,26 @@ export const Investments: React.FC<InvestmentsProps> = ({
                               Volatilidade
                             </th>
                             <th
-                              className="px-4 py-2 text-right text-indigo-600"
+                              className="px-4 py-2 text-right text-blue-600"
                               title="Taxa Interna de Retorno: Considera o tamanho e a data dos aportes."
                             >
                               <div className="flex items-center justify-end gap-1">
                                 XTIR a.m.{" "}
                                 <Info
                                   size={10}
-                                  className="text-indigo-300 cursor-help"
+                                  className="text-blue-300 cursor-help"
                                 />
                               </div>
                             </th>
                             <th
-                              className="px-4 py-2 text-right text-indigo-600"
+                              className="px-4 py-2 text-right text-blue-600"
                               title="Taxa Interna de Retorno: Considera o tamanho e a data dos aportes."
                             >
                               <div className="flex items-center justify-end gap-1">
                                 XTIR a.a.{" "}
                                 <Info
                                   size={10}
-                                  className="text-indigo-300 cursor-help"
+                                  className="text-blue-300 cursor-help"
                                 />
                               </div>
                             </th>
@@ -4517,12 +4517,12 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                   {(h.volatility * 100).toFixed(2)}%
                                 </td>
                                 <td
-                                  className={`px-4 py-2 text-right font-bold ${h.xtirMonthly >= 0 ? "text-indigo-600" : "text-rose-600"}`}
+                                  className={`px-4 py-2 text-right font-bold ${h.xtirMonthly >= 0 ? "text-blue-600" : "text-rose-600"}`}
                                 >
                                   {h.xtirMonthly.toFixed(2)}%
                                 </td>
                                 <td
-                                  className={`px-4 py-2 text-right font-bold ${h.xtirAnnual >= 0 ? "text-indigo-600" : "text-rose-600"}`}
+                                  className={`px-4 py-2 text-right font-bold ${h.xtirAnnual >= 0 ? "text-blue-600" : "text-rose-600"}`}
                                 >
                                   {h.xtirAnnual.toFixed(2)}%
                                 </td>
@@ -4668,7 +4668,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-slate-200 shadow-sm h-[350px]">
                 <h3 className="text-sm font-bold text-slate-700 uppercase mb-4 flex items-center gap-2">
-                  <AreaChartIcon size={16} className="text-indigo-500" />{" "}
+                  <AreaChartIcon size={16} className="text-blue-500" />{" "}
                   Evolução Patrimonial
                 </h3>
                 <ResponsiveContainer width="100%" height="100%">
@@ -4819,7 +4819,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <button
                   onClick={() => setShowSyncOptions(!showSyncOptions)}
                   disabled={isSyncingHistory}
-                  className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-lg text-[10px] font-bold border border-indigo-100 hover:bg-indigo-100 disabled:opacity-50 transition-all"
+                  className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-lg text-[10px] font-bold border border-blue-100 hover:bg-blue-100 disabled:opacity-50 transition-all"
                 >
                   {isSyncingHistory ? (
                     <Loader2 size={10} className="animate-spin" />
@@ -4857,7 +4857,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                       Mês/Ano
                     </th>
                     <th
-                      className="px-4 py-3 text-right text-indigo-600"
+                      className="px-4 py-3 text-right text-blue-600"
                       title="Aportes e retiradas líquidas apenas neste mês"
                     >
                       Fluxo Cx Mês
@@ -4898,26 +4898,26 @@ export const Investments: React.FC<InvestmentsProps> = ({
                       </div>
                     </th>
                     <th
-                      className="px-4 py-3 text-right bg-indigo-50 dark:bg-indigo-950/60/50 text-indigo-700 dark:text-indigo-300"
+                      className="px-4 py-3 text-right bg-blue-50 dark:bg-blue-950/60/50 text-blue-700 dark:text-blue-300"
                       title="Taxa Interna de Retorno: Considera o tamanho e a data dos aportes."
                     >
                       <div className="flex items-center justify-end gap-1">
                         XTIR a.m.{" "}
                         <Info
                           size={10}
-                          className="text-indigo-600 cursor-help"
+                          className="text-blue-600 cursor-help"
                         />
                       </div>
                     </th>
                     <th
-                      className="px-4 py-3 text-right bg-indigo-50 dark:bg-indigo-950/60/50 text-indigo-700 dark:text-indigo-300"
+                      className="px-4 py-3 text-right bg-blue-50 dark:bg-blue-950/60/50 text-blue-700 dark:text-blue-300"
                       title="Taxa Interna de Retorno: Considera o tamanho e a data dos aportes."
                     >
                       <div className="flex items-center justify-end gap-1">
                         XTIR a.a.{" "}
                         <Info
                           size={10}
-                          className="text-indigo-600 cursor-help"
+                          className="text-blue-600 cursor-help"
                         />
                       </div>
                     </th>
@@ -4948,7 +4948,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                             {row.date}
                           </td>
                           <td
-                            className={`px-4 py-2.5 text-right font-medium ${row.flow > 0 ? "text-indigo-600" : row.flow < 0 ? "text-rose-500" : "text-gray-700"}`}
+                            className={`px-4 py-2.5 text-right font-medium ${row.flow > 0 ? "text-blue-600" : row.flow < 0 ? "text-rose-500" : "text-gray-700"}`}
                           >
                             {row.flow !== 0 ? formatCurrency(row.flow) : "-"}
                           </td>
@@ -4989,12 +4989,12 @@ export const Investments: React.FC<InvestmentsProps> = ({
                             {row.twrAccum.toFixed(2)}%
                           </td>
                           <td
-                            className={`px-4 py-2.5 text-right font-bold ${row.xtirMonthly >= 0 ? "text-indigo-600" : "text-rose-600"} bg-indigo-50 dark:bg-indigo-950/60/10`}
+                            className={`px-4 py-2.5 text-right font-bold ${row.xtirMonthly >= 0 ? "text-blue-600" : "text-rose-600"} bg-blue-50 dark:bg-blue-950/60/10`}
                           >
                             {row.xtirMonthly.toFixed(2)}%
                           </td>
                           <td
-                            className={`px-4 py-2.5 text-right font-bold ${row.xtirAnnual >= 0 ? "text-indigo-600" : "text-rose-600"} bg-indigo-50 dark:bg-indigo-950/60/10`}
+                            className={`px-4 py-2.5 text-right font-bold ${row.xtirAnnual >= 0 ? "text-blue-600" : "text-rose-600"} bg-blue-50 dark:bg-blue-950/60/10`}
                           >
                             {row.xtirAnnual.toFixed(2)}%
                           </td>
@@ -5370,14 +5370,14 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   placeholder="Subcategorias"
                 />
                 {syncStatus && (
-                  <span className="text-[10px] font-bold text-indigo-600 animate-pulse bg-indigo-50 dark:bg-indigo-950/60 px-2 py-1 rounded">
+                  <span className="text-[10px] font-bold text-blue-600 animate-pulse bg-blue-50 dark:bg-blue-950/60 px-2 py-1 rounded">
                     {syncStatus}
                   </span>
                 )}
                 <button
                   onClick={handleUpdatePrices}
                   disabled={loadingOnline}
-                  className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-lg text-[10px] font-bold border border-indigo-100 hover:bg-indigo-100 disabled:opacity-50 transition-all"
+                  className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-lg text-[10px] font-bold border border-blue-100 hover:bg-blue-100 disabled:opacity-50 transition-all"
                 >
                   {loadingOnline ? (
                     <Loader2 size={10} className="animate-spin" />
@@ -5445,17 +5445,17 @@ export const Investments: React.FC<InvestmentsProps> = ({
                           ([subName, subAssets]: [string, PortfolioItem[]]) => (
                             <React.Fragment key={subName}>
                               {subName !== "Geral" && (
-                                <tr className="bg-indigo-50 dark:bg-indigo-950/60/20">
+                                <tr className="bg-blue-50 dark:bg-blue-950/60/20">
                                   <td
                                     colSpan={9}
-                                    className="px-4 py-2 border-l-4 border-l-indigo-400 bg-indigo-50 dark:bg-indigo-950/60/30"
+                                    className="px-4 py-2 border-l-4 border-l-blue-400 bg-blue-50 dark:bg-blue-950/60/30"
                                   >
                                     <div className="flex items-center gap-2">
                                       <Layers
                                         size={12}
-                                        className="text-indigo-500"
+                                        className="text-blue-500"
                                       />
-                                      <span className="font-bold text-indigo-900 text-[10px] uppercase tracking-wider">
+                                      <span className="font-bold text-blue-900 text-[10px] uppercase tracking-wider">
                                         {subName}
                                       </span>
                                     </div>
@@ -5607,13 +5607,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                       </td>
                                       <td className="px-3 py-2.5 text-right">
                                         <div
-                                          className="font-bold text-indigo-600"
+                                          className="font-bold text-blue-600"
                                           title="Total Acumulado na História"
                                         >
                                           {formatCurrency(item.totalProventos)}
                                         </div>
                                         <div
-                                          className="text-[10px] font-bold text-indigo-600"
+                                          className="text-[10px] font-bold text-blue-600"
                                           title="YoC Anualizado (Rendimentos dos últimos 12 meses / Custo Original)"
                                         >
                                           YoC: {yocAnual.toFixed(2)}%
@@ -5666,19 +5666,19 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <div className="flex bg-slate-200 p-1 rounded-lg">
                   <button
                     onClick={() => setHistoryViewMode("grouped")}
-                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${historyViewMode === "grouped" ? "bg-white dark:bg-zinc-900 shadow text-indigo-600" : "text-gray-900 hover:text-slate-700"}`}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${historyViewMode === "grouped" ? "bg-white dark:bg-zinc-900 shadow text-blue-600" : "text-gray-900 hover:text-slate-700"}`}
                   >
                     Agrupado
                   </button>
                   <button
                     onClick={() => setHistoryViewMode("operations")}
-                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all flex items-center gap-1 ${historyViewMode === "operations" ? "bg-white dark:bg-zinc-900 shadow text-indigo-600" : "text-gray-900 hover:text-slate-700"}`}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all flex items-center gap-1 ${historyViewMode === "operations" ? "bg-white dark:bg-zinc-900 shadow text-blue-600" : "text-gray-900 hover:text-slate-700"}`}
                   >
                     <Briefcase size={10} /> Operações
                   </button>
                   <button
                     onClick={() => setHistoryViewMode("dividends")}
-                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all flex items-center gap-1 ${historyViewMode === "dividends" ? "bg-white dark:bg-zinc-900 shadow text-indigo-600" : "text-gray-900 hover:text-slate-700"}`}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all flex items-center gap-1 ${historyViewMode === "dividends" ? "bg-white dark:bg-zinc-900 shadow text-blue-600" : "text-gray-900 hover:text-slate-700"}`}
                   >
                     <Gift size={10} /> Proventos
                   </button>
@@ -6098,7 +6098,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                 setSelectedIds([]);
                               }
                             }}
-                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                           />
                         </th>
                         <th className="px-4 py-3">Data</th>
@@ -6146,14 +6146,14 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                 </tr>
                               )}
                               <tr
-                                className={`hover:bg-slate-50 transition-colors ${selectedIds.includes(t.id) ? "bg-indigo-50 dark:bg-indigo-950/60/50" : ""}`}
+                                className={`hover:bg-slate-50 transition-colors ${selectedIds.includes(t.id) ? "bg-blue-50 dark:bg-blue-950/60/50" : ""}`}
                               >
                                 <td className="px-4 py-3">
                                   <input
                                     type="checkbox"
                                     checked={selectedIds.includes(t.id)}
                                     onChange={() => handleToggleSelect(t.id)}
-                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                   />
                                 </td>
                                 <td className="px-4 py-3 font-mono text-[10px] text-gray-900">
@@ -6332,7 +6332,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
               <span className="text-[10px] font-bold text-gray-900 uppercase tracking-widest block mb-1">
                 Média Mensal (12m)
               </span>
-              <div className="text-2xl font-bold text-indigo-600">
+              <div className="text-2xl font-bold text-blue-600">
                 {formatCurrency(portfolioData.summary.proventos12mTotal / 12)}
               </div>
             </div>
@@ -6390,7 +6390,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             </div>
             <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-slate-200 shadow-sm h-[350px] overflow-hidden flex flex-col">
               <h3 className="text-xs font-bold text-slate-700 uppercase mb-4 flex items-center gap-2">
-                <Target size={14} className="text-indigo-500" /> Top 10
+                <Target size={14} className="text-blue-500" /> Top 10
                 Pagadoras
               </h3>
               <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
@@ -6407,7 +6407,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                       </div>
                       <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-indigo-50 dark:bg-indigo-950/600 rounded-full"
+                          className="h-full bg-blue-50 dark:bg-blue-950/600 rounded-full"
                           style={{ width: `${percent}%` }}
                         ></div>
                       </div>
@@ -6434,7 +6434,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             </button>
             <button
               onClick={() => setIsAiRadarOpen(true)}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-indigo-700 shadow-md flex items-center gap-2 text-xs"
+              className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-700 shadow-md flex items-center gap-2 text-xs"
             >
               <Sparkles size={14} /> Radar IA
             </button>
@@ -6575,7 +6575,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
               </button>
               <button
                 onClick={() => setTaxViewMode("dirf")}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${taxViewMode === "dirf" ? "bg-white dark:bg-zinc-900 shadow text-indigo-600" : "text-gray-900 hover:text-slate-700"}`}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${taxViewMode === "dirf" ? "bg-white dark:bg-zinc-900 shadow text-blue-600" : "text-gray-900 hover:text-slate-700"}`}
               >
                 <FileText size={14} /> Declaração Anual (DIRF)
               </button>
@@ -6588,7 +6588,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
               <select
                 value={taxYearFilter}
                 onChange={(e) => setTaxYearFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {Array.from(
                   new Set(
@@ -6864,7 +6864,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                           </td>
                                           <td className="px-3 py-2">
                                             <span
-                                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${item.type === "FII" ? "bg-orange-100 text-orange-700" : item.type === "ETF" ? "bg-blue-100 text-blue-700" : item.type === "CRYPTO" ? "bg-purple-100 text-purple-700" : item.type === "EXTERIOR" ? "bg-teal-100 text-teal-700" : item.type === "BDR" ? "bg-indigo-100 text-indigo-700 dark:text-indigo-300" : "bg-slate-100 text-slate-700"}`}
+                                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${item.type === "FII" ? "bg-orange-100 text-orange-700" : item.type === "ETF" ? "bg-blue-100 text-blue-700" : item.type === "CRYPTO" ? "bg-purple-100 text-purple-700" : item.type === "EXTERIOR" ? "bg-teal-100 text-teal-700" : item.type === "BDR" ? "bg-blue-100 text-blue-700 dark:text-blue-300" : "bg-slate-100 text-slate-700"}`}
                                             >
                                               {item.type}
                                             </span>
@@ -6924,7 +6924,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     key={groupName}
                     className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
                   >
-                    <div className="p-3 border-b border-slate-100 bg-indigo-50 dark:bg-indigo-950/60/30 flex items-center gap-2 text-xs font-bold text-indigo-800 uppercase tracking-wide">
+                    <div className="p-3 border-b border-slate-100 bg-blue-50 dark:bg-blue-950/60/30 flex items-center gap-2 text-xs font-bold text-blue-800 uppercase tracking-wide">
                       <FileText size={14} /> {groupName} - Posição em 31/12/
                       {taxYearFilter}
                     </div>
@@ -6975,7 +6975,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                 <td className="px-4 py-3 text-right font-medium text-slate-500 w-32">
                                   {formatCurrency(item.prevTotalCost)}
                                 </td>
-                                <td className="px-4 py-3 text-right font-bold text-indigo-700 dark:text-indigo-300 w-32">
+                                <td className="px-4 py-3 text-right font-bold text-blue-700 dark:text-blue-300 w-32">
                                   {formatCurrency(item.totalCost)}
                                 </td>
                               </tr>
@@ -7032,7 +7032,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <div>
                 <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                  <Calendar className="text-indigo-600" size={24} />
+                  <Calendar className="text-blue-600" size={24} />
                   Ativos em{" "}
                   {new Date(selectedMonth + "-02").toLocaleDateString("pt-BR", {
                     month: "long",
@@ -7070,21 +7070,21 @@ export const Investments: React.FC<InvestmentsProps> = ({
                       >
                         V. Mercado (Fim)
                       </th>
-                      <th className="px-4 py-3 text-right text-indigo-600">
+                      <th className="px-4 py-3 text-right text-blue-600">
                         Fluxo Líq.
                       </th>
                       <th className="px-4 py-3 text-right text-emerald-600">
                         Proventos
                       </th>
                       <th
-                        className="px-4 py-3 text-right bg-indigo-50 dark:bg-indigo-950/60/50 text-indigo-700 dark:text-indigo-300"
+                        className="px-4 py-3 text-right bg-blue-50 dark:bg-blue-950/60/50 text-blue-700 dark:text-blue-300"
                         title="Time-Weighted Return: Isola o efeito do tamanho e data dos aportes no mês, refletindo a variação intrínseca do ativo."
                       >
                         <div className="flex items-center justify-end gap-1">
                           TWR Mensal{" "}
                           <Info
                             size={10}
-                            className="text-indigo-400 cursor-help"
+                            className="text-blue-400 cursor-help"
                           />
                         </div>
                       </th>
@@ -7125,7 +7125,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                           {formatCurrency(asset.endValue)}
                         </td>
                         <td
-                          className={`px-4 py-3 text-right font-bold ${asset.netFlow > 0 ? "text-indigo-600" : asset.netFlow < 0 ? "text-rose-500" : "text-gray-700"}`}
+                          className={`px-4 py-3 text-right font-bold ${asset.netFlow > 0 ? "text-blue-600" : asset.netFlow < 0 ? "text-rose-500" : "text-gray-700"}`}
                         >
                           {asset.netFlow !== 0
                             ? formatCurrency(asset.netFlow)
@@ -7137,7 +7137,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                             : "-"}
                         </td>
                         <td
-                          className={`px-4 py-3 text-right font-bold ${asset.twr >= 0 ? "text-emerald-600" : "text-rose-600"} bg-indigo-50 dark:bg-indigo-950/60/20`}
+                          className={`px-4 py-3 text-right font-bold ${asset.twr >= 0 ? "text-emerald-600" : "text-rose-600"} bg-blue-50 dark:bg-blue-950/60/20`}
                         >
                           {asset.twr.toFixed(2)}%
                         </td>
@@ -7161,7 +7161,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex justify-end">
               <button
                 onClick={() => setSelectedMonth(null)}
-                className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg transition-all"
+                className="px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg transition-all"
               >
                 Fechar
               </button>
@@ -7485,7 +7485,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                       </div>
                       
                       {assetHistory[selectedTickerForHistory] && (
-                        <div className="px-3 py-2 bg-indigo-50 dark:bg-indigo-950/60/50 border border-indigo-100 rounded-xl">
+                        <div className="px-3 py-2 bg-blue-50 dark:bg-blue-950/60/50 border border-blue-100 rounded-xl">
                           <label className="flex items-start gap-3 cursor-pointer">
                             <input
                               type="checkbox"
@@ -7496,7 +7496,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                   e.target.checked
                                 );
                               }}
-                              className="w-4 h-4 mt-0.5 text-indigo-600 border-indigo-300 rounded focus:ring-indigo-500 transition-colors"
+                              className="w-4 h-4 mt-0.5 text-blue-600 border-blue-300 rounded focus:ring-blue-500 transition-colors"
                             />
                             <div>
                               <span className="text-xs font-bold text-slate-800 block">
@@ -7737,7 +7737,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm shadow-2xl p-6 animate-in zoom-in-95">
             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Edit3 size={20} className="text-indigo-600" /> Editar{" "}
+              <Edit3 size={20} className="text-blue-600" /> Editar{" "}
               {selectedIds.length} Itens
             </h3>
             <div className="space-y-4">
@@ -7751,7 +7751,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   onChange={(e) =>
                     setBatchTargetTicker(e.target.value.toUpperCase())
                   }
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-bold uppercase placeholder:font-normal"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 font-bold uppercase placeholder:font-normal"
                   placeholder="Ex: PETR4"
                 />
                 <p className="text-[10px] text-gray-600 mt-1">
@@ -7769,7 +7769,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   type="text"
                   value={batchTargetBroker}
                   onChange={(e) => setBatchTargetBroker(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 placeholder:font-normal"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder:font-normal"
                   placeholder="Ex: XP, BTG, Itaú"
                 />
               </div>
@@ -7786,7 +7786,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     setBatchTargetCat(e.target.value);
                     setBatchTargetSub("");
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Selecione...</option>
                   {categories
@@ -7806,7 +7806,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   value={batchTargetSub}
                   onChange={(e) => setBatchTargetSub(e.target.value)}
                   disabled={!batchTargetCat}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 >
                   <option value="">Sem alteração / Nenhuma</option>
                   {filteredSubCategoriesForBatch.map((s) => (
@@ -7826,7 +7826,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <button
                   onClick={handleBatchEdit}
                   disabled={isBatchSaving}
-                  className="flex-1 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-lg flex items-center justify-center gap-2"
+                  className="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-lg flex items-center justify-center gap-2"
                 >
                   {isBatchSaving ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -7845,7 +7845,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
         historyViewMode === "operations" && (
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-sm bg-white dark:bg-zinc-900 text-gray-900 rounded-full shadow-2xl z-50 px-4 py-3 border border-gray-200 animate-in slide-in-from-bottom-8 ring-1 ring-black/5 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-indigo-100 text-indigo-700 dark:text-indigo-300 p-2 rounded-full">
+              <div className="bg-blue-100 text-blue-700 dark:text-blue-300 p-2 rounded-full">
                 <CheckSquare size={16} />
               </div>
               <span className="font-bold text-sm text-gray-800">

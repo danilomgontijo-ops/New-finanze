@@ -159,7 +159,7 @@ const KPICard = ({ title, value, icon: Icon, color, subtext, onClick }: { title:
     const variants = {
         emerald: { bg: 'bg-emerald-50/40', iconBg: 'bg-emerald-100 text-emerald-600 border border-emerald-200/50', border: 'border-emerald-100/50', shadow: 'shadow-sm shadow-emerald-100/20', valueText: 'text-emerald-950', titleText: 'text-emerald-700/80' },
         rose: { bg: 'bg-rose-50/40', iconBg: 'bg-rose-100 text-rose-600 border border-rose-200/50', border: 'border-rose-100/50', shadow: 'shadow-sm shadow-rose-100/20', valueText: 'text-rose-950', titleText: 'text-rose-700/80' },
-        indigo: { bg: 'bg-indigo-600', iconBg: 'bg-indigo-50 dark:bg-indigo-950/600 text-white shadow-inner shadow-indigo-900/20 border border-indigo-500', border: 'border-indigo-500', shadow: 'shadow-lg shadow-indigo-500/30', valueText: 'text-white', titleText: 'text-indigo-200' },
+        indigo: { bg: 'bg-blue-600', iconBg: 'bg-blue-50 dark:bg-blue-950/600 text-white shadow-inner shadow-blue-900/20 border border-blue-500', border: 'border-blue-500', shadow: 'shadow-lg shadow-blue-500/30', valueText: 'text-white', titleText: 'text-blue-200' },
         blue: { bg: 'bg-blue-50/40', iconBg: 'bg-blue-100 text-blue-600 border border-blue-200/50', border: 'border-blue-100/50', shadow: 'shadow-sm shadow-blue-100/20', valueText: 'text-blue-950', titleText: 'text-blue-700/80' },
         zinc: { bg: 'bg-white dark:bg-zinc-900', iconBg: 'bg-zinc-50 dark:bg-zinc-950 text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-zinc-800/60 dark:border-zinc-800/80', border: 'border-zinc-200 dark:border-zinc-800/60 dark:border-zinc-800/80', shadow: 'shadow-sm shadow-zinc-200/20', valueText: 'text-zinc-800 dark:text-zinc-200', titleText: 'text-zinc-400 dark:text-zinc-500' }
     };
@@ -183,7 +183,7 @@ const KPICard = ({ title, value, icon: Icon, color, subtext, onClick }: { title:
                 {subtext && <div className="mt-1.5 transition-opacity group-hover:opacity-90 leading-tight">{subtext}</div>}
             </div>
             {onClick && (
-                <div className="absolute top-5 right-5 text-zinc-300 group-hover:text-indigo-500 transition-colors">
+                <div className="absolute top-5 right-5 text-zinc-300 group-hover:text-blue-500 transition-colors">
                     <ArrowRight strokeWidth={1.5} size={18} />
                 </div>
             )}
@@ -1098,7 +1098,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* HEADER: DATE NAV */}
       <div className="flex flex-col md:flex-row justify-between items-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl p-5 px-6 rounded-3xl border border-zinc-200/40 dark:border-zinc-800/50 gap-6 sticky top-0 z-40 transition-all shadow-sm">
           <div className="flex items-center gap-6">
-              <div className="p-3 bg-zinc-900 dark:bg-zinc-800 text-white dark:text-indigo-400 rounded-2xl shadow-lg rotate-3 group-hover:rotate-0 transition-transform">
+              <div className="p-3 bg-zinc-900 dark:bg-zinc-800 text-white dark:text-blue-400 rounded-2xl shadow-lg rotate-3 group-hover:rotate-0 transition-transform">
                   <BarChart3 size={24} />
               </div>
               <div className="flex items-center gap-2">
@@ -1141,7 +1141,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">Fluxo de Caixa & Aportes</h2>
               </div>
               <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                   <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Sincronizado</span>
               </div>
           </div>
@@ -1184,7 +1184,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   icon={Wallet} 
                   color="indigo" 
                   subtext={
-                      <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold uppercase tracking-wider">
+                      <span className="text-[10px] text-blue-500 dark:text-blue-400 font-semibold uppercase tracking-wider">
                           {stats.targetSavings > 0 ? ((stats.balance / stats.targetSavings) * 100).toFixed(1) : 0}% da meta de poupança
                       </span>
                   }
@@ -1198,7 +1198,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   subtext={
                       <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-wider flex items-center gap-1">
                           {investmentStats.monthlyGoal > 0 ? ((stats.myInvestmentFromPocket / investmentStats.monthlyGoal) * 100).toFixed(1) : 0}% da meta de aporte
-                          <span className="text-[9px] text-indigo-500 underline ml-auto font-bold">Ver detalhes</span>
+                          <span className="text-[9px] text-blue-500 underline ml-auto font-bold">Ver detalhes</span>
                       </span>
                   }
               />
@@ -1214,7 +1214,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   {/* ESQUERDA: CONTROLE DE ORÇAMENTO */}
                   <div className="space-y-6">
                       <div className="flex items-center gap-3">
-                          <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                          <div className="p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl">
                               <Receipt size={18} />
                           </div>
                           <div>
@@ -1427,7 +1427,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm p-5 md:p-6 relative overflow-hidden group">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                <div className="w-6 h-[2px] bg-indigo-500"></div>
+                <div className="w-6 h-[2px] bg-blue-500"></div>
                 Gestão de Patrimônio
             </h3>
             <div className="flex items-center gap-1.5">
@@ -1438,10 +1438,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Patrimônio Atual -> Destaque */}
-              <div className="bg-indigo-600 p-4 rounded-2xl border border-indigo-500 hover:shadow-md transition-all group/item overflow-hidden relative">
+              <div className="bg-blue-600 p-4 rounded-2xl border border-blue-500 hover:shadow-md transition-all group/item overflow-hidden relative">
                   <div className="flex items-center gap-1.5 mb-1 group/tooltip relative z-10">
-                      <span className="text-[10px] font-bold text-indigo-200 uppercase tracking-wider block">Patrimônio Atual</span>
-                      <Info size={12} className="text-indigo-300 cursor-help" />
+                      <span className="text-[10px] font-bold text-blue-200 uppercase tracking-wider block">Patrimônio Atual</span>
+                      <Info size={12} className="text-blue-300 cursor-help" />
                       <div className="absolute top-7 left-0 bg-zinc-800 text-white text-[10px] p-2.5 rounded-xl w-60 opacity-0 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:pointer-events-auto transition-opacity z-50 shadow-xl">
                           <strong>Composição:</strong> Valor de Mercado dos Investimentos + Saldo em Conta Corrente.
                       </div>
@@ -1531,17 +1531,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {/* Pool Reinvestimento */}
               <div 
                   onClick={() => setShowInvestmentDetails(!showInvestmentDetails)}
-                  className="bg-indigo-600 rounded-2xl p-5 text-white relative overflow-hidden group/pool cursor-pointer active:scale-[0.98] transition-transform flex flex-col justify-between"
+                  className="bg-blue-600 rounded-2xl p-5 text-white relative overflow-hidden group/pool cursor-pointer active:scale-[0.98] transition-transform flex flex-col justify-between"
               >
                   <div className="absolute -bottom-2 -right-2 opacity-10 group-hover:scale-105 transition-transform duration-500">
                     <RefreshCcw size={110} />
                   </div>
                   <div className="relative z-10 flex flex-col h-full justify-between">
                       <div>
-                        <span className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest block mb-2">Pool p/ Reinvestimento</span>
+                        <span className="text-[10px] font-bold text-blue-200 uppercase tracking-widest block mb-2">Pool p/ Reinvestimento</span>
                         <div className="space-y-1">
                             <span className="text-2xl font-bold tracking-tight block leading-none">R$ {(pocketInvestmentStats.passivePool || 0).toLocaleString('pt-BR')}</span>
-                            <span className="text-[10px] font-medium text-indigo-100/80 block leading-tight mt-1">Proveniente de dividendos e juros.</span>
+                            <span className="text-[10px] font-medium text-blue-100/80 block leading-tight mt-1">Proveniente de dividendos e juros.</span>
                         </div>
                       </div>
                       <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center text-[9px] font-bold uppercase tracking-widest">
@@ -1557,7 +1557,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 p-5 md:p-6 shadow-sm hover:shadow-md transition-shadow mt-6">
           <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${isGoalSimulatorOpen ? 'mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800' : ''}`}>
               <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                  <div className="p-2.5 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-xl">
                       <Target size={20} />
                   </div>
                   <div>
@@ -1571,13 +1571,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                  <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold rounded-xl border border-indigo-100 dark:border-indigo-900/40">
+                  <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-xl border border-blue-100 dark:border-blue-900/40">
                       <Sparkles size={13} className="shrink-0" />
                       <span>Histórico Ativo: {investmentStats.portfolioAnnualXTIR > 0.5 ? `${investmentStats.portfolioAnnualXTIR.toFixed(2)}% a.a.` : 'CDI de Referência'}</span>
                   </div>
                   <button
                       onClick={() => setIsGoalSimulatorOpen(!isGoalSimulatorOpen)}
-                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all active:scale-95"
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all active:scale-95"
                   >
                       <span>{isGoalSimulatorOpen ? 'Ocultar Simulador' : 'Simular Metas'}</span>
                       {isGoalSimulatorOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -1594,7 +1594,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <div className="space-y-2">
                               <div className="flex justify-between items-center text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
                                   <span>Meta de Patrimônio</span>
-                                  <span className="text-sm font-semibold text-indigo-600 font-mono">R$ {targetMet.toLocaleString('pt-BR')}</span>
+                                  <span className="text-sm font-semibold text-blue-600 font-mono">R$ {targetMet.toLocaleString('pt-BR')}</span>
                               </div>
                               <input 
                                   type="range" 
@@ -1603,7 +1603,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   step={50000}
                                   value={targetMet} 
                                   onChange={(e) => setTargetMet(Number(e.target.value))}
-                                  className="w-full accent-indigo-600 cursor-pointer"
+                                  className="w-full accent-blue-600 cursor-pointer"
                               />
                               <div className="flex justify-between text-[10px] text-zinc-400 font-semibold uppercase">
                                   <span>R$ 100 mil</span>
@@ -1615,7 +1615,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <div className="space-y-2">
                               <div className="flex justify-between items-center text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
                                   <span>Aporte Mensal Previsto</span>
-                                  <span className="text-sm font-semibold text-indigo-600 font-mono">R$ {monthlyAporte.toLocaleString('pt-BR')}</span>
+                                  <span className="text-sm font-semibold text-blue-600 font-mono">R$ {monthlyAporte.toLocaleString('pt-BR')}</span>
                               </div>
                               <input 
                                   type="range" 
@@ -1624,7 +1624,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   step={250}
                                   value={monthlyAporte} 
                                   onChange={(e) => setMonthlyAporte(Number(e.target.value))}
-                                  className="w-full accent-indigo-600 cursor-pointer"
+                                  className="w-full accent-blue-600 cursor-pointer"
                               />
                               <div className="flex justify-between text-[10px] text-zinc-400 font-semibold uppercase">
                                   <span>R$ 0</span>
@@ -1636,7 +1636,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <div className="space-y-2">
                               <div className="flex justify-between items-center text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
                                   <span>Retorno Esperado (a.a.)</span>
-                                  <span className="text-sm font-semibold text-indigo-600 font-mono">{annualReturn.toFixed(1)}%</span>
+                                  <span className="text-sm font-semibold text-blue-600 font-mono">{annualReturn.toFixed(1)}%</span>
                               </div>
                               <input 
                                   type="range" 
@@ -1645,7 +1645,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   step={0.5}
                                   value={annualReturn} 
                                   onChange={(e) => setAnnualReturn(Number(e.target.value))}
-                                  className="w-full accent-indigo-600 cursor-pointer"
+                                  className="w-full accent-blue-600 cursor-pointer"
                               />
                               <div className="flex justify-between text-[10px] text-zinc-400 font-semibold uppercase">
                                   <span>0% a.a.</span>
@@ -1678,16 +1678,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           ) : (
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                   {/* Card Tempo Estimado */}
-                                  <div className="bg-gradient-to-br from-indigo-50/30 to-indigo-50/10 dark:from-indigo-500/5 dark:to-indigo-500/10 border border-indigo-100/50 dark:border-indigo-900/30 rounded-3xl p-5 flex flex-col justify-between group/result hover:border-indigo-200/50 dark:hover:border-indigo-800/50 transition-colors text-indigo-950 dark:text-indigo-200">
+                                  <div className="bg-gradient-to-br from-blue-50/30 to-blue-50/10 dark:from-blue-500/5 dark:to-blue-500/10 border border-blue-100/50 dark:border-blue-900/30 rounded-3xl p-5 flex flex-col justify-between group/result hover:border-blue-200/50 dark:hover:border-blue-800/50 transition-colors text-blue-950 dark:text-blue-200">
                                       <div>
-                                          <span className="text-[10px] font-semibold text-indigo-700 dark:text-indigo-300/80 uppercase tracking-wider block mb-2">Tempo Estimado</span>
-                                          <span className="text-2xl font-bold text-indigo-950 dark:text-indigo-100 tracking-tight block leading-none">
+                                          <span className="text-[10px] font-semibold text-blue-700 dark:text-blue-300/80 uppercase tracking-wider block mb-2">Tempo Estimado</span>
+                                          <span className="text-2xl font-bold text-blue-950 dark:text-blue-100 tracking-tight block leading-none">
                                               {goalProjectionData.years > 0 ? `${goalProjectionData.years} ${goalProjectionData.years === 1 ? 'ano' : 'anos'}` : ''}
                                               {goalProjectionData.years > 0 && goalProjectionData.remainingMonths > 0 ? ' e ' : ''}
                                               {goalProjectionData.remainingMonths > 0 || goalProjectionData.years === 0 ? `${goalProjectionData.remainingMonths} ${goalProjectionData.remainingMonths === 1 ? 'mês' : 'meses'}` : ''}
                                           </span>
                                       </div>
-                                      <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 mt-4 uppercase tracking-wider flex items-center gap-1">
+                                      <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 mt-4 uppercase tracking-wider flex items-center gap-1">
                                           <Calendar size={12} /> {goalProjectionData.estimatedDateStr}
                                       </span>
                                   </div>
@@ -1726,7 +1726,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   <div className="flex justify-between items-center mb-3">
                                       <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Crescimento Patrimonial vs. Aportes</span>
                                       <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider">
-                                          <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Patrimônio</span>
+                                          <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400"><span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Patrimônio</span>
                                           <span className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400"><span className="w-2.5 h-2.5 rounded-full bg-zinc-400"></span> Total Aportado</span>
                                       </div>
                                   </div>
@@ -1779,7 +1779,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {showInvestmentDetails && monthlyInvestmentsList.length > 0 && (
           <div className="bg-zinc-50 dark:bg-zinc-950/60 border border-t-0 border-zinc-200 dark:border-zinc-800/80 p-5 -mt-2 mb-6 rounded-b-3xl mx-1 shadow-inner animate-in slide-in-from-top-2">
               <h4 className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <TrendingUp size={14} className="text-indigo-600 dark:text-indigo-400"/> Detalhamento dos Aportes do Mês
+                  <TrendingUp size={14} className="text-blue-600 dark:text-blue-400"/> Detalhamento dos Aportes do Mês
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {monthlyInvestmentsList.map(t => (
@@ -1802,7 +1802,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm p-5 md:p-6 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-                        <div className="p-2 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                        <div className="p-2 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-xl">
                             <CardIcon size={18} />
                         </div>
                         <h3 className="text-xs font-bold uppercase tracking-wider">Cartões de Crédito</h3>
@@ -1821,13 +1821,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 <div className="flex items-center gap-2.5 min-w-0">
                                     <BankLogo bankId={card.icon || 'generic'} className="w-7 h-7 rounded-lg shrink-0 shadow-sm" />
                                     <div className="min-w-0">
-                                        <span className="block font-bold text-zinc-800 dark:text-zinc-200 text-xs truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{card.name}</span>
+                                        <span className="block font-bold text-zinc-800 dark:text-zinc-200 text-xs truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{card.name}</span>
                                         <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Minha parte: <strong className="text-zinc-700 dark:text-zinc-300">R$ {(card.myPart || 0).toLocaleString('pt-BR')}</strong></span>
                                     </div>
                                 </div>
                                 <div className="text-right shrink-0">
                                     <span className="block font-bold text-zinc-900 dark:text-zinc-100 text-xs">R$ {(card.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                    <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded">{percentage.toFixed(0)}%</span>
+                                    <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded">{percentage.toFixed(0)}%</span>
                                 </div>
                             </div>
                         );
@@ -1867,15 +1867,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* PARCELAS */}
       {(installmentStats.userInstallmentTotal > 0 || installmentStats.nathyInstallmentTotal > 0) && (
           <div className="bg-white dark:bg-zinc-900 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm hover:shadow-md transition-shadow">
-              <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles size={14} className="text-indigo-500"/> Projeção de Parcelas</h3>
+              <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles size={14} className="text-blue-500"/> Projeção de Parcelas</h3>
               <div className="flex gap-3">
                   {installmentStats.userInstallmentTotal > 0 && (
-                      <button onClick={() => setProjectionScope(projectionScope === 'user' ? null : 'user')} className={`flex-1 p-3.5 rounded-2xl border transition-all text-left group ${projectionScope === 'user' ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 ring-2 ring-indigo-500/20 shadow-inner' : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200/80 dark:border-zinc-800/80 hover:bg-indigo-50/50 hover:border-indigo-200'}`}>
+                      <button onClick={() => setProjectionScope(projectionScope === 'user' ? null : 'user')} className={`flex-1 p-3.5 rounded-2xl border transition-all text-left group ${projectionScope === 'user' ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-200 ring-2 ring-blue-500/20 shadow-inner' : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200/80 dark:border-zinc-800/80 hover:bg-blue-50/50 hover:border-blue-200'}`}>
                           <div className="flex justify-between items-center mb-1">
-                              <span className={`text-[10px] font-bold uppercase tracking-wider block transition-colors ${projectionScope === 'user' ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-500 dark:text-zinc-400 group-hover:text-indigo-500'}`}>Minhas Parcelas</span>
-                              {projectionScope === 'user' ? <ChevronUp size={14} className="text-indigo-500"/> : <ChevronDown size={14} className="text-zinc-400 group-hover:text-indigo-400"/>}
+                              <span className={`text-[10px] font-bold uppercase tracking-wider block transition-colors ${projectionScope === 'user' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500 dark:text-zinc-400 group-hover:text-blue-500'}`}>Minhas Parcelas</span>
+                              {projectionScope === 'user' ? <ChevronUp size={14} className="text-blue-500"/> : <ChevronDown size={14} className="text-zinc-400 group-hover:text-blue-400"/>}
                           </div>
-                          <span className={`text-xl font-bold tracking-tight transition-colors ${projectionScope === 'user' ? 'text-indigo-700 dark:text-indigo-300' : 'text-zinc-800 dark:text-zinc-200'}`}>R$ {(installmentStats.userInstallmentTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                          <span className={`text-xl font-bold tracking-tight transition-colors ${projectionScope === 'user' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-800 dark:text-zinc-200'}`}>R$ {(installmentStats.userInstallmentTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       </button>
                   )}
                   {installmentStats.nathyInstallmentTotal > 0 && (
@@ -1894,7 +1894,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <div key={idx} className="bg-zinc-50 dark:bg-zinc-950/40 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 p-3.5 h-[180px] flex flex-col hover:bg-white dark:hover:bg-zinc-900 hover:shadow-sm transition-all">
                               <div className="flex justify-between items-center mb-2.5 pb-2 border-b border-zinc-200/80 dark:border-zinc-800/80">
                                   <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 capitalize tracking-wide">{monthData.date.toLocaleDateString('pt-BR', { month: 'long' })}</span>
-                                  <span className={`text-xs md:text-sm font-bold ${projectionScope === 'nathy' ? 'text-pink-600 dark:text-pink-400' : 'text-indigo-600 dark:text-indigo-400'}`}>R$ {(monthData.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
+                                  <span className={`text-xs md:text-sm font-bold ${projectionScope === 'nathy' ? 'text-pink-600 dark:text-pink-400' : 'text-blue-600 dark:text-blue-400'}`}>R$ {(monthData.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
                               </div>
                               <div className="overflow-y-auto custom-scrollbar flex-1 space-y-1.5 pr-1">
                                   {monthData.items.map((t, tIdx) => (
@@ -1918,7 +1918,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm overflow-hidden flex flex-col h-[400px] hover:shadow-md transition-all group">
               <div className="p-4 md:p-5 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-950/40 flex justify-between items-center">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-xl shadow-xs">
+                    <div className="p-2.5 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-xl shadow-xs">
                         <Clock size={18} />
                     </div>
                     <div>
@@ -1940,7 +1940,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                       <IconRenderer iconName={cat?.icon || 'circle'} size={16} />
                                   </div>
                                   <div className="flex flex-col min-w-0">
-                                      <span className="font-bold text-xs md:text-sm text-zinc-900 dark:text-zinc-100 truncate max-w-[140px] sm:max-w-[200px] group-hover/row:text-indigo-600 dark:group-hover/row:text-indigo-400 transition-colors uppercase tracking-tight">{t.description}</span>
+                                      <span className="font-bold text-xs md:text-sm text-zinc-900 dark:text-zinc-100 truncate max-w-[140px] sm:max-w-[200px] group-hover/row:text-blue-600 dark:group-hover/row:text-blue-400 transition-colors uppercase tracking-tight">{t.description}</span>
                                       <div className="flex items-center gap-1.5 mt-0.5">
                                         <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{new Date(t.date).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})}</span>
                                         <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>

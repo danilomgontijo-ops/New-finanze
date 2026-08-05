@@ -416,7 +416,7 @@ export const AiDividendRadar: React.FC<AiDividendRadarProps> = ({ isOpen, onClos
                                                         <button 
                                                             key={ticker} 
                                                             onClick={() => setSelectedTickers(prev => prev.includes(ticker) ? prev.filter(t => t !== ticker) : [...prev, ticker])}
-                                                            className={`px-2 py-1.5 rounded-lg text-xs font-bold transition-all border ${selectedTickers.includes(ticker) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white dark:bg-zinc-900 text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                                            className={`px-2 py-1.5 rounded-lg text-xs font-bold transition-all border ${selectedTickers.includes(ticker) ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white dark:bg-zinc-900 text-gray-500 border-gray-200 hover:border-gray-300'}`}
                                                         >
                                                             {ticker}
                                                         </button>

@@ -798,7 +798,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                             setSelectedAssetsToSearch(uniqueTickers);
                           }
                         }}
-                        className="text-xs text-indigo-600 font-medium hover:underline"
+                        className="text-xs text-blue-600 font-medium hover:underline"
                       >
                         {selectedAssetsToSearch.length === uniqueTickers.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
                       </button>
@@ -1376,7 +1376,7 @@ export const Settings: React.FC<SettingsProps> = (props) => {
                         </div>
                         <button
                             onClick={() => setIsDuplicateAnalyzerOpen(true)}
-                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-2 shrink-0"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-2 shrink-0"
                         >
                             <Sparkles size={16} />
                             <span>Analisar Duplicações</span>

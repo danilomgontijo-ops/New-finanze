@@ -727,7 +727,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         {/* UPDATE MODE MODAL OVERLAY */}
         {showUpdateModal && (
             <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 animate-in fade-in duration-300">
-                <div className="bg-indigo-50 p-5 rounded-full text-indigo-600 mb-6 shadow-inner border border-indigo-100">
+                <div className="bg-blue-50 p-5 rounded-full text-blue-600 mb-6 shadow-inner border border-blue-100">
                     <Repeat size={36} />
                 </div>
                 <h3 className="text-2xl font-medium tracking-tight text-zinc-900 mb-3 text-center tracking-tight">Editar Recorrência</h3>
@@ -735,24 +735,24 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     Esta é uma transação <span className="font-semibold text-zinc-700">{initialData?.installmentId ? 'parcelada' : (initialData?.fixedGroupId ? 'fixa' : 'compartilhada')}</span>. Como deseja aplicar as alterações?
                 </p>
                 <div className="space-y-4 w-full max-w-sm">
-                    <button onClick={() => handleConfirmUpdate('single')} className="w-full flex items-center p-4 border border-zinc-200/60 rounded-xl hover:bg-zinc-50 transition-all text-left gap-4 group hover:border-indigo-200 hover:shadow-sm shadow-zinc-200/5">
-                        <div className="bg-white p-2.5 rounded-2xl border border-zinc-200 shadow-sm shadow-zinc-200/5 text-zinc-500 group-hover:text-indigo-600 group-hover:border-indigo-200 transition-colors"><FileText size={20} /></div>
+                    <button onClick={() => handleConfirmUpdate('single')} className="w-full flex items-center p-4 border border-zinc-200/60 rounded-xl hover:bg-zinc-50 transition-all text-left gap-4 group hover:border-blue-200 hover:shadow-sm shadow-zinc-200/5">
+                        <div className="bg-white p-2.5 rounded-2xl border border-zinc-200 shadow-sm shadow-zinc-200/5 text-zinc-500 group-hover:text-blue-600 group-hover:border-blue-200 transition-colors"><FileText size={20} /></div>
                         <div>
-                            <span className="block text-sm font-semibold text-zinc-800 group-hover:text-indigo-700 transition-colors">Apenas esta</span>
+                            <span className="block text-sm font-semibold text-zinc-800 group-hover:text-blue-700 transition-colors">Apenas esta</span>
                             <span className="block text-xs text-zinc-500 mt-0.5">Alterar somente este lançamento.</span>
                         </div>
                     </button>
-                    <button onClick={() => handleConfirmUpdate('future')} className="w-full flex items-center p-4 border border-indigo-200 bg-indigo-50/50 rounded-2xl hover:bg-indigo-50 transition-all text-left gap-4 group ring-2 ring-indigo-500/20 shadow-sm shadow-zinc-200/5">
-                        <div className="bg-white p-2.5 rounded-2xl border border-indigo-200 shadow-sm shadow-zinc-200/5 text-indigo-600"><FastForward size={20} /></div>
+                    <button onClick={() => handleConfirmUpdate('future')} className="w-full flex items-center p-4 border border-blue-200 bg-blue-50/50 rounded-2xl hover:bg-blue-50 transition-all text-left gap-4 group ring-2 ring-blue-500/20 shadow-sm shadow-zinc-200/5">
+                        <div className="bg-white p-2.5 rounded-2xl border border-blue-200 shadow-sm shadow-zinc-200/5 text-blue-600"><FastForward size={20} /></div>
                         <div>
-                            <span className="block text-sm font-semibold text-indigo-900">Esta e futuras</span>
-                            <span className="block text-xs text-indigo-600/80 mt-0.5">Alterar desta data em diante.</span>
+                            <span className="block text-sm font-semibold text-blue-900">Esta e futuras</span>
+                            <span className="block text-xs text-blue-600/80 mt-0.5">Alterar desta data em diante.</span>
                         </div>
                     </button>
-                    <button onClick={() => handleConfirmUpdate('all')} className="w-full flex items-center p-4 border border-zinc-200/60 rounded-xl hover:bg-zinc-50 transition-all text-left gap-4 group hover:border-indigo-200 hover:shadow-sm shadow-zinc-200/5">
-                        <div className="bg-white p-2.5 rounded-2xl border border-zinc-200 shadow-sm shadow-zinc-200/5 text-zinc-500 group-hover:text-indigo-600 group-hover:border-indigo-200 transition-colors"><Layers size={20} /></div>
+                    <button onClick={() => handleConfirmUpdate('all')} className="w-full flex items-center p-4 border border-zinc-200/60 rounded-xl hover:bg-zinc-50 transition-all text-left gap-4 group hover:border-blue-200 hover:shadow-sm shadow-zinc-200/5">
+                        <div className="bg-white p-2.5 rounded-2xl border border-zinc-200 shadow-sm shadow-zinc-200/5 text-zinc-500 group-hover:text-blue-600 group-hover:border-blue-200 transition-colors"><Layers size={20} /></div>
                         <div>
-                            <span className="block text-sm font-semibold text-zinc-800 group-hover:text-indigo-700 transition-colors">Todas</span>
+                            <span className="block text-sm font-semibold text-zinc-800 group-hover:text-blue-700 transition-colors">Todas</span>
                             <span className="block text-xs text-zinc-500 mt-0.5">Alterar toda a série.</span>
                         </div>
                     </button>
@@ -776,7 +776,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           <div className="flex bg-zinc-100/50 p-1 rounded-xl mb-8 shadow-inner border border-zinc-200/50">
             <button onClick={() => setType(TransactionType.EXPENSE)} className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${type === TransactionType.EXPENSE ? 'bg-white text-rose-600 shadow-sm ring-1 ring-zinc-900/5' : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/50'}`}>Despesa</button>
             <button onClick={() => setType(TransactionType.INCOME)} className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${type === TransactionType.INCOME ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-zinc-900/5' : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/50'}`}>Receita</button>
-            <button onClick={() => setType(TransactionType.INVESTMENT)} className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${type === TransactionType.INVESTMENT ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-zinc-900/5' : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/50'}`}>Investimento</button>
+            <button onClick={() => setType(TransactionType.INVESTMENT)} className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${type === TransactionType.INVESTMENT ? 'bg-white text-blue-600 shadow-sm ring-1 ring-zinc-900/5' : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-200/50'}`}>Investimento</button>
           </div>
 
           <form id="transaction-form" className="space-y-6">
@@ -786,20 +786,20 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               <div className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                    <div>
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-indigo-400"/> Data da Operação</label>
-                    <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5" />
+                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-blue-400"/> Data da Operação</label>
+                    <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5" />
                    </div>
                    
                    <div>
-                     <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Landmark size={14} className="text-indigo-400"/> Corretora</label>
-                     <input type="text" value={invBroker} onChange={(e) => setInvBroker(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="XP, BTG, NuInvest..." />
+                     <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Landmark size={14} className="text-blue-400"/> Corretora</label>
+                     <input type="text" value={invBroker} onChange={(e) => setInvBroker(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="XP, BTG, NuInvest..." />
                    </div>
                 </div>
 
                 {/* DADOS DO ATIVO COM AUTOCOMPLETE E EVENTO */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="relative" ref={dropdownRef}>
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><TrendingUp size={14} className="text-indigo-400"/> Ativo / Título</label>
+                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><TrendingUp size={14} className="text-blue-400"/> Ativo / Título</label>
                     <input 
                       type="text" 
                       required 
@@ -810,7 +810,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                       }}
                       onFocus={() => setShowTickerSuggestions(true)}
                       onBlur={normalizeTickerName}
-                      className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-zinc-900 font-semibold uppercase transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 placeholder:font-medium" 
+                      className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-zinc-900 font-semibold uppercase transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 placeholder:font-medium" 
                       placeholder="PETR4, Tesouro Selic..." 
                       autoComplete="off"
                     />
@@ -822,7 +822,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                 <li 
                                     key={suggestion}
                                     onMouseDown={() => selectSuggestedTicker(suggestion)}
-                                    className="px-5 py-3 text-sm font-semibold text-zinc-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer border-b border-zinc-100 last:border-0 transition-colors"
+                                    className="px-5 py-3 text-sm font-semibold text-zinc-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer border-b border-zinc-100 last:border-0 transition-colors"
                                 >
                                     {suggestion}
                                 </li>
@@ -836,7 +836,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     <select 
                         value={invEvent} 
                         onChange={(e) => setInvEvent(e.target.value as any)} 
-                        className="w-full px-4 py-3 bg-zinc-100/80 border border-zinc-200/60 rounded-xl outline-none text-sm font-semibold text-zinc-800 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer"
+                        className="w-full px-4 py-3 bg-zinc-100/80 border border-zinc-200/60 rounded-xl outline-none text-sm font-semibold text-zinc-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer"
                     >
                         <option value="BUY">Compra (Aplicação)</option>
                         <option value="SELL">Venda (Resgate)</option>
@@ -857,8 +857,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 {isDividendEvent && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Globe size={14} className="text-indigo-400"/> Moeda</label>
-                            <select value={invCurrency} onChange={(e) => setInvCurrency(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none font-semibold text-zinc-800 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer shadow-sm shadow-zinc-200/5">
+                            <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Globe size={14} className="text-blue-400"/> Moeda</label>
+                            <select value={invCurrency} onChange={(e) => setInvCurrency(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none font-semibold text-zinc-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer shadow-sm shadow-zinc-200/5">
                                 <option value="BRL">BRL (R$)</option>
                                 <option value="USD">USD (U$)</option>
                             </select>
@@ -867,10 +867,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 )}
 
                 {invEvent === 'BONUS' && (
-                    <div className="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100 animate-in fade-in mt-5 shadow-sm shadow-zinc-200/5">
-                        <label className="block text-[10px] font-semibold text-indigo-600 uppercase tracking-widest mb-2 flex items-center gap-1.5"><RefreshCcw size={14}/> Razão da Bonificação (%)</label>
-                        <input type="number" step="0.000001" value={invBonusRatio} onChange={(e) => setInvBonusRatio(e.target.value)} className="w-full px-4 py-3 bg-white border border-indigo-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-zinc-900 font-semibold transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Ex: 10 para 10%" />
-                        <p className="text-[10px] text-indigo-500/80 mt-3 font-medium leading-relaxed">Informe a porcentagem exata (ex: 10 para 10%). Isso garante o cálculo correto do preço nominal no histórico.</p>
+                    <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100 animate-in fade-in mt-5 shadow-sm shadow-zinc-200/5">
+                        <label className="block text-[10px] font-semibold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-1.5"><RefreshCcw size={14}/> Razão da Bonificação (%)</label>
+                        <input type="number" step="0.000001" value={invBonusRatio} onChange={(e) => setInvBonusRatio(e.target.value)} className="w-full px-4 py-3 bg-white border border-blue-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-zinc-900 font-semibold transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Ex: 10 para 10%" />
+                        <p className="text-[10px] text-blue-500/80 mt-3 font-medium leading-relaxed">Informe a porcentagem exata (ex: 10 para 10%). Isso garante o cálculo correto do preço nominal no histórico.</p>
                     </div>
                 )}
 
@@ -888,22 +888,22 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                             <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">
                                 {invEvent === 'SPLIT' || invEvent === 'MERGE' ? 'Fator (Ex: 3 para 1:3)' : (invEvent === 'TICKER_UPDATE' ? 'Proporção (Ex: 1 para 1:1, 0.5 para 2:1)' : 'Quantidade')}
                             </label>
-                            <input type="number" step="0.000001" required value={invQuantity} onChange={(e) => setInvQuantity(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 font-medium" placeholder={invEvent === 'SPLIT' ? "Ex: 2 (para 1:2)" : (invEvent === 'TICKER_UPDATE' ? "Ex: 1" : "0,00")} />
+                            <input type="number" step="0.000001" required value={invQuantity} onChange={(e) => setInvQuantity(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 font-medium" placeholder={invEvent === 'SPLIT' ? "Ex: 2 (para 1:2)" : (invEvent === 'TICKER_UPDATE' ? "Ex: 1" : "0,00")} />
                         </div>
                         
                         {invEvent !== 'SPLIT' && invEvent !== 'MERGE' && invEvent !== 'TICKER_UPDATE' && (
                             <div>
                                 <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">{invEvent === 'BONUS' ? 'Custo Atribuído (Unit.)' : 'Preço Unitário'}</label>
                                 <div className="relative flex items-center">
-                                <select value={invCurrency} onChange={(e) => setInvCurrency(e.target.value)} className="absolute left-2 text-[10px] bg-zinc-100/80 border border-zinc-200/60 rounded-xl px-2 font-semibold h-8 outline-none text-zinc-600 appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20"><option value="BRL">R$</option><option value="USD">U$</option></select>
-                                <input type="number" step="0.0001" required value={invPrice} onChange={(e) => setInvPrice(e.target.value)} className="w-full pl-16 pr-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl outline-none font-semibold text-zinc-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 placeholder:font-medium" placeholder="0,00" />
+                                <select value={invCurrency} onChange={(e) => setInvCurrency(e.target.value)} className="absolute left-2 text-[10px] bg-zinc-100/80 border border-zinc-200/60 rounded-xl px-2 font-semibold h-8 outline-none text-zinc-600 appearance-none cursor-pointer focus:ring-2 focus:ring-blue-500/20"><option value="BRL">R$</option><option value="USD">U$</option></select>
+                                <input type="number" step="0.0001" required value={invPrice} onChange={(e) => setInvPrice(e.target.value)} className="w-full pl-16 pr-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl outline-none font-semibold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 placeholder:font-medium" placeholder="0,00" />
                                 </div>
                             </div>
                         )}
                         
                         {invEvent === 'SELL' && (
                             <div className="col-span-1 sm:col-span-2 flex items-center gap-3 pt-2 pb-2">
-                                <input type="checkbox" checked={invIsTotalRedemption} onChange={(e) => handleTotalRedemptionChange(e.target.checked)} className="w-5 h-5 text-indigo-600 border-zinc-300 rounded-md focus:ring-indigo-500 transition-colors cursor-pointer" />
+                                <input type="checkbox" checked={invIsTotalRedemption} onChange={(e) => handleTotalRedemptionChange(e.target.checked)} className="w-5 h-5 text-blue-600 border-zinc-300 rounded-md focus:ring-blue-500 transition-colors cursor-pointer" />
                                 <label className="text-xs font-semibold text-zinc-800 cursor-pointer select-none" onClick={() => handleTotalRedemptionChange(!invIsTotalRedemption)}>Resgate Total (Zerar Posição)</label>
                             </div>
                         )}
@@ -911,11 +911,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 )}
 
                 {(invEvent === 'BUY' || invEvent === 'SELL' || invEvent === 'AMORTIZACAO') && (
-                    <div className="bg-indigo-600 p-6 rounded-3xl shadow-lg shadow-indigo-200 flex justify-between items-center text-white relative overflow-hidden">
+                    <div className="bg-blue-600 p-6 rounded-3xl shadow-lg shadow-blue-200 flex justify-between items-center text-white relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
                         <div className="relative z-10">
-                            <span className="text-[10px] font-semibold text-indigo-200 uppercase tracking-widest block mb-1.5">Total Operação (BRL)</span>
-                            <p className="text-[10px] text-indigo-300 font-medium">Rendimentos e Taxas inclusos</p>
+                            <span className="text-[10px] font-semibold text-blue-200 uppercase tracking-widest block mb-1.5">Total Operação (BRL)</span>
+                            <p className="text-[10px] text-blue-300 font-medium">Rendimentos e Taxas inclusos</p>
                         </div>
                         <div className="text-right flex flex-col items-end relative z-10">
                             <span className="text-4xl font-light tracking-tight">R$ {(parseFloat(amount || '0') || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
@@ -942,7 +942,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                             required 
                             value={invPtax} 
                             onChange={(e) => setInvPtax(e.target.value)} 
-                            className="w-full pl-10 pr-4 py-3 border border-zinc-200/60 rounded-xl text-sm font-semibold text-zinc-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 placeholder:font-medium bg-white" 
+                            className="w-full pl-10 pr-4 py-3 border border-zinc-200/60 rounded-xl text-sm font-semibold text-zinc-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 placeholder:font-medium bg-white" 
                             placeholder="Ex: 5.2045"
                         />
                     </div>
@@ -955,7 +955,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
                                 <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">Valor Bruto ({invCurrency})</label>
-                                <input type="number" step="0.01" required value={invGrossAmount} onChange={(e) => setInvGrossAmount(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="0,00" />
+                                <input type="number" step="0.01" required value={invGrossAmount} onChange={(e) => setInvGrossAmount(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="0,00" />
                             </div>
                             <div>
                                 <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">Imposto ({invCurrency})</label>
@@ -987,8 +987,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     <div className="space-y-5 animate-in fade-in bg-zinc-50/40 p-5 rounded-3xl border border-zinc-200/60">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
-                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Percent size={14} className="text-indigo-400"/> Indexador</label>
-                                <select value={fixedIncomeIndexer} onChange={(e) => setFixedIncomeIndexer(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
+                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Percent size={14} className="text-blue-400"/> Indexador</label>
+                                <select value={fixedIncomeIndexer} onChange={(e) => setFixedIncomeIndexer(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
                                     <option value="CDI">% do CDI</option>
                                     <option value="IPCA">IPCA +</option>
                                     <option value="PRE">Pré-fixado (% a.a.)</option>
@@ -997,12 +997,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Percent size={14} className="text-indigo-400"/> Taxa / Valor</label>
+                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Percent size={14} className="text-blue-400"/> Taxa / Valor</label>
                                 {fixedIncomeIndexer === 'CUSTOM' ? (
-                                    <input type="text" value={invYieldRate} onChange={(e) => setInvYieldRate(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Ex: 100% CDI" />
+                                    <input type="text" value={invYieldRate} onChange={(e) => setInvYieldRate(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Ex: 100% CDI" />
                                 ) : (
                                     <div className="relative">
-                                        <input type="number" step="0.01" value={fixedIncomeRate} onChange={(e) => setFixedIncomeRate(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Ex: 110" />
+                                        <input type="number" step="0.01" value={fixedIncomeRate} onChange={(e) => setFixedIncomeRate(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Ex: 110" />
                                         <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                                             <span className="text-zinc-400 text-sm font-semibold">%</span>
                                         </div>
@@ -1012,8 +1012,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
-                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-indigo-400"/> Vencimento</label>
-                                <input type="date" value={invMaturityDate} onChange={(e) => setInvMaturityDate(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5" />
+                                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-blue-400"/> Vencimento</label>
+                                <input type="date" value={invMaturityDate} onChange={(e) => setInvMaturityDate(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5" />
                             </div>
                         </div>
                     </div>
@@ -1022,8 +1022,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 {!isDividendEvent && invEvent !== 'SPLIT' && invEvent !== 'MERGE' && invEvent !== 'TICKER_UPDATE' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calculator size={14} className="text-indigo-400"/> Taxas (Na moeda orig.)</label>
-                            <input type="number" step="0.01" value={invFees} onChange={(e) => setInvFees(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="0,00" />
+                            <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calculator size={14} className="text-blue-400"/> Taxas (Na moeda orig.)</label>
+                            <input type="number" step="0.01" value={invFees} onChange={(e) => setInvFees(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="0,00" />
                         </div>
                         {/* Oculta IRRF se for compra, pois não há imposto retido na fonte na aquisição */}
                         {invEvent !== 'BUY' && (
@@ -1038,15 +1038,15 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 bg-zinc-50/50 p-4 rounded-2xl border border-zinc-100 mt-5">
                    <div className="col-span-1">
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Layers size={14} className="text-indigo-400"/> Categoria de Investimento</label>
-                    <select required value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setSubCategoryId(''); }} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none font-semibold text-zinc-800 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
+                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Layers size={14} className="text-blue-400"/> Categoria de Investimento</label>
+                    <select required value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setSubCategoryId(''); }} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none font-semibold text-zinc-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
                       <option value="">Selecione...</option>
                       {filteredCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                    </div>
                    <div className="col-span-1">
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Layers size={14} className="text-indigo-400"/> Subcategoria</label>
-                    <select value={subCategoryId} onChange={(e) => setSubCategoryId(e.target.value)} disabled={!categoryId || filteredSubCategories.length === 0} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none disabled:bg-zinc-50 disabled:text-zinc-400 disabled:cursor-not-allowed focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
+                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Layers size={14} className="text-blue-400"/> Subcategoria</label>
+                    <select value={subCategoryId} onChange={(e) => setSubCategoryId(e.target.value)} disabled={!categoryId || filteredSubCategories.length === 0} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none disabled:bg-zinc-50 disabled:text-zinc-400 disabled:cursor-not-allowed focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
                       <option value="">Nenhuma</option>
                       {filteredSubCategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
@@ -1054,8 +1054,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><FileText size={14} className="text-indigo-400"/> Observação (Opcional)</label>
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none resize-none h-24 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Detalhes..."></textarea>
+                  <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><FileText size={14} className="text-blue-400"/> Observação (Opcional)</label>
+                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 border border-zinc-200/60 rounded-xl text-sm outline-none resize-none h-24 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Detalhes..."></textarea>
                 </div>
               </div>
             ) : (
@@ -1064,11 +1064,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 
                 {/* VALOR TOTAL - LABEL ENFATIZADO */}
                 <div className="bg-zinc-50/40 p-5 rounded-3xl border border-zinc-200/60 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-10 -mt-10 blur-2xl"></div>
                   <div className="relative z-10 flex justify-between items-center mb-3">
                     <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest">Valor Total {type === TransactionType.INCOME ? 'Recebido' : 'da Compra'}</label>
                     {installments > 1 && (
-                      <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-100/50 px-2.5 py-1 rounded-lg border border-indigo-200/50">
+                      <span className="text-[10px] font-semibold text-blue-700 bg-blue-100/50 px-2.5 py-1 rounded-lg border border-blue-200/50">
                         Sua Parcela Mensal: R$ {(installmentValuePreview || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </span>
                     )}
@@ -1082,7 +1082,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                         value={amount} 
                         readOnly={type === TransactionType.INVESTMENT}
                         onChange={(e) => setAmount(e.target.value)} 
-                        className={`w-full pl-20 pr-5 py-6 text-4xl font-medium bg-white border border-zinc-200/60 rounded-3xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm placeholder:text-zinc-300 ${type === TransactionType.INVESTMENT ? 'bg-slate-50 cursor-not-allowed opacity-80' : ''}`} 
+                        className={`w-full pl-20 pr-5 py-6 text-4xl font-medium bg-white border border-zinc-200/60 rounded-3xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm placeholder:text-zinc-300 ${type === TransactionType.INVESTMENT ? 'bg-slate-50 cursor-not-allowed opacity-80' : ''}`} 
                         placeholder="0,00" 
                     />
                   </div>
@@ -1092,7 +1092,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                       </div>
                   )}
                   {isShared && type === TransactionType.EXPENSE && (
-                      <div className="mt-4 text-[10px] text-indigo-600 font-semibold flex flex-col gap-1.5 bg-indigo-50 p-3 rounded-2xl border border-indigo-100 relative z-10 shadow-sm shadow-zinc-200/5">
+                      <div className="mt-4 text-[10px] text-blue-600 font-semibold flex flex-col gap-1.5 bg-blue-50 p-3 rounded-2xl border border-blue-100 relative z-10 shadow-sm shadow-zinc-200/5">
                           <span className="flex items-center gap-2"><Info size={14} className="shrink-0" /> Compra compartilhada (50/50).</span>
                           <span className="pl-5">Você pagará: R$ {((parseFloat(amount || '0') / 2) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} no total.</span>
                       </div>
@@ -1100,7 +1100,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><FileText size={14} className="text-indigo-400" /> Descrição</label>
+                  <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><FileText size={14} className="text-blue-400" /> Descrição</label>
                   <input 
                     id="desc-input"
                     list="description-suggestions" // Link to datalist
@@ -1109,7 +1109,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     value={description} 
                     onChange={(e) => setDescription(e.target.value)}
                     onBlur={handleDescriptionBlur} 
-                    className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" 
+                    className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" 
                     placeholder="Ex: Uber, Mercado..." 
                     autoComplete="new-password"
                   />
@@ -1123,16 +1123,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className={type === TransactionType.INCOME ? "col-span-1 sm:col-span-2" : "col-span-1"}>
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Layers size={14} className="text-indigo-400" /> Categoria</label>
-                    <select required value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setSubCategoryId(''); }} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
+                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Layers size={14} className="text-blue-400" /> Categoria</label>
+                    <select required value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setSubCategoryId(''); }} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
                       <option value="">Selecione</option>
                       {filteredCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
                   {type !== TransactionType.INCOME && (
                     <div className="col-span-1">
-                      <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><ChevronDown size={14} className="text-indigo-400" /> Subcategoria</label>
-                      <select value={subCategoryId} onChange={(e) => setSubCategoryId(e.target.value)} disabled={!categoryId || filteredSubCategories.length === 0} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer disabled:bg-zinc-50 disabled:text-zinc-400 disabled:cursor-not-allowed">
+                      <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><ChevronDown size={14} className="text-blue-400" /> Subcategoria</label>
+                      <select value={subCategoryId} onChange={(e) => setSubCategoryId(e.target.value)} disabled={!categoryId || filteredSubCategories.length === 0} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer disabled:bg-zinc-50 disabled:text-zinc-400 disabled:cursor-not-allowed">
                         <option value="">Nenhuma</option>
                         {filteredSubCategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </select>
@@ -1142,12 +1142,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-indigo-400" /> Data</label>
-                    <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5" />
+                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-blue-400" /> Data</label>
+                    <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Tag size={14} className="text-indigo-400" /> Tags</label>
-                    <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Ex: #viagem, Uber..." />
+                    <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Tag size={14} className="text-blue-400" /> Tags</label>
+                    <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200/60 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400" placeholder="Ex: #viagem, Uber..." />
                   </div>
                 </div>
 
@@ -1159,7 +1159,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                 id="useCompetence" 
                                 checked={useCompetenceDate} 
                                 onChange={(e) => setUseCompetenceDate(e.target.checked)}
-                                className="w-4 h-4 text-indigo-600 rounded border-zinc-300 focus:ring-indigo-500/20 transition-all cursor-pointer"
+                                className="w-4 h-4 text-blue-600 rounded border-zinc-300 focus:ring-blue-500/20 transition-all cursor-pointer"
                             />
                             <label htmlFor="useCompetence" className="text-xs font-semibold text-zinc-700 cursor-pointer select-none">
                                 Selecionar Mês de Referência (Competência)
@@ -1167,17 +1167,17 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                         </div>
                         
                         {useCompetenceDate && (
-                            <div className="animate-in slide-in-from-top-2 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/50">
-                                <label className="block text-[10px] font-semibold text-indigo-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                            <div className="animate-in slide-in-from-top-2 bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50">
+                                <label className="block text-[10px] font-semibold text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                     <Clock size={14} /> Mês de Competência
                                 </label>
                                 <input 
                                     type="month" 
                                     value={competenceMonth} 
                                     onChange={(e) => setCompetenceMonth(e.target.value)} 
-                                    className="w-full px-4 py-3 bg-white border border-indigo-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold text-indigo-900 shadow-sm shadow-zinc-200/5 transition-all"
+                                    className="w-full px-4 py-3 bg-white border border-blue-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-blue-900 shadow-sm shadow-zinc-200/5 transition-all"
                                 />
-                                <p className="text-[10px] text-indigo-500/80 mt-2 font-medium flex items-center gap-1.5">
+                                <p className="text-[10px] text-blue-500/80 mt-2 font-medium flex items-center gap-1.5">
                                     <Info size={12} /> Útil para salários recebidos no dia 5 referente ao mês anterior.
                                 </p>
                             </div>
@@ -1189,8 +1189,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                    <div className="space-y-5 pt-3">
                         <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">Forma de Pagamento</label>
                         <div className="flex bg-zinc-100/50 p-1 rounded-xl">
-                            <button type="button" onClick={() => { setPaymentMethod(PaymentMethod.DEBIT_CASH); setInstallments(1); setIsRecurringDebit(false); }} className={`flex-1 py-3 text-xs font-semibold rounded-2xl transition-all flex items-center justify-center gap-2 ${paymentMethod === PaymentMethod.DEBIT_CASH ? 'bg-white shadow-sm shadow-zinc-200/5 text-zinc-800' : 'text-zinc-500 hover:text-zinc-700'}`}><Banknote size={16} className={paymentMethod === PaymentMethod.DEBIT_CASH ? 'text-indigo-500' : ''} /> Débito / Dinheiro</button>
-                            <button type="button" onClick={() => setPaymentMethod(PaymentMethod.CREDIT_CARD)} className={`flex-1 py-3 text-xs font-semibold rounded-2xl transition-all flex items-center justify-center gap-2 ${paymentMethod === PaymentMethod.CREDIT_CARD ? 'bg-white shadow-sm shadow-zinc-200/5 text-zinc-800' : 'text-zinc-500 hover:text-zinc-700'}`}><CardIcon size={16} className={paymentMethod === PaymentMethod.CREDIT_CARD ? 'text-indigo-500' : ''} /> Cartão Crédito</button>
+                            <button type="button" onClick={() => { setPaymentMethod(PaymentMethod.DEBIT_CASH); setInstallments(1); setIsRecurringDebit(false); }} className={`flex-1 py-3 text-xs font-semibold rounded-2xl transition-all flex items-center justify-center gap-2 ${paymentMethod === PaymentMethod.DEBIT_CASH ? 'bg-white shadow-sm shadow-zinc-200/5 text-zinc-800' : 'text-zinc-500 hover:text-zinc-700'}`}><Banknote size={16} className={paymentMethod === PaymentMethod.DEBIT_CASH ? 'text-blue-500' : ''} /> Débito / Dinheiro</button>
+                            <button type="button" onClick={() => setPaymentMethod(PaymentMethod.CREDIT_CARD)} className={`flex-1 py-3 text-xs font-semibold rounded-2xl transition-all flex items-center justify-center gap-2 ${paymentMethod === PaymentMethod.CREDIT_CARD ? 'bg-white shadow-sm shadow-zinc-200/5 text-zinc-800' : 'text-zinc-500 hover:text-zinc-700'}`}><CardIcon size={16} className={paymentMethod === PaymentMethod.CREDIT_CARD ? 'text-blue-500' : ''} /> Cartão Crédito</button>
                         </div>
 
                         {paymentMethod === PaymentMethod.DEBIT_CASH && (
@@ -1200,7 +1200,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                     id="recurring-debit" 
                                     checked={isRecurringDebit} 
                                     onChange={(e) => { setIsRecurringDebit(e.target.checked); setInstallments(1); }}
-                                    className="w-4 h-4 text-indigo-600 rounded border-zinc-300 focus:ring-indigo-500/20 transition-all cursor-pointer"
+                                    className="w-4 h-4 text-blue-600 rounded border-zinc-300 focus:ring-blue-500/20 transition-all cursor-pointer"
                                 />
                                 <label htmlFor="recurring-debit" className="text-xs font-semibold text-zinc-700 cursor-pointer select-none">
                                     Repetir Lançamento? (Parcelar no Débito)
@@ -1213,7 +1213,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                 {paymentMethod === PaymentMethod.CREDIT_CARD && (
                                     <div className="col-span-1">
                                         <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">Cartão</label>
-                                        <select value={creditCardId} onChange={(e) => setCreditCardId(e.target.value)} required className="w-full px-4 py-3 border border-zinc-200/60 rounded-xl text-sm bg-white font-semibold text-zinc-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
+                                        <select value={creditCardId} onChange={(e) => setCreditCardId(e.target.value)} required className="w-full px-4 py-3 border border-zinc-200/60 rounded-xl text-sm bg-white font-semibold text-zinc-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 appearance-none cursor-pointer">
                                             <option value="">Selecione...</option>
                                             {creditCards.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                         </select>
@@ -1222,8 +1222,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                 <div className={paymentMethod === PaymentMethod.CREDIT_CARD ? "col-span-1" : "col-span-1 sm:col-span-2"}>
                                     <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-widest mb-2">{isRecurringDebit ? 'Número de Vezes' : 'Parcelas'}</label>
                                     <div className="relative">
-                                        <Repeat className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400" size={16} />
-                                        <input type="number" min="1" max="99" value={installments} onChange={(e) => setInstallments(parseInt(e.target.value) || 1)} className="w-full pl-11 pr-4 py-3 border border-zinc-200/60 rounded-xl text-sm bg-white font-semibold text-zinc-900 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm shadow-zinc-200/5" />
+                                        <Repeat className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400" size={16} />
+                                        <input type="number" min="1" max="99" value={installments} onChange={(e) => setInstallments(parseInt(e.target.value) || 1)} className="w-full pl-11 pr-4 py-3 border border-zinc-200/60 rounded-xl text-sm bg-white font-semibold text-zinc-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5" />
                                     </div>
                                 </div>
                             </div>
@@ -1237,8 +1237,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                             <button type="button" onClick={() => setIsFixed(!isFixed)} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-semibold text-xs transition-all ${isFixed ? 'bg-amber-50 border-amber-200 text-amber-700 shadow-sm shadow-zinc-200/5' : 'bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50'}`}>
                                 <Repeat size={16} className={isFixed ? 'text-amber-500' : ''} /> Despesa Fixa
                             </button>
-                            <button type="button" onClick={handleSharedChange} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-semibold text-xs transition-all ${isShared ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm shadow-zinc-200/5' : 'bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50'}`}>
-                                <Users size={16} className={isShared ? 'text-indigo-500' : ''} /> Dividir (50/50)
+                            <button type="button" onClick={handleSharedChange} className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-semibold text-xs transition-all ${isShared ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm shadow-zinc-200/5' : 'bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50'}`}>
+                                <Users size={16} className={isShared ? 'text-blue-500' : ''} /> Dividir (50/50)
                             </button>
                             <button type="button" onClick={() => setFundedByResgate(!fundedByResgate)} className={`col-span-2 flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-semibold text-xs transition-all ${fundedByResgate ? 'bg-purple-50 border-purple-200 text-purple-700 shadow-sm shadow-zinc-200/5' : 'bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50'}`}>
                                 <ArrowDownRight size={16} className={fundedByResgate ? 'text-purple-500' : ''} /> Custeada por Resgate de Investimento
@@ -1279,7 +1279,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           <button 
             type="button" 
             onClick={(e) => handleProcessSubmit(e, true)}
-            className={`px-8 py-3 text-sm font-semibold text-white rounded-2xl shadow-lg transition-all active:scale-95 flex items-center gap-2 ${type === TransactionType.INCOME ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20' : (type === TransactionType.INVESTMENT ? 'bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/20' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20')}`}
+            className={`px-8 py-3 text-sm font-semibold text-white rounded-2xl shadow-lg transition-all active:scale-95 flex items-center gap-2 ${type === TransactionType.INCOME ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20' : (type === TransactionType.INVESTMENT ? 'bg-blue-500 hover:bg-blue-600 shadow-blue-500/20' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20')}`}
           >
               <CheckCircle2 size={16} className="opacity-80" /> Salvar Registro
           </button>

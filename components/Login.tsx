@@ -64,8 +64,8 @@ export const Login = () => {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-4 md:p-8 select-none relative overflow-hidden transition-colors duration-300">
       {/* Background shapes for a high-end designer layout */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-100 dark:bg-indigo-950/20 rounded-full blur-3xl opacity-40"></div>
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-50 dark:bg-indigo-950/20 rounded-full blur-3xl opacity-60"></div>
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-100 dark:bg-blue-950/20 rounded-full blur-3xl opacity-40"></div>
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-50 dark:bg-blue-950/20 rounded-full blur-3xl opacity-60"></div>
       </div>
 
       <motion.div 
@@ -75,7 +75,7 @@ export const Login = () => {
         className="w-full max-w-[440px] bg-white dark:bg-zinc-900 rounded-3xl shadow-xl shadow-zinc-200/50 dark:shadow-none border border-zinc-200/60 dark:border-zinc-800/80 overflow-hidden relative z-10"
       >
         {/* Decorative Top Accent Bar */}
-        <div className="h-1.5 bg-indigo-600 w-full"></div>
+        <div className="h-1.5 bg-blue-600 w-full"></div>
 
         {/* Header */}
         <div className="p-8 pb-4 text-center">
@@ -83,9 +83,9 @@ export const Login = () => {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.1, duration: 0.4 }}
-            className="w-14 h-14 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm"
+            className="w-14 h-14 bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm"
           >
-            <Wallet className="w-7 h-7 text-indigo-600 dark:text-indigo-400" strokeWidth={1.5} />
+            <Wallet className="w-7 h-7 text-blue-600 dark:text-blue-400" strokeWidth={1.5} />
           </motion.div>
           <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50 tracking-tight">FinanZe</h1>
           <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1.5 font-normal px-4">
@@ -136,7 +136,7 @@ export const Login = () => {
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:bg-white dark:focus:bg-zinc-800 focus:border-transparent outline-none text-zinc-900 dark:text-zinc-50 font-medium transition-all text-sm placeholder-zinc-400 dark:placeholder-zinc-500"
+                  className="w-full pl-11 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:bg-white dark:focus:bg-zinc-800 focus:border-transparent outline-none text-zinc-900 dark:text-zinc-50 font-medium transition-all text-sm placeholder-zinc-400 dark:placeholder-zinc-500"
                   placeholder="exemplo@email.com"
                 />
               </div>
@@ -153,7 +153,7 @@ export const Login = () => {
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:bg-white dark:focus:bg-zinc-800 focus:border-transparent outline-none text-zinc-900 dark:text-zinc-50 font-medium transition-all text-sm placeholder-zinc-400 dark:placeholder-zinc-500"
+                  className="w-full pl-11 pr-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-600 focus:bg-white dark:focus:bg-zinc-800 focus:border-transparent outline-none text-zinc-900 dark:text-zinc-50 font-medium transition-all text-sm placeholder-zinc-400 dark:placeholder-zinc-500"
                   placeholder="Sua senha secreta"
                   minLength={6}
                 />
@@ -165,7 +165,7 @@ export const Login = () => {
               whileTap={{ scale: 0.99 }}
               type="submit" 
               disabled={loading}
-              className="w-full bg-indigo-600 dark:bg-indigo-500 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-2 mt-6 cursor-pointer text-sm"
+              className="w-full bg-blue-600 dark:bg-blue-500 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-lg shadow-blue-100 dark:shadow-none flex items-center justify-center gap-2 mt-6 cursor-pointer text-sm"
             >
               {loading ? (
                 <Loader2 className="animate-spin w-5 h-5" />
@@ -181,7 +181,7 @@ export const Login = () => {
           <div className="mt-6 text-center">
             <button 
               onClick={() => { setIsSignUp(!isSignUp); setError(null); }}
-              className="text-indigo-600 dark:text-indigo-400 font-semibold text-sm hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer"
+              className="text-blue-600 dark:text-blue-400 font-semibold text-sm hover:text-blue-700 dark:hover:text-blue-300 transition-colors cursor-pointer"
             >
               {isSignUp ? 'Já possui uma conta? Faça login' : 'Primeira vez aqui? Cadastre-se'}
             </button>

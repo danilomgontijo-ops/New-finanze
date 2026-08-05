@@ -424,7 +424,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
         {/* HEADER */}
         <div className="p-5 md:p-6 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-2xl border border-indigo-100 dark:border-indigo-900/40">
+            <div className="p-3 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-2xl border border-blue-100 dark:border-blue-900/40">
               <Sparkles size={22} />
             </div>
             <div>
@@ -443,12 +443,12 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
         {/* MESSAGES & FILTERS BAR */}
         <div className="px-6 py-3 bg-zinc-100/60 dark:bg-zinc-950/80 border-b border-zinc-200/60 dark:border-zinc-800/60 flex flex-wrap gap-4 items-center justify-between text-xs">
           <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
-            <Filter size={14} className="text-indigo-500" />
+            <Filter size={14} className="text-blue-500" />
             <span className="font-semibold">Nível de Sensibilidade:</span>
             <select
               value={similarityThreshold}
               onChange={(e) => setSimilarityThreshold(parseFloat(e.target.value))}
-              className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2.5 py-1 text-xs font-medium text-zinc-800 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2.5 py-1 text-xs font-medium text-zinc-800 dark:text-zinc-200 outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               <option value={0.95}>Muito Alto (Quase Idênticos)</option>
               <option value={0.85}>Alto (Pequenos erros de digitação / 85%)</option>
@@ -487,10 +487,10 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
               <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-950 p-3 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80">
                 <button
                   onClick={toggleSelectAll}
-                  className="flex items-center gap-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:text-indigo-600 transition-colors"
+                  className="flex items-center gap-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:text-blue-600 transition-colors"
                 >
                   {selectedClusterIds.length === clusters.length ? (
-                    <CheckSquare size={16} className="text-indigo-600" />
+                    <CheckSquare size={16} className="text-blue-600" />
                   ) : (
                     <Square size={16} className="text-zinc-400" />
                   )}
@@ -516,7 +516,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
                     key={cluster.id} 
                     className={`bg-white dark:bg-zinc-900/90 rounded-2xl border transition-all overflow-hidden ${
                       isSelected 
-                        ? 'border-indigo-300 dark:border-indigo-800/80 shadow-xs' 
+                        ? 'border-blue-300 dark:border-blue-800/80 shadow-xs' 
                         : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300'
                     }`}
                   >
@@ -525,9 +525,9 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
                       <div className="flex items-center gap-3 min-w-0">
                         <button
                           onClick={() => toggleSelectCluster(cluster.id)}
-                          className="text-zinc-400 hover:text-indigo-600 transition-colors shrink-0"
+                          className="text-zinc-400 hover:text-blue-600 transition-colors shrink-0"
                         >
-                          {isSelected ? <CheckSquare size={18} className="text-indigo-600" /> : <Square size={18} />}
+                          {isSelected ? <CheckSquare size={18} className="text-blue-600" /> : <Square size={18} />}
                         </button>
 
                         <div 
@@ -536,7 +536,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
                         >
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-zinc-800 dark:text-zinc-200 text-sm truncate">{cluster.title}</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/50">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50">
                               {cluster.rules.length} regras
                             </span>
                           </div>
@@ -548,7 +548,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
                         <button
                           onClick={() => handleConsolidateCluster(cluster)}
                           disabled={isProcessing}
-                          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-50"
                         >
                           <Layers size={13} />
                           <span>Aglutinar Este</span>
@@ -582,7 +582,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
                                   onClick={() => handleSelectMasterRule(cluster, rule.key)}
                                   className={`p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
                                     isMaster 
-                                      ? 'bg-indigo-50/70 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-800/80' 
+                                      ? 'bg-blue-50/70 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800/80' 
                                       : 'bg-white dark:bg-zinc-900 border-zinc-200/80 dark:border-zinc-800 hover:bg-zinc-50'
                                   }`}
                                 >
@@ -592,7 +592,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
                                       name={`master_${cluster.id}`} 
                                       checked={isMaster} 
                                       onChange={() => handleSelectMasterRule(cluster, rule.key)}
-                                      className="text-indigo-600 focus:ring-indigo-500 shrink-0" 
+                                      className="text-blue-600 focus:ring-blue-500 shrink-0" 
                                     />
                                     <div className="min-w-0">
                                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -612,7 +612,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
                                       {catName} {subCatName ? `› ${subCatName}` : ''}
                                     </span>
                                     {isMaster && (
-                                      <span className="text-[9px] font-bold uppercase bg-indigo-600 text-white px-1.5 py-0.5 rounded tracking-wide">
+                                      <span className="text-[9px] font-bold uppercase bg-blue-600 text-white px-1.5 py-0.5 rounded tracking-wide">
                                         Mestra
                                       </span>
                                     )}
@@ -624,8 +624,8 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
                         </div>
 
                         {/* MASTER RULE CUSTOMIZATION FORM */}
-                        <div className="p-3.5 bg-indigo-50/30 dark:bg-indigo-950/20 rounded-xl border border-indigo-100 dark:border-indigo-900/40 space-y-3">
-                          <span className="text-[11px] font-bold text-indigo-900 dark:text-indigo-300 block">
+                        <div className="p-3.5 bg-blue-50/30 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/40 space-y-3">
+                          <span className="text-[11px] font-bold text-blue-900 dark:text-blue-300 block">
                             Configurar Redação e Categoria Mestra (Unificada):
                           </span>
 
@@ -636,7 +636,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
                                 type="text"
                                 value={config.target}
                                 onChange={(e) => updateClusterConfig(cluster.id, 'target', e.target.value)}
-                                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-1.5 text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-1.5 text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-500/20"
                                 placeholder="Descrição padronizada..."
                               />
                             </div>
@@ -649,7 +649,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
                                   updateClusterConfig(cluster.id, 'catId', e.target.value);
                                   updateClusterConfig(cluster.id, 'subCatId', '');
                                 }}
-                                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500/20"
                               >
                                 <option value="">Sem Categoria</option>
                                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -662,7 +662,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
                                 value={config.subCatId}
                                 onChange={(e) => updateClusterConfig(cluster.id, 'subCatId', e.target.value)}
                                 disabled={!config.catId}
-                                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-zinc-100 dark:disabled:bg-zinc-800"
+                                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500/20 disabled:bg-zinc-100 dark:disabled:bg-zinc-800"
                               >
                                 <option value="">Sem Subcategoria</option>
                                 {config.catId && subCategories.filter(s => s.categoryId === config.catId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -676,7 +676,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
                               id={`dedup_${cluster.id}`}
                               checked={config.deduplicateKeys}
                               onChange={(e) => updateClusterConfig(cluster.id, 'deduplicateKeys', e.target.checked)}
-                              className="text-indigo-600 rounded focus:ring-indigo-500"
+                              className="text-blue-600 rounded focus:ring-blue-500"
                             />
                             <label htmlFor={`dedup_${cluster.id}`} className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium cursor-pointer">
                               Remover gatilhos redundantes com apenas diferenças de espaços vazios no final
@@ -695,7 +695,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
         {/* FOOTER */}
         <div className="p-4 md:p-5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 flex flex-col sm:flex-row gap-3 justify-between items-center">
           <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <Info size={14} className="text-indigo-500 shrink-0" />
+            <Info size={14} className="text-blue-500 shrink-0" />
             <span>A aglutinação atualizará as regras para padronizar os novos lançamentos e importações.</span>
           </div>
 
@@ -710,7 +710,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
               <button
                 onClick={handleConsolidateSelected}
                 disabled={selectedClusterIds.length === 0 || isProcessing}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/20 flex items-center gap-2 disabled:opacity-50"
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-600/20 flex items-center gap-2 disabled:opacity-50"
               >
                 <Layers size={15} />
                 <span>Aglutinar Selecionados ({selectedClusterIds.length})</span>
