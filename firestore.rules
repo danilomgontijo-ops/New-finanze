@@ -1,0 +1,83 @@
+rules_version = '2';
+
+// Regras de segurança do Firestore para o FinanZe.
+//
+// COMO APLICAR (este arquivo não é lido automaticamente pelo Firebase — precisa
+// ser publicado manualmente):
+//   1. Console: https://console.firebase.google.com/project/controleorca-3a6f4/firestore/rules
+//      → cole o conteúdo abaixo → "Publicar".
+//   2. Ou via CLI: `firebase deploy --only firestore:rules` (requer firebase.json
+//      apontando para este arquivo e login com `firebase login`).
+//
+// Modelo de dados observado em services/storageService.ts:
+//   - Coleções "por documento com campo userId": transactions, categories,
+//     subcategories, creditCards, assetPrices, assetHistory.
+//   - Coleções "por documento = userId": settings, mappings (o ID do documento
+//     É o uid do usuário dono).
+//
+// Sem estas regras publicadas, qualquer usuário autenticado (inclusive anônimo,
+// se reativado) pode ler/editar/apagar dados de QUALQUER outro usuário — o app
+// hoje confia inteiramente nas queries client-side (`where("userId","==",uid)`),
+// que não protegem nada sozinhas.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function ownsResource() {
+      return isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    function ownsNewResource() {
+      return isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Coleções com campo userId no próprio documento.
+    match /transactions/{docId} {
+      allow read, update, delete: if ownsResource();
+      allow create: if ownsNewResource();
+    }
+
+    match /categories/{docId} {
+      allow read, update, delete: if ownsResource();
+      allow create: if ownsNewResource();
+    }
+
+    match /subcategories/{docId} {
+      allow read, update, delete: if ownsResource();
+      allow create: if ownsNewResource();
+    }
+
+    match /creditCards/{docId} {
+      allow read, update, delete: if ownsResource();
+      allow create: if ownsNewResource();
+    }
+
+    match /assetPrices/{docId} {
+      allow read, update, delete: if ownsResource();
+      allow create: if ownsNewResource();
+    }
+
+    match /assetHistory/{docId} {
+      allow read, update, delete: if ownsResource();
+      allow create: if ownsNewResource();
+    }
+
+    // Coleções onde o ID do documento É o uid do usuário.
+    match /settings/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /mappings/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Qualquer outra coleção não listada explicitamente fica bloqueada por padrão.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
