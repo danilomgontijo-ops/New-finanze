@@ -190,7 +190,7 @@ const TransactionGroup: React.FC<TransactionGroupProps> = ({
     );
 };
 
-const YearlyView = ({ transactions, categories, subCategories, creditCards, settings, year }: { transactions: Transaction[], categories: Category[], subCategories: SubCategory[], creditCards: CreditCard[], settings: UserSettings, year: number }) => {
+const YearlyView = ({ transactions, allTransactions, categories, subCategories, creditCards, settings, year }: { transactions: Transaction[], allTransactions: Transaction[], categories: Category[], subCategories: SubCategory[], creditCards: CreditCard[], settings: UserSettings, year: number }) => {
     const [viewType, setViewType] = useState<TransactionType>(TransactionType.EXPENSE);
     const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
     
@@ -203,21 +203,137 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
 
     const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
+    const isNathyTransactionLocal = (t: Transaction) => {
+        const nathyCategoryId = categories.find(c => c.name.toLowerCase() === 'nathy')?.id;
+        const isNathyCategory = nathyCategoryId && t.categoryId === nathyCategoryId;
+        const isNathyDesc = t.description.toLowerCase().includes('(parte nathy)');
+        return !!(isNathyCategory || isNathyDesc);
+    };
+
     // 1. Calculate Aggregated Yearly Summary (Income, Expense, Investment, Balance)
     const yearlySummary = useMemo(() => {
-        const summary = Array(12).fill(null).map(() => ({ income: 0, expense: 0, investment: 0, balance: 0 }));
-        
+        const summary = Array(12).fill(null).map(() => ({ 
+            income: 0, 
+            expense: 0, 
+            investment: 0, 
+            balance: 0,
+            pocket: 0,
+            provento: 0,
+            resgate: 0
+        }));
+
+        const filteredTxIds = new Set(transactions.map(t => t.id));
+
+        // Group all transactions by year-month across all time
+        const txByMonth = new Map<string, Transaction[]>();
+        const sortedTxs = [...allTransactions]
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        sortedTxs.forEach(t => {
+            const ym = t.date.slice(0, 7);
+            if (!txByMonth.has(ym)) {
+                txByMonth.set(ym, []);
+            }
+            txByMonth.get(ym)!.push(t);
+        });
+
+        const sortedMonths = Array.from(txByMonth.keys()).sort();
+
+        let currentProventosPool = 0;
+        let currentResgatesPool = 0;
+
+        sortedMonths.forEach(ym => {
+            const ymYear = parseInt(ym.slice(0, 4));
+            const ymMth = parseInt(ym.slice(5, 7)) - 1; // 0-indexed
+
+            const monthTxs = txByMonth.get(ym)!;
+
+            // 1. Accumulate all monthly proventos and resgates received BEFORE processing investments
+            let monthProventos = 0;
+            let monthResgates = 0;
+
+            monthTxs.forEach(t => {
+                if (t.type === TransactionType.INVESTMENT) {
+                    const isNathy = isNathyTransactionLocal(t);
+                    if (isNathy) return;
+
+                    const ev = t.investmentDetails?.event || 'BUY';
+                    if (['DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(ev)) {
+                        monthProventos += t.amount;
+                    } else if (ev === 'SELL' || ev === 'AMORTIZACAO') {
+                        monthResgates += t.amount;
+                    }
+                }
+            });
+
+            currentProventosPool += monthProventos;
+            currentResgatesPool += monthResgates;
+
+            // 2. Calculate total monthly investment (BUY/BONUS)
+            let monthInvested = 0;
+            const monthBuys: Transaction[] = [];
+
+            monthTxs.forEach(t => {
+                if (t.type === TransactionType.INVESTMENT) {
+                    const isNathy = isNathyTransactionLocal(t);
+                    if (isNathy) return;
+
+                    const ev = t.investmentDetails?.event || 'BUY';
+                    if (['BUY', 'BONUS'].includes(ev)) {
+                        monthInvested += t.amount;
+                        monthBuys.push(t);
+                    }
+                }
+            });
+
+            // 3. Subtract proventos and resgates pool from total monthly invested amount
+            let monthResgateUsed = 0;
+            let monthProventoUsed = 0;
+            let monthPocket = 0;
+
+            if (monthInvested > 0) {
+                // First try to use Resgates Pool
+                monthResgateUsed = Math.min(monthInvested, currentResgatesPool);
+                currentResgatesPool -= monthResgateUsed;
+                const remaining = monthInvested - monthResgateUsed;
+
+                // Next try to use Proventos Pool
+                monthProventoUsed = Math.min(remaining, currentProventosPool);
+                currentProventosPool -= monthProventoUsed;
+
+                // The rest is pocket money
+                monthPocket = remaining - monthProventoUsed;
+
+                // If the year matches the selected year, save the filtered values to summary
+                if (ymYear === year) {
+                    monthBuys.forEach(t => {
+                        if (filteredTxIds.has(t.id)) {
+                            const ratio = t.amount / monthInvested;
+                            summary[ymMth].investment += t.amount;
+                            summary[ymMth].pocket += monthPocket * ratio;
+                            summary[ymMth].provento += monthProventoUsed * ratio;
+                            summary[ymMth].resgate += monthResgateUsed * ratio;
+                        }
+                    });
+                }
+            }
+        });
+
+        // Now calculate Income and Expense for the selected year using the filtered transactions (transactions)
         transactions.forEach(t => {
+            const isNathy = isNathyTransactionLocal(t);
+            if (isNathy && !t.isShared) return;
+
             const effDate = calculateEffectiveDate(t, creditCards, settings);
             if (effDate.getFullYear() !== year) return;
             const m = effDate.getMonth();
-            
-            if (t.type === TransactionType.INCOME) summary[m].income += t.amount;
-            else if (t.type === TransactionType.EXPENSE && !t.fundedByResgate) summary[m].expense += t.amount;
-            else if (t.type === TransactionType.INVESTMENT) {
-                const ev = t.investmentDetails?.event;
-                if (ev === 'BUY' || ev === 'BONUS') summary[m].investment += t.amount;
-                else if (['SELL', 'AMORTIZACAO', 'DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(ev || '')) summary[m].investment -= t.amount;
+
+            const amountToUse = t.isShared ? (t.amount / 2) : t.amount;
+
+            if (t.type === TransactionType.INCOME) {
+                summary[m].income += t.amount;
+            } else if (t.type === TransactionType.EXPENSE && !t.fundedByResgate) {
+                summary[m].expense += amountToUse;
             }
         });
 
@@ -227,12 +343,15 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
         });
 
         return summary;
-    }, [transactions, creditCards, settings, year]);
+    }, [transactions, allTransactions, creditCards, settings, year, categories]);
 
     // 2. Existing Category Logic
     const monthlyLookup = useMemo(() => {
         const map = new Map<string, number>();
         transactions.forEach(t => {
+            const isNathy = isNathyTransactionLocal(t);
+            if (isNathy && !t.isShared) return;
+
             if (t.type !== viewType) return;
             const effDate = calculateEffectiveDate(t, creditCards, settings);
             const y = effDate.getFullYear(); const m = effDate.getMonth();
@@ -240,7 +359,9 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
             const subKey = (viewType === TransactionType.EXPENSE && t.subCategoryId) ? `${y}-${m}-${t.categoryId}-${t.subCategoryId}` : null;
             
             let amountToAdd = t.amount;
-            if (viewType === TransactionType.INVESTMENT) {
+            if (viewType === TransactionType.EXPENSE) {
+                amountToAdd = t.isShared ? (t.amount / 2) : t.amount;
+            } else if (viewType === TransactionType.INVESTMENT) {
                 const ev = t.investmentDetails?.event;
                 if (['SELL', 'AMORTIZACAO', 'DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(ev || '')) {
                     amountToAdd = -t.amount;
@@ -253,7 +374,7 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
             if (subKey) map.set(subKey, (map.get(subKey) || 0) + amountToAdd);
         });
         return map;
-    }, [transactions, creditCards, settings, viewType, year]);
+    }, [transactions, creditCards, settings, viewType, year, categories]);
 
     const getPriorAverage = (targetYear: number, targetMonthIndex: number, catId: string, subId: string = 'all') => {
         let sum = 0; let count = 0;
@@ -272,12 +393,17 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
             data[c.id] = { id: c.id, name: c.name, icon: c.icon, color: c.color, total: 0, months: new Array(12).fill(null).map(() => ({ val: 0, avg: 0 })), subcats: {} };
         });
         transactions.forEach(t => {
+            const isNathy = isNathyTransactionLocal(t);
+            if (isNathy && !t.isShared) return;
+
             const effectiveDate = calculateEffectiveDate(t, creditCards, settings);
             if (effectiveDate.getFullYear() !== year || t.type !== viewType) return;
             const month = effectiveDate.getMonth(); const catId = t.categoryId;
             if (data[catId]) {
                 let amountToAdd = t.amount;
-                if (viewType === TransactionType.INVESTMENT) {
+                if (viewType === TransactionType.EXPENSE) {
+                    amountToAdd = t.isShared ? (t.amount / 2) : t.amount;
+                } else if (viewType === TransactionType.INVESTMENT) {
                     const ev = t.investmentDetails?.event;
                     if (['SELL', 'AMORTIZACAO', 'DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(ev || '')) {
                         amountToAdd = -t.amount;
@@ -336,7 +462,7 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-xs">
                         <thead>
-                            <tr className="bg-zinc-50 dark:bg-zinc-950/50 dark:bg-zinc-950/50 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 font-medium">
+                            <tr className="bg-zinc-50 dark:bg-zinc-950/50 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-medium">
                                 <th className="px-3 py-2 text-left w-32 sticky left-0 bg-zinc-50 dark:bg-zinc-950 shadow-[1px_0_2px_rgba(0,0,0,0.05)]">Tipo</th>
                                 <th className="px-2 py-2 text-right font-medium bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 min-w-[80px]">Total</th>
                                 {MONTHS.map(m => <th key={m} className="px-1 py-2 text-center min-w-[70px]">{m}</th>)}
@@ -383,7 +509,48 @@ const YearlyView = ({ transactions, categories, subCategories, creditCards, sett
                                 </td>
                                 {yearlySummary.map((m, i) => (
                                     <td key={i} className="px-1 py-2.5 text-center text-blue-600 font-medium">
-                                        {m.investment > 0 ? (m.investment || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                                        {m.investment !== 0 ? (m.investment || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                                    </td>
+                                ))}
+                            </tr>
+
+                            {/* Investimentos Subdivisions */}
+                            <tr className="text-[10px] text-zinc-500 hover:bg-blue-50/10 transition-colors">
+                                <td className="px-3 py-1.5 pl-6 sticky left-0 bg-white dark:bg-zinc-900 shadow-[1px_0_2px_rgba(0,0,0,0.05)] flex items-center gap-1.5 italic">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Renda Ativa
+                                </td>
+                                <td className="px-2 py-1.5 text-right font-medium text-zinc-600 bg-zinc-50 dark:bg-zinc-950/30">
+                                    {(yearlySummary.reduce((acc, m) => acc + m.pocket, 0) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' })}
+                                </td>
+                                {yearlySummary.map((m, i) => (
+                                    <td key={i} className="px-1 py-1.5 text-center text-zinc-600">
+                                        {m.pocket > 0 ? (m.pocket || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                                    </td>
+                                ))}
+                            </tr>
+                            <tr className="text-[10px] text-zinc-500 hover:bg-blue-50/10 transition-colors">
+                                <td className="px-3 py-1.5 pl-6 sticky left-0 bg-white dark:bg-zinc-900 shadow-[1px_0_2px_rgba(0,0,0,0.05)] flex items-center gap-1.5 italic">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Proventos
+                                </td>
+                                <td className="px-2 py-1.5 text-right font-medium text-zinc-600 bg-zinc-50 dark:bg-zinc-950/30">
+                                    {(yearlySummary.reduce((acc, m) => acc + m.provento, 0) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' })}
+                                </td>
+                                {yearlySummary.map((m, i) => (
+                                    <td key={i} className="px-1 py-1.5 text-center text-zinc-600">
+                                        {m.provento > 0 ? (m.provento || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                                    </td>
+                                ))}
+                            </tr>
+                            <tr className="text-[10px] text-zinc-500 hover:bg-blue-50/10 transition-colors">
+                                <td className="px-3 py-1.5 pl-6 sticky left-0 bg-white dark:bg-zinc-900 shadow-[1px_0_2px_rgba(0,0,0,0.05)] flex items-center gap-1.5 italic">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span> Reinvestimentos
+                                </td>
+                                <td className="px-2 py-1.5 text-right font-medium text-zinc-600 bg-zinc-50 dark:bg-zinc-950/30">
+                                    {(yearlySummary.reduce((acc, m) => acc + m.resgate, 0) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' })}
+                                </td>
+                                {yearlySummary.map((m, i) => (
+                                    <td key={i} className="px-1 py-1.5 text-center text-zinc-600">
+                                        {m.resgate > 0 ? (m.resgate || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
                                     </td>
                                 ))}
                             </tr>
@@ -916,21 +1083,28 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
   }, [currentMonthTransactions, categories]);
 
   const paymentMethodSummary = useMemo(() => {
-      const summary: Record<string, number> = {};
+      const summary: Record<string, { total: number; color?: string; isCard?: boolean; cardName: string }> = {};
       currentMonthTransactions.forEach(t => {
           if (t.type !== TransactionType.EXPENSE) return;
           const key = t.paymentMethod || PaymentMethod.DEBIT_CASH;
           let name = 'Outros';
+          let cardColor: string | undefined;
+          let isCard = false;
           if (key === PaymentMethod.CREDIT_CARD) {
               const card = t.creditCardId ? creditCards.find(c => c.id === t.creditCardId) : null;
               name = card ? `Cartão ${card.name}` : 'Cartão de Crédito';
+              cardColor = card?.color;
+              isCard = true;
           } else if (key === PaymentMethod.DEBIT_CASH) {
               name = 'Débito / Dinheiro';
           }
           
-          summary[name] = (summary[name] || 0) + t.amount;
+          if (!summary[name]) {
+              summary[name] = { total: 0, color: cardColor, isCard, cardName: name };
+          }
+          summary[name].total += t.amount;
       });
-      return Object.entries(summary).sort((a, b) => b[1] - a[1]);
+      return Object.values(summary).sort((a, b) => b.total - a.total);
   }, [currentMonthTransactions, creditCards]);
 
     return (
@@ -1102,12 +1276,29 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                 <div className="pt-4 mt-2 border-t border-zinc-100 dark:border-zinc-800 pb-1">
                     <h4 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Resumo por Forma de Pagamento</h4>
                     <div className="flex flex-wrap gap-3">
-                        {paymentMethodSummary.map(([method, total]) => (
-                            <div key={method} className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-4 py-2 flex items-center justify-between min-w-[140px] flex-1 sm:flex-none">
-                                <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 dark:text-zinc-500 line-clamp-1 mr-3" title={method}>{method}</span>
-                                <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{formatCurrency(total)}</span>
-                            </div>
-                        ))}
+                        {paymentMethodSummary.map(({ cardName, total, color, isCard }) => {
+                            const hasColor = isCard && color;
+                            return (
+                                <div 
+                                    key={cardName} 
+                                    className="bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200/40 dark:border-zinc-800/80 rounded-2xl px-4 py-2.5 flex items-center justify-between min-w-[150px] flex-1 sm:flex-none transition-all hover:scale-[1.01] hover:shadow-sm"
+                                    style={{
+                                        borderColor: hasColor ? `${color}40` : undefined,
+                                        backgroundColor: hasColor ? `${color}0d` : undefined,
+                                    }}
+                                >
+                                    <div className="flex items-center gap-2 mr-3 min-w-0">
+                                        {hasColor ? (
+                                            <CardIcon size={14} style={{ color: color }} className="shrink-0" />
+                                        ) : (
+                                            <Wallet size={14} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
+                                        )}
+                                        <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 line-clamp-1" title={cardName}>{cardName}</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(total)}</span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -1194,7 +1385,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
 
         {/* RESULTS SECTION */}
         {viewMode === 'yearly' ? ( 
-            <YearlyView transactions={yearlyFilteredTransactions} categories={categories} subCategories={subCategories} creditCards={creditCards} settings={settings} year={selectedYear} /> 
+            <YearlyView transactions={yearlyFilteredTransactions} allTransactions={transactions} categories={categories} subCategories={subCategories} creditCards={creditCards} settings={settings} year={selectedYear} /> 
         ) : (
             <div className="space-y-6">
                 {potentialDuplicateGroups.length > 0 && !dismissedDuplicates && (

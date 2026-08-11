@@ -395,7 +395,7 @@ export const Dashboard = ({
   }, [filteredTransactions]);
 
   // Monthly Pocket Investment Stats
-    const pocketInvestmentStats = useMemo(() => {
+  const pocketInvestmentStats = useMemo(() => {
     let activePool = 0;
     let totalProventosReceived = 0;
     let totalProventosReinvested = 0;
@@ -410,61 +410,104 @@ export const Dashboard = ({
       .filter(t => t.date.slice(0, 7) <= currentYearMonth)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+    // Group transactions by year-month
+    const txByMonth = new Map<string, Transaction[]>();
     sortedTxs.forEach(t => {
-      if (t.type === TransactionType.INVESTMENT) {
-        const isNathy = isNathyTransaction(t);
-        if (isNathy) return;
+      const ym = t.date.slice(0, 7);
+      if (!txByMonth.has(ym)) {
+        txByMonth.set(ym, []);
+      }
+      txByMonth.get(ym)!.push(t);
+    });
 
-        const event = t.investmentDetails?.event || 'BUY';
-        if (['DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(event)) {
-          totalProventosReceived += t.amount;
-          currentProventosPool += t.amount;
-        } else if (event === 'SELL') {
-          totalResgatesReceived += t.amount;
-          currentResgatesPool += t.amount;
-        } else if (['BUY', 'BONUS'].includes(event)) {
-          let amountToClassify = t.amount;
-          let pocket = 0;
-          let provento = 0;
-          let resgate = 0;
+    const sortedMonths = Array.from(txByMonth.keys()).sort();
 
-          if (t.investmentDetails?.sourceType === 'PROVENTO') {
-            provento = amountToClassify;
-            currentProventosPool = Math.max(0, currentProventosPool - amountToClassify);
-          } else if (t.investmentDetails?.sourceType === 'RESGATE') {
-            resgate = amountToClassify;
-            currentResgatesPool = Math.max(0, currentResgatesPool - amountToClassify);
-          } else if (t.investmentDetails?.sourceType === 'POCKET') {
-            pocket = amountToClassify;
-          } else {
-            resgate = Math.min(amountToClassify, currentResgatesPool);
-            currentResgatesPool -= resgate;
-            amountToClassify -= resgate;
+    sortedMonths.forEach(ym => {
+      const monthTxs = txByMonth.get(ym)!;
 
-            provento = Math.min(amountToClassify, currentProventosPool);
-            currentProventosPool -= provento;
-            amountToClassify -= provento;
+      // 1. Accumulate all monthly proventos and resgates received BEFORE processing investments
+      let monthProventos = 0;
+      let monthResgates = 0;
 
-            pocket = amountToClassify;
+      monthTxs.forEach(t => {
+        if (t.type === TransactionType.INVESTMENT) {
+          const isNathy = isNathyTransaction(t);
+          if (isNathy) return;
+
+          const event = t.investmentDetails?.event || 'BUY';
+          if (['DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(event)) {
+            monthProventos += t.amount;
+            totalProventosReceived += t.amount;
+          } else if (event === 'SELL' || event === 'AMORTIZACAO') {
+            monthResgates += t.amount;
+            totalResgatesReceived += t.amount;
           }
-
-          totalProventosReinvested += provento;
-          totalResgatesReinvested += resgate;
-          activePool += pocket;
-          txBreakdown.set(t.id, { pocket, provento, resgate });
         }
+      });
+
+      currentProventosPool += monthProventos;
+      currentResgatesPool += monthResgates;
+
+      // 2. Calculate total monthly investment (BUY/BONUS)
+      let monthInvested = 0;
+      const monthBuys: Transaction[] = [];
+
+      monthTxs.forEach(t => {
+        if (t.type === TransactionType.INVESTMENT) {
+          const isNathy = isNathyTransaction(t);
+          if (isNathy) return;
+
+          const event = t.investmentDetails?.event || 'BUY';
+          if (['BUY', 'BONUS'].includes(event)) {
+            monthInvested += t.amount;
+            monthBuys.push(t);
+          }
+        }
+      });
+
+      // 3. Subtract proventos and resgates pool from total monthly invested amount
+      let monthResgateUsed = 0;
+      let monthProventoUsed = 0;
+      let monthPocket = 0;
+
+      if (monthInvested > 0) {
+        // First try to use Resgates Pool
+        monthResgateUsed = Math.min(monthInvested, currentResgatesPool);
+        currentResgatesPool -= monthResgateUsed;
+        const remaining = monthInvested - monthResgateUsed;
+
+        // Next try to use Proventos Pool
+        monthProventoUsed = Math.min(remaining, currentProventosPool);
+        currentProventosPool -= monthProventoUsed;
+
+        // The rest is pocket money
+        monthPocket = remaining - monthProventoUsed;
+
+        totalProventosReinvested += monthProventoUsed;
+        totalResgatesReinvested += monthResgateUsed;
+        activePool += monthPocket;
+
+        // 4. Distribute the monthly totals proportionally to each transaction of this month
+        monthBuys.forEach(t => {
+          const ratio = t.amount / monthInvested;
+          txBreakdown.set(t.id, {
+            pocket: monthPocket * ratio,
+            provento: monthProventoUsed * ratio,
+            resgate: monthResgateUsed * ratio
+          });
+        });
       }
     });
 
     return { 
       activePool, 
-      passivePool: currentProventosPool, 
+      passivePool: currentProventosPool + currentResgatesPool, 
       resgatesPool: currentResgatesPool,
       totalProventosReceived, 
       totalProventosReinvested,
       txBreakdown
     };
-  }, [transactions, categories]);
+  }, [transactions, categories, currentDate]);
 
   // Monthly stats
   const stats = useMemo(() => {
