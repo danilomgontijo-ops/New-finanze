@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Transaction, Category, TransactionType, PaymentMethod, InvestmentDetails, SubCategory } from '../types';
 import { GeminiService } from '../services/geminiService';
 import { YahooFinanceService } from '../services/yahooFinanceService';
+import { BrapiService } from '../services/brapiService';
 import { X, Sparkles, Search, CheckCircle2, AlertCircle, Save, Calendar, Loader2, ArrowRight, DollarSign } from 'lucide-react';
 
 interface AiDividendRadarProps {
@@ -200,11 +201,85 @@ export const AiDividendRadar: React.FC<AiDividendRadarProps> = ({ isOpen, onClos
               return tempHoldings[targetTicker] || 0;
           };
 
+          // Helper to check if ticker/dividend is in USD / exterior
+          const isUsdAsset = (ticker: string, divCurrency?: string) => {
+              if (divCurrency === 'USD') return true;
+              const recentTx = sortedTransactions
+                  .filter(t => t.investmentDetails?.ticker === ticker)
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+              if (recentTx?.investmentDetails?.currency === 'USD') return true;
+
+              const mapInfo = tickerCategoryMap[ticker];
+              if (mapInfo) {
+                  const cat = categories.find(c => c.id === mapInfo.categoryId);
+                  const subC = subCategories.find(s => s.id === mapInfo.subCategoryId);
+                  const catName = (cat?.name || '').toLowerCase();
+                  const subCatName = (subC?.name || '').toLowerCase();
+                  if (catName.includes('exterior') || catName.includes('eua') || catName.includes('internacional') || subCatName.includes('eua') || subCatName.includes('exterior')) {
+                      return true;
+                  }
+              }
+              // Tickers without numbers (e.g. AAPL, MSFT, O, SCHD, NVDA, TSLA) that aren't Brazilian 'OUTROS'
+              if (!/\d/.test(ticker) && ticker !== 'OUTROS' && ticker.length <= 6) {
+                  return true;
+              }
+              return false;
+          };
+
+          // Cache for PTAX queries during the search session
+          const ptaxCache = new Map<string, number>();
+
+          const getPtaxForDate = async (dateStr: string): Promise<number> => {
+              if (!dateStr) dateStr = new Date().toISOString().split('T')[0];
+              if (ptaxCache.has(dateStr)) return ptaxCache.get(dateStr)!;
+
+              // Check BCB PTAX for dateStr or preceding business days (up to 5 days back for weekends/holidays)
+              let cur = new Date(dateStr + 'T12:00:00Z');
+              for (let i = 0; i < 5; i++) {
+                  const yyyy = cur.getUTCFullYear();
+                  const mm = String(cur.getUTCMonth() + 1).padStart(2, '0');
+                  const dd = String(cur.getUTCDate()).padStart(2, '0');
+                  const tryDateStr = `${yyyy}-${mm}-${dd}`;
+
+                  try {
+                      const ptaxRes = await BrapiService.fetchPtaxForDate(tryDateStr);
+                      if (ptaxRes && ptaxRes.venda > 0) {
+                          ptaxCache.set(dateStr, ptaxRes.venda);
+                          return ptaxRes.venda;
+                      }
+                  } catch (e) {
+                      console.warn(`Error fetching BCB PTAX for ${tryDateStr}:`, e);
+                  }
+                  cur.setUTCDate(cur.getUTCDate() - 1);
+              }
+
+              // Fallback: Gemini historical forex
+              try {
+                  const gRate = await GeminiService.fetchHistoricalForex(dateStr, 'USD');
+                  if (gRate && gRate > 1) {
+                      ptaxCache.set(dateStr, gRate);
+                      return gRate;
+                  }
+              } catch (e) {}
+
+              // Fallback: Current BCB PTAX
+              try {
+                  const currentPtax = await BrapiService.fetchPtax();
+                  if (currentPtax && currentPtax > 1) {
+                      ptaxCache.set(dateStr, currentPtax);
+                      return currentPtax;
+                  }
+              } catch (e) {}
+
+              return 5.50; // default fallback if APIs fail
+          };
+
           // Process results: Match with quantity user owns
           const processed: any[] = [];
           const seen = new Set<string>();
 
-          allDividends.forEach((div: any, idx: number) => {
+          for (let idx = 0; idx < allDividends.length; idx++) {
+              const div = allDividends[idx];
               // If we have dataCom, use it. Otherwise, assume they held it 30 days before payment.
               let targetDate = div.dataCom;
               if (!targetDate) {
@@ -221,35 +296,41 @@ export const AiDividendRadar: React.FC<AiDividendRadarProps> = ({ isOpen, onClos
               const currentQty = getQuantityOnDate(div.ticker, targetDate);
               
               // Skip if user didn't hold the asset
-              if (currentQty <= 0) return;
+              if (currentQty <= 0) continue;
 
               // Check for duplicates inside the search session
-              // Yahoo might return Ex-date and 'DIVIDEND', while Gemini returns real Payment-date and 'JCP'.
-              // We consider it a duplicate if ticker, amount, and payment month/year are the same.
               let divDateForKey = new Date();
               if (div.paymentDate) divDateForKey = new Date(div.paymentDate);
-              const uniqueKey = `${div.ticker}-${divDateForKey.getFullYear()}-${divDateForKey.getMonth()}-${div.amount.toFixed(4)}`;
-              if (seen.has(uniqueKey)) return;
+              const uniqueKey = `${div.ticker}-${divDateForKey.getFullYear()}-${divDateForKey.getMonth()}-${Number(div.amount).toFixed(4)}`;
+              if (seen.has(uniqueKey)) continue;
               seen.add(uniqueKey);
 
-              // --- US TAX LOGIC (30% Withholding) ---
-              let grossUnit = div.amount;
-              let taxUnit = 0;
-              let netUnit = div.amount;
-              let ptax = div.ptax || 1;
+              const isUsd = isUsdAsset(div.ticker, div.currency);
+              const currency = isUsd ? 'USD' : 'BRL';
 
-              if (div.currency === 'USD') {
+              // --- US TAX LOGIC & PTAX LOOKUP ---
+              let grossUnit = Number(div.amount) || 0;
+              let taxUnit = 0;
+              let netUnit = grossUnit;
+              let ptax = 1;
+
+              if (isUsd) {
+                  // If div already has a valid PTAX > 1 from Gemini/source, use it; otherwise fetch real PTAX
+                  if (div.ptax && typeof div.ptax === 'number' && div.ptax > 1) {
+                      ptax = div.ptax;
+                  } else {
+                      ptax = await getPtaxForDate(div.paymentDate || targetDate);
+                  }
                   // US Law: 30% tax on dividends for non-residents
                   taxUnit = grossUnit * 0.30;
                   netUnit = grossUnit - taxUnit;
               } else if (div.type === 'JCP') {
-                  // JCP (Juros sobre Capital Próprio) in Brazil has 15% IRRF (Imposto de Renda Retido na Fonte)
+                  // JCP (Juros sobre Capital Próprio) in Brazil has 15% IRRF
                   taxUnit = grossUnit * 0.15;
                   netUnit = grossUnit - taxUnit;
               }
 
-              // Calculate Totals in BRL
-              // (Net USD * Qty) * PTAX
+              // Calculate Totals in BRL: (Net USD * Qty) * PTAX
               const totalAmountBrl = (netUnit * currentQty) * ptax;
 
               // Check for Duplicates (Compare converted BRL amount)
@@ -280,7 +361,7 @@ export const AiDividendRadar: React.FC<AiDividendRadarProps> = ({ isOpen, onClos
                   netUnit, // Unitary Net in Original Currency
                   
                   quantity: currentQty,
-                  currency: div.currency,
+                  currency: currency,
                   ptax: ptax,
                   
                   totalAmount: totalAmountBrl, // Final BRL to receive
@@ -290,7 +371,7 @@ export const AiDividendRadar: React.FC<AiDividendRadarProps> = ({ isOpen, onClos
                   editableDate: div.paymentDate,
                   editableAmount: totalAmountBrl
               });
-          });
+          }
 
           setFoundDividends(processed);
           setSources(allSources);
@@ -497,7 +578,7 @@ export const AiDividendRadar: React.FC<AiDividendRadarProps> = ({ isOpen, onClos
                                                     <div className="font-bold text-gray-800">{item.ticker}</div>
                                                     <div className="text-[9px] text-gray-500 font-bold bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-0.5">{item.type}</div>
                                                 </td>
-                                                <td className="px-4 py-3 font-mono text-xs text-gray-500">{new Date(item.date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>
+                                                <td className="px-4 py-3 font-mono text-xs text-gray-500">{(() => { const d = new Date(item.date); return isNaN(d.getTime()) ? (item.date || '') : d.toLocaleDateString('pt-BR', {timeZone: 'UTC'}); })()}</td>
                                                 <td className="px-4 py-3 text-right text-xs font-medium text-gray-700">
                                                     {item.currency} {item.grossUnit.toFixed(4)}
                                                 </td>
@@ -506,7 +587,11 @@ export const AiDividendRadar: React.FC<AiDividendRadarProps> = ({ isOpen, onClos
                                                     {item.currency === 'USD' && item.taxUnit > 0 && <span className="block text-[8px] text-rose-600 font-bold">(30%)</span>}
                                                 </td>
                                                 <td className="px-4 py-3 text-center text-xs text-gray-500 font-mono">
-                                                    {item.currency === 'USD' ? item.ptax.toFixed(4) : '-'}
+                                                    {item.currency === 'USD' ? (
+                                                        <span className="font-semibold text-blue-700 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-100">
+                                                            R$ {item.ptax.toFixed(4)}
+                                                        </span>
+                                                    ) : '-'}
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
                                                     <div className="font-bold text-emerald-600 bg-emerald-50/50 px-2 py-1 rounded">

@@ -30,8 +30,12 @@ const formatCurrency = (val: number) =>
   (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function calculateEffectiveDate(t: Transaction, creditCards: CreditCard[], settings: UserSettings): Date {
-    if (t.manualAccountingDate) return new Date(t.manualAccountingDate);
-    const date = new Date(t.date);
+    if (t.manualAccountingDate) {
+        const mDate = new Date(t.manualAccountingDate);
+        if (!isNaN(mDate.getTime())) return mDate;
+    }
+    let date = new Date(t.date);
+    if (isNaN(date.getTime())) date = new Date();
     const dayOfMonth = t.originalDay || date.getUTCDate();
     const month = date.getUTCMonth();
     const year = date.getUTCFullYear();
@@ -818,9 +822,19 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
 
                 {/* Date & Icon */}
                 <div className="flex flex-col items-center justify-center min-w-[32px]">
-                    <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 leading-none">{new Date(t.date).getUTCDate().toString().padStart(2, '0')}</span>
+                    <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 leading-none">
+                        {(() => {
+                            let d = new Date(t.date);
+                            if (isNaN(d.getTime())) d = new Date();
+                            return d.getUTCDate().toString().padStart(2, '0');
+                        })()}
+                    </span>
                     <span className="text-[9px] font-medium text-zinc-700 dark:text-zinc-300 uppercase leading-none mt-0.5">
-                        {new Date(t.date).toLocaleDateString('pt-BR', {month: 'short'}).replace('.','')}
+                        {(() => {
+                            let d = new Date(t.date);
+                            if (isNaN(d.getTime())) d = new Date();
+                            return d.toLocaleDateString('pt-BR', {month: 'short'}).replace('.','');
+                        })()}
                     </span>
                 </div>
 

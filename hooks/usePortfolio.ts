@@ -7,40 +7,93 @@ const calculateXIRR = (
   dates: Date[],
   guess: number = 0.1,
 ): number => {
-  const xirr = (values: number[], dates: Date[], guess: number) => {
+  if (!values || !dates || values.length < 2) return 0;
+  if (values.every((v) => v >= 0) || values.every((v) => v <= 0)) return 0;
+
+  // Combine values and dates into flow items and sort chronologically
+  const flows = values
+    .map((val, idx) => ({ amount: val, date: new Date(dates[idx]) }))
+    .filter((f) => !isNaN(f.date.getTime()) && !isNaN(f.amount))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  if (flows.length < 2) return 0;
+
+  const startDate = flows[0].date;
+  const endDate = flows[flows.length - 1].date;
+  const diffDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+
+  // If holding period is less than 1 day, calculate simple return % instead of annualizing
+  if (diffDays < 1) {
+    const totalOutflow = flows.filter((f) => f.amount < 0).reduce((acc, f) => acc + Math.abs(f.amount), 0);
+    const totalInflow = flows.filter((f) => f.amount > 0).reduce((acc, f) => acc + f.amount, 0);
+    if (totalOutflow > 0) {
+      return ((totalInflow - totalOutflow) / totalOutflow) * 100;
+    }
+    return 0;
+  }
+
+  const xirr = (sortedFlows: { date: Date; amount: number }[], initialGuess: number) => {
     const limit = 100;
     const tol = 1e-6;
-    let x0 = guess;
+    let x0 = initialGuess;
+
     for (let i = 0; i < limit; i++) {
       let fValue = 0;
       let fDerivative = 0;
-      for (let j = 0; j < values.length; j++) {
-        const dt =
-          (dates[j].getTime() - dates[0].getTime()) /
-          (1000 * 60 * 60 * 24 * 365.25);
-        const factor = Math.pow(Math.abs(1 + x0), dt);
-        const sign = 1 + x0 >= 0 ? 1 : Math.floor(dt) % 2 === 0 ? 1 : -1;
-        fValue += values[j] / (sign * factor);
-        fDerivative += (-dt * values[j]) / (sign * factor * (1 + x0));
+
+      for (let j = 0; j < sortedFlows.length; j++) {
+        const dt = (sortedFlows[j].date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+        if (dt < 0) continue;
+
+        const base = 1 + x0;
+        if (base <= 0) {
+          x0 = -0.99;
+          break;
+        }
+
+        const factor = Math.pow(base, dt);
+        fValue += sortedFlows[j].amount / factor;
+        fDerivative += (-dt * sortedFlows[j].amount) / (factor * base);
       }
+
       if (Math.abs(fDerivative) < 1e-12) break;
       const step = fValue / fDerivative;
-      const x1 = x0 - Math.max(-0.5, Math.min(0.5, step)); // Dampen the step to prevent wild oscillations
+      const stepDampened = Math.max(-0.5, Math.min(0.5, step));
+      const x1 = x0 - stepDampened;
+
       if (Math.abs(x1 - x0) < tol) return x1;
       x0 = x1;
-      if (x0 <= -1) x0 = -0.999; // Keep x0 in a valid range for Math.pow
+      if (x0 <= -0.999) x0 = -0.99;
     }
     return x0;
   };
+
   try {
-    if (
-      values.length === 0 ||
-      values.every((v) => v >= 0) ||
-      values.every((v) => v <= 0)
-    )
-      return 0;
-    const result = xirr(values, dates, guess);
-    return isNaN(result) || !isFinite(result) ? 0 : result * 100;
+    let result = xirr(flows, guess);
+
+    if (isNaN(result) || !isFinite(result) || Math.abs(result) > 10 || result <= -1) {
+      const guesses = [0.05, -0.05, 0.2, -0.2, 0.5];
+      for (const g of guesses) {
+        const altResult = xirr(flows, g);
+        if (!isNaN(altResult) && isFinite(altResult) && Math.abs(altResult) <= 10 && altResult > -1) {
+          result = altResult;
+          break;
+        }
+      }
+    }
+
+    if (isNaN(result) || !isFinite(result) || result <= -1) return 0;
+
+    const annualRatePct = result * 100;
+    if (diffDays < 30 && Math.abs(annualRatePct) > 500) {
+      const totalOutflow = flows.filter((f) => f.amount < 0).reduce((acc, f) => acc + Math.abs(f.amount), 0);
+      const totalInflow = flows.filter((f) => f.amount > 0).reduce((acc, f) => acc + f.amount, 0);
+      if (totalOutflow > 0) {
+        return ((totalInflow - totalOutflow) / totalOutflow) * 100;
+      }
+    }
+
+    return annualRatePct;
   } catch (e) {
     return 0;
   }
@@ -194,6 +247,8 @@ export interface PortfolioItem {
   totalProventos12m: number;
   realizedProfit: number;
   yieldRate?: string;
+  maturityDate?: string;
+  hasDailyLiquidity?: boolean;
   category: string;
   subCategory: string;
   categoryId: string;
@@ -201,6 +256,53 @@ export interface PortfolioItem {
   profit: number;
   lots: any[];
 }
+
+export const getTxAmountBrl = (t: Transaction, currentUsdRate: number = 5.5): number => {
+  if (!t) return 0;
+  const rawAmount = Math.abs(t.amount || 0);
+  const det = t.investmentDetails;
+  if (!det) return rawAmount;
+
+  const isUsd = det.currency === 'USD';
+  if (!isUsd) return rawAmount;
+
+  const ptax = (det.ptax && det.ptax > 1) ? det.ptax : (currentUsdRate > 1 ? currentUsdRate : 5.5);
+
+  let expectedUSD = 0;
+  const gross = det.grossAmount || 0;
+  const tax = det.tax || 0;
+  const netUSD = gross > 0 ? (gross - tax) : 0;
+  const qty = det.quantity || 0;
+  const price = det.price || 0;
+
+  if (netUSD > 0) {
+    expectedUSD = netUSD;
+  } else if (gross > 0) {
+    expectedUSD = gross;
+  } else if (qty > 0 && price > 0) {
+    expectedUSD = qty * price;
+  }
+
+  if (expectedUSD > 0) {
+    const expectedBRL = expectedUSD * ptax;
+    const distUSD = Math.abs(rawAmount - expectedUSD);
+    const distBRL = Math.abs(rawAmount - expectedBRL);
+
+    if (distBRL < distUSD) {
+      return rawAmount;
+    } else {
+      return rawAmount * ptax;
+    }
+  }
+
+  if (ptax > 1.2 && rawAmount > 0) {
+    if (rawAmount < 300) {
+      return rawAmount * ptax;
+    }
+  }
+
+  return rawAmount;
+};
 
 export function usePortfolioData(
   investmentTransactions: Transaction[],
@@ -247,8 +349,16 @@ export function usePortfolioData(
   }, [investmentTransactions, categories]);
 
   return useMemo(() => {
-    const usdPriceObj = assetPrices.find((p) => p.ticker === "USDBRL");
-    const currentUsdRate = usdPriceObj ? usdPriceObj.currentPrice : 1;
+    const usdPriceObj = assetPrices.find(
+      (p) => p.ticker === "USDBRL" || p.ticker === "USD/BRL" || p.ticker === "USDBRL=X" || p.ticker === "BRL=X",
+    );
+    let currentUsdRate = usdPriceObj && usdPriceObj.currentPrice > 1 ? usdPriceObj.currentPrice : 0;
+    if (currentUsdRate <= 1) {
+      const txWithPtax = cleanInvestmentTxs.find(
+        (t) => t.investmentDetails?.currency === "USD" && t.investmentDetails?.ptax && t.investmentDetails.ptax > 1,
+      );
+      currentUsdRate = txWithPtax?.investmentDetails?.ptax || 5.5;
+    }
     const assets: Record<string, any> = {};
     const profitMap: Record<string, number> = {};
     let totalRealizedProfit = 0;
@@ -264,6 +374,8 @@ export function usePortfolioData(
         broker,
         newTicker,
         yieldRate,
+        maturityDate,
+        hasDailyLiquidity,
       } = t.investmentDetails;
       const tDate = new Date(t.date);
 
@@ -287,35 +399,41 @@ export function usePortfolioData(
           broker: broker || "Carteira",
           cashFlows: [],
           yieldRate: yieldRate || undefined,
+          maturityDate: maturityDate || undefined,
+          hasDailyLiquidity: hasDailyLiquidity !== undefined ? hasDailyLiquidity : undefined,
           earliestDate: tDate,
           lots: [], // FIFO Tracking: Array of { date: Date, q: number, cost: number, yieldRate?: string }
         };
       }
       const a = assets[ticker];
+      if (maturityDate) a.maturityDate = maturityDate;
+      if (hasDailyLiquidity !== undefined) a.hasDailyLiquidity = hasDailyLiquidity;
       if (tDate < a.earliestDate) a.earliestDate = tDate;
 
+      const effectiveTxAmount = getTxAmountBrl(t, currentUsdRate);
+
       if (["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(event)) {
-        a.totalProventos += t.amount;
+        a.totalProventos += effectiveTxAmount;
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-        if (tDate >= oneYearAgo) a.totalProventos12m += t.amount;
+        if (tDate >= oneYearAgo) a.totalProventos12m += effectiveTxAmount;
 
-        a.cashFlows.push({ date: tDate, amount: t.amount });
+        a.cashFlows.push({ date: tDate, amount: effectiveTxAmount });
       } else if (event === "AMORTIZACAO") {
-        a.totalCost -= t.amount;
-        a.historicalCost -= t.amount;
-        a.cashFlows.push({ date: tDate, amount: t.amount });
+        a.totalCost -= effectiveTxAmount;
+        a.historicalCost -= effectiveTxAmount;
+        a.cashFlows.push({ date: tDate, amount: effectiveTxAmount });
       } else if (event === "BUY") {
         a.quantity += quantity;
-        a.totalCost += t.amount;
-        a.historicalCost += t.amount;
-        a.cashFlows.push({ date: tDate, amount: -t.amount });
+        a.totalCost += effectiveTxAmount;
+        a.historicalCost += effectiveTxAmount;
+        a.cashFlows.push({ date: tDate, amount: -effectiveTxAmount });
         // Add to FIFO Lots
         const rateForLot = yieldRate || a.yieldRate;
         a.lots.push({
           date: tDate,
           q: quantity,
-          cost: t.amount,
+          cost: effectiveTxAmount,
           yieldRate: rateForLot,
         });
         if (yieldRate) a.yieldRate = yieldRate;
@@ -449,7 +567,7 @@ export function usePortfolioData(
           a.lots = [];
         }
 
-        const transactionProfit = t.amount - costOfSold;
+        const transactionProfit = effectiveTxAmount - costOfSold;
 
         const previousTotalCost = a.totalCost;
         const reductionRatio =
@@ -478,7 +596,7 @@ export function usePortfolioData(
           a.lots = [];
         }
 
-        a.cashFlows.push({ date: tDate, amount: t.amount });
+        a.cashFlows.push({ date: tDate, amount: effectiveTxAmount });
       } else if (event === "BONUS") {
         const bonusValue = quantity * price;
         a.quantity += quantity;
@@ -630,9 +748,9 @@ export function usePortfolioData(
                 calcBal += curVal;
 
                 const lotDateStr =
-                  lot.date instanceof Date
+                  lot.date instanceof Date && !isNaN(lot.date.getTime())
                     ? lot.date.toISOString()
-                    : String(lot.date);
+                    : String(lot.date || "");
                 if (lotDateStr <= yesterdayStr) {
                   calcYesterday += calculateRealFixedIncome(
                     lot.cost,
@@ -723,6 +841,10 @@ export function usePortfolioData(
               m2.date.localeCompare(m1.date),
             );
             closingDate = new Date(sortedH[0].date);
+          }
+          const maxFlowTime = Math.max(...a.cashFlows.map((f: any) => new Date(f.date).getTime()));
+          if (closingDate.getTime() < maxFlowTime) {
+            closingDate = new Date(maxFlowTime);
           }
           const flows = [
             ...a.cashFlows,
@@ -873,6 +995,7 @@ export function usePortfolioData(
     cleanInvestmentTxs.forEach((t) => {
       const tDate = new Date(t.date);
       const event = t.investmentDetails?.event || "BUY";
+      const amtBrl = getTxAmountBrl(t, currentUsdRate);
       if (
         [
           "DIVIDEND",
@@ -883,17 +1006,22 @@ export function usePortfolioData(
           "SELL",
         ].includes(event)
       ) {
-        portfolioCashFlows.push({ date: tDate, amount: t.amount });
+        portfolioCashFlows.push({ date: tDate, amount: amtBrl });
       } else if (event === "BUY") {
-        portfolioCashFlows.push({ date: tDate, amount: -t.amount });
+        portfolioCashFlows.push({ date: tDate, amount: -amtBrl });
       }
     });
 
     let portfolioXTIR = 0;
     if (portfolioCashFlows.length > 0 && summary.marketValue > 0) {
+      let closingDate = new Date();
+      const maxFlowTime = Math.max(...portfolioCashFlows.map((f: any) => new Date(f.date).getTime()));
+      if (closingDate.getTime() < maxFlowTime) {
+        closingDate = new Date(maxFlowTime);
+      }
       const flows = [
         ...portfolioCashFlows,
-        { date: new Date(), amount: summary.marketValue },
+        { date: closingDate, amount: summary.marketValue },
       ];
       portfolioXTIR = calculateXIRR(
         flows.map((f) => f.amount),

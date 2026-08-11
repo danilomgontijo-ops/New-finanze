@@ -120,12 +120,24 @@ export const DividendBulkImporter: React.FC<DividendBulkImporterProps> = ({ isOp
             let categoryId = defaultCatId;
             let subCategoryId = '';
 
-            // Tenta encontrar categoria pelo nome (se disponível)
-            // No formato B3, não temos categoria/subcategoria, usa padrão.
-            // No formato original, tentamos extrair.
-            
-            // Re-implementar lógica de categoria para o formato original se necessário
-            // Para o formato B3, manter padrão.
+            // Try to find category/subcategory from ticker history
+            const matchTx = transactions.find(t => 
+                t.investmentDetails?.ticker?.trim().toUpperCase() === ticker.toUpperCase() && 
+                (t.categoryId || t.subCategoryId)
+            );
+            if (matchTx) {
+                if (matchTx.subCategoryId) {
+                    const sub = subCategories.find(s => s.id === matchTx.subCategoryId);
+                    if (sub) {
+                        categoryId = sub.categoryId;
+                        subCategoryId = sub.id;
+                    } else if (matchTx.categoryId) {
+                        categoryId = matchTx.categoryId;
+                    }
+                } else if (matchTx.categoryId) {
+                    categoryId = matchTx.categoryId;
+                }
+            }
 
             // Check Duplicate
             const isDuplicate = transactions.some(t => 

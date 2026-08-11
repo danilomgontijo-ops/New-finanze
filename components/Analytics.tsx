@@ -1105,7 +1105,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                                               {groupDetailsByName && t.count > 1 ? (
                                                   <span className="font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950/40 px-2 py-1 rounded-md">{t.count} ocorrências</span>
                                               ) : (
-                                                  new Date(t.date || t.dates?.[0]).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+                                                  (() => {
+                                                      const raw = t.date || t.dates?.[0];
+                                                      if (!raw) return '--/--/----';
+                                                      const d = new Date(raw);
+                                                      if (isNaN(d.getTime())) return String(raw);
+                                                      return d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                                                  })()
                                               )}
                                           </td>
                                           <td className="px-6 py-4">

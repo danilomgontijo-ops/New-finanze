@@ -34,7 +34,7 @@ export const YahooFinanceService = {
               dataCom: dateStr,
               amount: div.amount,
               currency: currency,
-              ptax: 1
+              ptax: currency === 'USD' ? undefined : 1
             };
           });
           

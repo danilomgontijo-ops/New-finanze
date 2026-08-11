@@ -294,7 +294,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
                     <div><h1 className="text-3xl font-extrabold text-gray-900 dark:text-zinc-50 mb-2 uppercase">Relatório Financeiro</h1><p className="text-sm font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-widest">FinanZe Personal Finance</p></div>
                     <div className="text-right">
                         <div className="text-sm font-bold text-gray-900 dark:text-zinc-50">PERÍODO</div>
-                        <div className="text-xl font-light text-gray-700 dark:text-zinc-300 capitalize">{dateMode === 'month' ? new Date(selectedMonth + '-02').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : `${new Date(startDate + 'T12:00:00').toLocaleDateString('pt-BR')} - ${new Date(endDate + 'T12:00:00').toLocaleDateString('pt-BR')}`}</div>
+                        <div className="text-xl font-light text-gray-700 dark:text-zinc-300 capitalize">{dateMode === 'month' ? (() => { const d = new Date(selectedMonth + '-02'); return isNaN(d.getTime()) ? selectedMonth : d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }); })() : (() => { const d1 = new Date(startDate + 'T12:00:00'); const d2 = new Date(endDate + 'T12:00:00'); const str1 = isNaN(d1.getTime()) ? startDate : d1.toLocaleDateString('pt-BR'); const str2 = isNaN(d2.getTime()) ? endDate : d2.toLocaleDateString('pt-BR'); return `${str1} - ${str2}`; })()}</div>
                     </div>
                 </div>
                 <div className="grid grid-cols-3 gap-8 mb-10 break-inside-avoid">
@@ -343,7 +343,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
                         <tbody className="text-gray-800">
                             {reportData.transactions.map((t, index) => (
                                 <tr key={t.id} className="border-b border-gray-200 dark:border-zinc-700 odd:bg-white dark:bg-zinc-900 even:bg-gray-50 dark:bg-zinc-800\/50 break-inside-avoid">
-                                    <td className="py-2.5 pl-2 text-gray-700 dark:text-zinc-300 font-mono text-xs">{new Date(t.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
+                                    <td className="py-2.5 pl-2 text-gray-700 dark:text-zinc-300 font-mono text-xs">{(() => { const d = new Date(t.date); return isNaN(d.getTime()) ? (t.date || '') : d.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); })()}</td>
                                     <td className="py-2.5 pr-4"><div className="font-semibold text-gray-900 dark:text-zinc-50">{t.description}</div><div className="text-[10px] text-gray-500 dark:text-zinc-400">{t.paymentMethod === PaymentMethod.CREDIT_CARD ? creditCards.find(c => c.id === t.creditCardId)?.name || 'Crédito' : 'Débito'}{t.isShared && ' • Dividido'}</div></td>
                                     <td className="py-2.5 text-xs">{categories.find(c => c.id === t.categoryId)?.name}</td>
                                     <td className={`py-2.5 text-right font-bold ${t.type === TransactionType.INCOME ? 'text-emerald-700' : (t.type === TransactionType.INVESTMENT ? 'text-blue-700' : 'text-gray-900 dark:text-zinc-50')}`}>R$ {(t.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>

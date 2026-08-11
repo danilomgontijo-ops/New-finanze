@@ -55,6 +55,7 @@ export interface InvestmentDetails {
   grossAmount?: number; // Valor Bruto (para Proventos)
   maturityDate?: string; // ISO Date string
   profitabilityType?: 'PRE' | 'POS' | 'INDEXED';
+  hasDailyLiquidity?: boolean;
   isTotalRedemption?: boolean;
   sourceType?: 'POCKET' | 'PROVENTO' | 'RESGATE';
 }

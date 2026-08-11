@@ -18,11 +18,14 @@ export const DividendForm: React.FC<DividendFormProps> = ({ categories, subCateg
   const [ticker, setTicker] = useState(transactionToEdit?.investmentDetails?.ticker || '');
   const [broker, setBroker] = useState(transactionToEdit?.investmentDetails?.broker || '');
   const [eventType, setEventType] = useState<'DIVIDEND' | 'JCP' | 'RENDIMENTO' | 'REEMBOLSO'>((transactionToEdit?.investmentDetails?.event as any) || 'DIVIDEND');
-  const [date, setDate] = useState(transactionToEdit?.date || new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(transactionToEdit?.date ? transactionToEdit.date.split('T')[0] : new Date().toISOString().split('T')[0]);
   
   // Values
-  const [grossValue, setGrossValue] = useState(transactionToEdit?.amount ? String(Math.abs(transactionToEdit.amount) + (transactionToEdit.investmentDetails?.tax || 0)) : '');
-  const [taxValue, setTaxValue] = useState(transactionToEdit?.investmentDetails?.tax ? String(transactionToEdit.investmentDetails.tax) : '');
+  const initialGross = transactionToEdit?.investmentDetails?.grossAmount
+    ? String(transactionToEdit.investmentDetails.grossAmount)
+    : (transactionToEdit?.amount ? String(Math.abs(transactionToEdit.amount) + (transactionToEdit.investmentDetails?.tax || 0)) : '');
+  const [grossValue, setGrossValue] = useState(initialGross);
+  const [taxValue, setTaxValue] = useState(transactionToEdit?.investmentDetails?.tax !== undefined ? String(transactionToEdit.investmentDetails.tax) : '');
   const [netValue, setNetValue] = useState(transactionToEdit?.amount ? String(Math.abs(transactionToEdit.amount)) : '');
   
   // Foreign Exchange
@@ -30,18 +33,29 @@ export const DividendForm: React.FC<DividendFormProps> = ({ categories, subCateg
   const [ptax, setPtax] = useState(transactionToEdit?.investmentDetails?.ptax ? String(transactionToEdit.investmentDetails.ptax) : '');
   const [loadingForex, setLoadingForex] = useState(false);
 
-  const [categoryId, setCategoryId] = useState('');
-  const [subCategoryId, setSubCategoryId] = useState('');
+  const [categoryId, setCategoryId] = useState(transactionToEdit?.categoryId || '');
+  const [subCategoryId, setSubCategoryId] = useState(transactionToEdit?.subCategoryId || '');
   
   const [duplicateWarning, setDuplicateWarning] = useState(false);
 
-  // Auto-select first investment category
+  // Suggested tickers from transaction history
+  const knownTickers = React.useMemo(() => {
+    const set = new Set<string>();
+    transactions.forEach(t => {
+      if (t.investmentDetails?.ticker) {
+        set.add(t.investmentDetails.ticker.trim().toUpperCase());
+      }
+    });
+    return Array.from(set).sort();
+  }, [transactions]);
+
+  // Auto-select first investment category if none set
   useEffect(() => {
-      if (!categoryId) {
-          const invCat = categories.find(c => c.type === TransactionType.INVESTMENT);
+      if (!categoryId && categories.length > 0) {
+          const invCat = categories.find(c => c.type === TransactionType.INVESTMENT) || categories[0];
           if (invCat) setCategoryId(invCat.id);
       }
-  }, [categories]);
+  }, [categories, categoryId]);
 
   // Auto-calculate Net Value (Converted to BRL)
   useEffect(() => {
@@ -49,8 +63,6 @@ export const DividendForm: React.FC<DividendFormProps> = ({ categories, subCateg
       const tax = parseFloat(taxValue) || 0;
       const conversionRate = currency === 'USD' ? (parseFloat(ptax) || 0) : 1;
       
-      // Logic: (Gross - Tax) in original currency * Exchange Rate
-      // If USD: (1.00 - 0.30) * 5.50 = R$ 3.85
       const netOriginal = gross - tax;
       const netBrl = netOriginal * (conversionRate > 0 ? conversionRate : 0);
 
@@ -59,6 +71,7 @@ export const DividendForm: React.FC<DividendFormProps> = ({ categories, subCateg
       // Check for Duplicates
       if (ticker && date && netBrl > 0) {
           const isDuplicate = transactions.some(t => 
+              t.id !== transactionToEdit?.id &&
               t.type === TransactionType.INVESTMENT &&
               t.investmentDetails?.ticker === ticker.toUpperCase() &&
               t.investmentDetails?.event === eventType &&
@@ -69,30 +82,50 @@ export const DividendForm: React.FC<DividendFormProps> = ({ categories, subCateg
       } else {
           setDuplicateWarning(false);
       }
-  }, [grossValue, taxValue, ticker, date, eventType, transactions, currency, ptax]);
+  }, [grossValue, taxValue, ticker, date, eventType, transactions, currency, ptax, transactionToEdit]);
 
   // Auto-Fill Category and Subcategory based on Ticker History
   useEffect(() => {
-      if (ticker.length >= 3) {
-          const cleanTicker = ticker.trim().toUpperCase();
-          
-          // Find the most recent investment transaction with this ticker
-          const relevant = transactions
-              .filter(t => t.type === TransactionType.INVESTMENT && t.investmentDetails?.ticker === cleanTicker)
-              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const cleanTicker = ticker.trim().toUpperCase();
+      if (!cleanTicker) return;
 
-          if (relevant.length > 0) {
-              const last = relevant[0];
-              if (last.categoryId) setCategoryId(last.categoryId);
-              if (last.subCategoryId) setSubCategoryId(last.subCategoryId);
-              
-              // Try to auto-detect currency from previous entries
-              if (last.investmentDetails?.currency) {
-                  setCurrency(last.investmentDetails.currency as 'BRL' | 'USD');
+      // Do not override category if user is editing an existing transaction and ticker hasn't changed
+      if (transactionToEdit && cleanTicker === transactionToEdit.investmentDetails?.ticker?.trim().toUpperCase() && categoryId) {
+          return;
+      }
+      
+      // Find previous transactions with this ticker
+      const matchingTxs = transactions.filter(t => 
+          t.investmentDetails?.ticker?.trim().toUpperCase() === cleanTicker
+      );
+
+      if (matchingTxs.length > 0) {
+          matchingTxs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
+          const matchedTx = matchingTxs.find(t => t.categoryId || t.subCategoryId);
+          if (matchedTx) {
+              if (matchedTx.subCategoryId) {
+                  const sub = subCategories.find(s => s.id === matchedTx.subCategoryId);
+                  if (sub) {
+                      setCategoryId(sub.categoryId);
+                      setSubCategoryId(sub.id);
+                  } else if (matchedTx.categoryId) {
+                      setCategoryId(matchedTx.categoryId);
+                  }
+              } else if (matchedTx.categoryId) {
+                  setCategoryId(matchedTx.categoryId);
+                  setSubCategoryId('');
+              }
+
+              if (matchedTx.investmentDetails?.currency) {
+                  setCurrency(matchedTx.investmentDetails.currency as 'BRL' | 'USD');
+              }
+              if (matchedTx.investmentDetails?.broker && !broker) {
+                  setBroker(matchedTx.investmentDetails.broker);
               }
           }
       }
-  }, [ticker, transactions]);
+  }, [ticker, transactions, subCategories, transactionToEdit]);
 
   const handleFetchForex = async () => {
       if (!date) return;
@@ -132,6 +165,7 @@ export const DividendForm: React.FC<DividendFormProps> = ({ categories, subCateg
       };
 
       const payload: any = {
+          ...(transactionToEdit?.id ? { id: transactionToEdit.id } : {}),
           type: TransactionType.INVESTMENT,
           amount: parseFloat(netValue), // Value entering the cash flow (always BRL)
           date: new Date(date + 'T12:00:00').toISOString(),
@@ -164,7 +198,7 @@ export const DividendForm: React.FC<DividendFormProps> = ({ categories, subCateg
       <div className="bg-slate-50 dark:bg-zinc-950 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
         
         <div className="px-6 py-4 border-b border-gray-200 dark:border-zinc-700 flex justify-between items-center bg-gray-50 dark:bg-zinc-800\/50">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-50 flex items-center gap-2"><Gift size={20} className="text-gray-700 dark:text-zinc-300"/> Registrar Provento</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-zinc-50 flex items-center gap-2"><Gift size={20} className="text-gray-700 dark:text-zinc-300"/> {transactionToEdit ? 'Editar Provento' : 'Registrar Provento'}</h2>
           <button onClick={onClose} className="p-2 bg-white hover:bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 rounded-full transition-colors shadow-sm"><X size={18} /></button>
         </div>
 
@@ -180,7 +214,20 @@ export const DividendForm: React.FC<DividendFormProps> = ({ categories, subCateg
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase mb-1.5 flex items-center gap-1.5"><TrendingUp size={12}/> Ativo (Ticker)</label>
-                    <input type="text" required value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} className="w-full px-4 py-2.5 bg-gray-50 dark:bg-zinc-800\/50 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-gray-500 outline-none text-gray-900 dark:text-zinc-50 font-bold uppercase placeholder:font-normal" placeholder="Ex: AAPL" />
+                    <input 
+                      type="text" 
+                      required 
+                      list="dividend-ticker-list"
+                      value={ticker} 
+                      onChange={(e) => setTicker(e.target.value.toUpperCase())} 
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-zinc-800\/50 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-gray-500 outline-none text-gray-900 dark:text-zinc-50 font-bold uppercase placeholder:font-normal" 
+                      placeholder="Ex: PETR4" 
+                    />
+                    <datalist id="dividend-ticker-list">
+                      {knownTickers.map(t => (
+                        <option key={t} value={t} />
+                      ))}
+                    </datalist>
                 </div>
                 <div>
                     <label className="block text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase mb-1.5 flex items-center gap-1.5"><Calendar size={12}/> Data Pagamento</label>

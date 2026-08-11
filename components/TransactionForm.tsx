@@ -7,7 +7,7 @@ import { BrapiService } from '../services/brapiService';
 import { 
   X, TrendingUp, Calendar, Calculator, DollarSign, Search, Loader2, Landmark, 
   ShieldCheck, FileText, Percent, Layers, Info, AlertCircle, Tag, CreditCard as CardIcon, 
-  Banknote, Repeat, Users, CheckCircle2, ChevronDown, Plus, Minus, Gift, Divide, Merge, Globe, RefreshCcw, Coins, Save, ArrowRightLeft, Clock, FastForward, Copy, ArrowDownRight, Target
+  Banknote, Repeat, Users, CheckCircle2, ChevronDown, Plus, Minus, Gift, Divide, Merge, Globe, RefreshCcw, Coins, Save, ArrowRightLeft, Clock, FastForward, Copy, ArrowDownRight, Target, Zap
 } from 'lucide-react';
 
 interface TransactionFormProps {
@@ -73,6 +73,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [invGrossAmount, setInvGrossAmount] = useState(''); // Estado para Proventos Brutos
   const [invMaturityDate, setInvMaturityDate] = useState('');
   const [invProfitabilityType, setInvProfitabilityType] = useState<'PRE' | 'POS' | 'INDEXED' | ''>('');
+  const [invHasDailyLiquidity, setInvHasDailyLiquidity] = useState(false);
 
   const [fixedIncomeIndexer, setFixedIncomeIndexer] = useState('CDI');
   const [fixedIncomeRate, setFixedIncomeRate] = useState('');
@@ -414,6 +415,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           setInvGrossAmount(det.grossAmount?.toString() || '');
           setInvMaturityDate(det.maturityDate || '');
           setInvProfitabilityType(det.profitabilityType || '');
+          setInvHasDailyLiquidity(det.hasDailyLiquidity || false);
           setInvIsTotalRedemption(det.isTotalRedemption || false);
           if (det.currency === 'USD' && det.ptax) {
               setInvPtax(det.ptax.toString());
@@ -442,19 +444,51 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       setInvIsTotalRedemption(checked);
   };
 
-  // Auto-detect and set currency/category from previous transactions of the same ticker to avoid manual selection mistakes
+  // Auto-detect and set currency/category/indexer/rate/vencimento/liquidez from previous transactions of the same ticker to avoid manual typing mistakes
   useEffect(() => {
       if (type === TransactionType.INVESTMENT && invTicker && transactions && !initialData) {
-          const matchedTx = transactions.find(t => t.type === 'INVESTMENT' && t.investmentDetails?.ticker?.toUpperCase() === invTicker.trim().toUpperCase());
-          if (matchedTx && matchedTx.investmentDetails) {
-              if (matchedTx.investmentDetails.currency) {
-                  setInvCurrency(matchedTx.investmentDetails.currency);
-              }
-              if (matchedTx.categoryId) {
-                  setCategoryId(matchedTx.categoryId);
-              }
-              if (matchedTx.subCategoryId) {
-                  setSubCategoryId(matchedTx.subCategoryId);
+          const uppercaseTicker = invTicker.trim().toUpperCase();
+          if (!uppercaseTicker) return;
+
+          const matchingTxs = transactions.filter(t => 
+              t.type === 'INVESTMENT' && 
+              t.investmentDetails?.ticker?.toUpperCase() === uppercaseTicker
+          );
+
+          if (matchingTxs.length > 0) {
+              // Sort to find the latest transaction
+              matchingTxs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+              const matchedTx = matchingTxs[0];
+              const det = matchedTx.investmentDetails;
+
+              if (det) {
+                  if (det.currency) setInvCurrency(det.currency);
+                  if (matchedTx.categoryId) setCategoryId(matchedTx.categoryId);
+                  if (matchedTx.subCategoryId) setSubCategoryId(matchedTx.subCategoryId);
+
+                  // Auto-fill Fixed Income parameters if available
+                  if (det.yieldRate) {
+                      setInvYieldRate(det.yieldRate);
+                      const rateStr = det.yieldRate;
+                      if (rateStr.includes('CDI')) {
+                          setFixedIncomeIndexer('CDI');
+                          setFixedIncomeRate(rateStr.replace('% CDI', '').replace(' CDI', '').trim());
+                      } else if (rateStr.includes('IPCA')) {
+                          setFixedIncomeIndexer('IPCA');
+                          setFixedIncomeRate(rateStr.replace('IPCA +', '').replace('%', '').trim());
+                      } else if (rateStr.includes('PRE') || rateStr.includes('a.a.')) {
+                          setFixedIncomeIndexer('PRE');
+                          setFixedIncomeRate(rateStr.replace('% a.a.', '').trim());
+                      } else if (rateStr.includes('SELIC')) {
+                          setFixedIncomeIndexer('SELIC');
+                          setFixedIncomeRate(rateStr.replace('% SELIC', '').replace(' SELIC', '').trim());
+                      } else {
+                          setFixedIncomeIndexer('CUSTOM');
+                      }
+                  }
+                  if (det.maturityDate) setInvMaturityDate(det.maturityDate);
+                  if (det.profitabilityType) setInvProfitabilityType(det.profitabilityType);
+                  if (det.hasDailyLiquidity !== undefined) setInvHasDailyLiquidity(det.hasDailyLiquidity);
               }
           }
       }
@@ -638,6 +672,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           bonusRatio: invBonusRatio !== '' ? parseFloat(invBonusRatio) : null,
           maturityDate: isFixedIncome ? invMaturityDate : undefined,
           profitabilityType: isFixedIncome ? (invProfitabilityType || undefined) : undefined,
+          hasDailyLiquidity: isFixedIncome ? invHasDailyLiquidity : undefined,
           isTotalRedemption: invEvent === 'SELL' ? invIsTotalRedemption : undefined
       } : undefined
     };
@@ -1032,6 +1067,21 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                             <div>
                                 <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-blue-400"/> Vencimento</label>
                                 <input type="date" value={invMaturityDate} onChange={(e) => setInvMaturityDate(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-zinc-900 dark:text-zinc-50 transition-all shadow-sm shadow-zinc-200/5" />
+                            </div>
+                            <div className="flex flex-col justify-end">
+                                <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Zap size={14} className="text-amber-500"/> Liquidez</label>
+                                <label className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-all shadow-sm shadow-zinc-200/5">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={invHasDailyLiquidity} 
+                                        onChange={(e) => setInvHasDailyLiquidity(e.target.checked)} 
+                                        className="w-4 h-4 text-blue-600 rounded border-zinc-300 dark:border-zinc-700 focus:ring-blue-500" 
+                                    />
+                                    <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                                        <Zap size={14} className={invHasDailyLiquidity ? "text-amber-500 fill-amber-500" : "text-zinc-400"} />
+                                        Possui Liquidez Diária
+                                    </span>
+                                </label>
                             </div>
                         </div>
                     </div>

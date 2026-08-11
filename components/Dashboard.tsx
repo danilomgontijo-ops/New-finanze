@@ -80,6 +80,28 @@ const toIsoDateStr = (input: string | Date | undefined): string => {
     return new Date().toISOString().split("T")[0];
 };
 
+const safeFormatPtBR = (dateVal: any, options?: Intl.DateTimeFormatOptions): string => {
+  if (!dateVal) return "--/--/----";
+  try {
+    const iso = toIsoDateStr(dateVal);
+    const parts = iso.split("-");
+    if (parts.length === 3) {
+      const year = Number(parts[0]);
+      const month = Number(parts[1]);
+      const day = Number(parts[2]);
+      if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+        const d = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+        return d.toLocaleDateString("pt-BR", options);
+      }
+    }
+    const d = new Date(dateVal);
+    if (!isNaN(d.getTime())) return d.toLocaleDateString("pt-BR", options);
+  } catch {
+    // fallback
+  }
+  return String(dateVal || "");
+};
+
 const calculateRealFixedIncome = (principal: number, startDateStr: string, rateStr: string, cdiData: { date: string, value: number }[]): number => {
     if (!principal || principal <= 0) return 0;
     if (!rateStr || typeof rateStr !== 'string') rateStr = '100% CDI';
@@ -147,33 +169,94 @@ const calculateRealFixedIncome = (principal: number, startDateStr: string, rateS
 
 // Robust XIRR Calculation with fallback
 const calculateXIRR = (values: number[], dates: Date[], guess: number = 0.1): number => {
-    const xirr = (values: number[], dates: Date[], guess: number) => {
-        const limit = 100; const tol = 1e-6; let x0 = guess;
-        for (let i = 0; i < limit; i++) {
-            let fValue = 0; let fDerivative = 0;
-            for (let j = 0; j < values.length; j++) {
-                const dt = (dates[j].getTime() - dates[0].getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-                const factor = Math.pow(Math.abs(1 + x0), dt);
-                const sign = (1 + x0) >= 0 ? 1 : (Math.floor(dt) % 2 === 0 ? 1 : -1);
-                fValue += values[j] / (sign * factor);
-                fDerivative += -dt * values[j] / (sign * factor * (1 + x0));
-            }
-            if (Math.abs(fDerivative) < 1e-12) break;
-            const step = fValue / fDerivative;
-            const x1 = x0 - Math.max(-0.5, Math.min(0.5, step)); // Dampen the step to prevent wild oscillations
-            if (Math.abs(x1 - x0) < tol) return x1;
-            x0 = x1;
-            if (x0 <= -1) x0 = -0.999; // Keep x0 in a valid range for Math.pow
+  if (!values || !dates || values.length < 2) return 0;
+  if (values.every((v) => v >= 0) || values.every((v) => v <= 0)) return 0;
+
+  const flows = values
+    .map((val, idx) => ({ amount: val, date: new Date(dates[idx]) }))
+    .filter((f) => !isNaN(f.date.getTime()) && !isNaN(f.amount))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  if (flows.length < 2) return 0;
+
+  const startDate = flows[0].date;
+  const endDate = flows[flows.length - 1].date;
+  const diffDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+
+  if (diffDays < 1) {
+    const totalOutflow = flows.filter((f) => f.amount < 0).reduce((acc, f) => acc + Math.abs(f.amount), 0);
+    const totalInflow = flows.filter((f) => f.amount > 0).reduce((acc, f) => acc + f.amount, 0);
+    if (totalOutflow > 0) {
+      return ((totalInflow - totalOutflow) / totalOutflow) * 100;
+    }
+    return 0;
+  }
+
+  const xirr = (sortedFlows: { date: Date; amount: number }[], initialGuess: number) => {
+    const limit = 100;
+    const tol = 1e-6;
+    let x0 = initialGuess;
+
+    for (let i = 0; i < limit; i++) {
+      let fValue = 0;
+      let fDerivative = 0;
+
+      for (let j = 0; j < sortedFlows.length; j++) {
+        const dt = (sortedFlows[j].date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+        if (dt < 0) continue;
+
+        const base = 1 + x0;
+        if (base <= 0) {
+          x0 = -0.99;
+          break;
         }
-        return x0; 
-    };
-    try {
-        if (values.length === 0 || values.every(v => v >= 0) || values.every(v => v <= 0)) return 0;
-        const result = xirr(values, dates, guess);
-        const resultPct = isNaN(result) || !isFinite(result) ? 0 : result * 100;
-        if (Math.abs(resultPct) > 10000) return 0; 
-        return resultPct;
-    } catch (e) { return 0; }
+
+        const factor = Math.pow(base, dt);
+        fValue += sortedFlows[j].amount / factor;
+        fDerivative += (-dt * sortedFlows[j].amount) / (factor * base);
+      }
+
+      if (Math.abs(fDerivative) < 1e-12) break;
+      const step = fValue / fDerivative;
+      const stepDampened = Math.max(-0.5, Math.min(0.5, step));
+      const x1 = x0 - stepDampened;
+
+      if (Math.abs(x1 - x0) < tol) return x1;
+      x0 = x1;
+      if (x0 <= -0.999) x0 = -0.99;
+    }
+    return x0;
+  };
+
+  try {
+    let result = xirr(flows, guess);
+
+    if (isNaN(result) || !isFinite(result) || Math.abs(result) > 10 || result <= -1) {
+      const guesses = [0.05, -0.05, 0.2, -0.2, 0.5];
+      for (const g of guesses) {
+        const altResult = xirr(flows, g);
+        if (!isNaN(altResult) && isFinite(altResult) && Math.abs(altResult) <= 10 && altResult > -1) {
+          result = altResult;
+          break;
+        }
+      }
+    }
+
+    if (isNaN(result) || !isFinite(result) || result <= -1) return 0;
+
+    const annualRatePct = result * 100;
+    if (diffDays < 30 && Math.abs(annualRatePct) > 500) {
+      const totalOutflow = flows.filter((f) => f.amount < 0).reduce((acc, f) => acc + Math.abs(f.amount), 0);
+      const totalInflow = flows.filter((f) => f.amount > 0).reduce((acc, f) => acc + f.amount, 0);
+      if (totalOutflow > 0) {
+        return ((totalInflow - totalOutflow) / totalOutflow) * 100;
+      }
+    }
+
+    return annualRatePct;
+  } catch (e) {
+    return 0;
+  }
 };
 
 function calculateEffectiveDate(t: Transaction, creditCards: CreditCard[], settings: UserSettings): Date {
@@ -797,7 +880,7 @@ export const Dashboard = ({
                     return (
                       <tr key={t.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
                         <td className="py-2.5 px-3 text-zinc-500 whitespace-nowrap">
-                          {new Date(t.date).toLocaleDateString('pt-BR')}
+                          {safeFormatPtBR(t.date)}
                         </td>
                         <td className="py-2.5 px-3 font-bold text-zinc-900 dark:text-zinc-100">
                           <div>{t.investmentDetails?.ticker || t.description}</div>
@@ -1244,7 +1327,7 @@ export const Dashboard = ({
                     <div className="min-w-0">
                       <span className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate block">{t.description}</span>
                       <span className="text-[10px] text-zinc-400 font-medium">
-                        {new Date(t.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} • {cat?.name}
+                        {safeFormatPtBR(t.date, { day: '2-digit', month: '2-digit' })} • {cat?.name}
                       </span>
                     </div>
                   </div>
@@ -1284,7 +1367,7 @@ export const Dashboard = ({
                   <div className="min-w-0">
                     <span className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate block">{t.investmentDetails?.ticker}</span>
                     <span className="text-[10px] text-zinc-400 font-medium">
-                      {new Date(t.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} • {t.investmentDetails?.event}
+                      {safeFormatPtBR(t.date, { day: '2-digit', month: '2-digit' })} • {t.investmentDetails?.event}
                     </span>
                   </div>
                 </div>

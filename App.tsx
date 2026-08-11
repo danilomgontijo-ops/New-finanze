@@ -469,6 +469,7 @@ const App: React.FC = () => {
                      onEditTransaction={handleEditTransaction}
                      onDeleteTransaction={(id, mode) => StorageService.deleteTransaction(id, mode)}
                      onOpenBulkImport={() => setIsBulkInvOpen(true)}
+                     onOpenDividendForm={() => { setEditingDividend(null); setIsDividendFormOpen(true); }}
                    />
                )}
 

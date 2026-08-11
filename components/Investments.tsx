@@ -16,6 +16,7 @@ import { BrapiService } from "../services/brapiService";
 import { SheetsService } from "../services/sheetsService";
 import { DividendBulkImporter } from "./DividendBulkImporter";
 import { AiDividendRadar } from "./AiDividendRadar";
+import { getTxAmountBrl } from "../hooks/usePortfolio";
 import {
   BarChart,
   Bar,
@@ -87,10 +88,11 @@ import {
   ChevronUp,
   Eye,
   EyeOff,
+  Zap,
+  Clock,
   Copy,
   Banknote,
   AreaChart as AreaChartIcon,
-  Clock,
   Percent,
   ShieldCheck,
   PieChart as PieChartIcon,
@@ -112,7 +114,7 @@ interface InvestmentsProps {
   onEditTransaction: (t: Transaction) => void;
   onDeleteTransaction: (id: string, mode?: "single" | "future" | "all") => void;
   onOpenBulkImport: () => void;
-  onOpenDividendForm: () => void;
+  onOpenDividendForm?: () => void;
 }
 
 interface PortfolioItem {
@@ -133,6 +135,8 @@ interface PortfolioItem {
   broker: string;
   longName?: string;
   yieldRate?: string;
+  maturityDate?: string;
+  hasDailyLiquidity?: boolean;
   earliestDate?: Date;
   currentQuote: number;
   currentPriceBRL: number;
@@ -152,40 +156,91 @@ const calculateXIRR = (
   dates: Date[],
   guess: number = 0.1,
 ): number => {
-  const xirr = (values: number[], dates: Date[], guess: number) => {
+  if (!values || !dates || values.length < 2) return 0;
+  if (values.every((v) => v >= 0) || values.every((v) => v <= 0)) return 0;
+
+  const flows = values
+    .map((val, idx) => ({ amount: val, date: new Date(dates[idx]) }))
+    .filter((f) => !isNaN(f.date.getTime()) && !isNaN(f.amount))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  if (flows.length < 2) return 0;
+
+  const startDate = flows[0].date;
+  const endDate = flows[flows.length - 1].date;
+  const diffDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+
+  if (diffDays < 1) {
+    const totalOutflow = flows.filter((f) => f.amount < 0).reduce((acc, f) => acc + Math.abs(f.amount), 0);
+    const totalInflow = flows.filter((f) => f.amount > 0).reduce((acc, f) => acc + f.amount, 0);
+    if (totalOutflow > 0) {
+      return ((totalInflow - totalOutflow) / totalOutflow) * 100;
+    }
+    return 0;
+  }
+
+  const xirr = (sortedFlows: { date: Date; amount: number }[], initialGuess: number) => {
     const limit = 100;
     const tol = 1e-6;
-    let x0 = guess;
+    let x0 = initialGuess;
+
     for (let i = 0; i < limit; i++) {
       let fValue = 0;
       let fDerivative = 0;
-      for (let j = 0; j < values.length; j++) {
-        const dt =
-          (dates[j].getTime() - dates[0].getTime()) /
-          (1000 * 60 * 60 * 24 * 365.25);
-        const factor = Math.pow(Math.abs(1 + x0), dt);
-        const sign = 1 + x0 >= 0 ? 1 : Math.floor(dt) % 2 === 0 ? 1 : -1;
-        fValue += values[j] / (sign * factor);
-        fDerivative += (-dt * values[j]) / (sign * factor * (1 + x0));
+
+      for (let j = 0; j < sortedFlows.length; j++) {
+        const dt = (sortedFlows[j].date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+        if (dt < 0) continue;
+
+        const base = 1 + x0;
+        if (base <= 0) {
+          x0 = -0.99;
+          break;
+        }
+
+        const factor = Math.pow(base, dt);
+        fValue += sortedFlows[j].amount / factor;
+        fDerivative += (-dt * sortedFlows[j].amount) / (factor * base);
       }
+
       if (Math.abs(fDerivative) < 1e-12) break;
       const step = fValue / fDerivative;
-      const x1 = x0 - Math.max(-0.5, Math.min(0.5, step)); // Dampen the step to prevent wild oscillations
+      const stepDampened = Math.max(-0.5, Math.min(0.5, step));
+      const x1 = x0 - stepDampened;
+
       if (Math.abs(x1 - x0) < tol) return x1;
       x0 = x1;
-      if (x0 <= -1) x0 = -0.999; // Keep x0 in a valid range for Math.pow
+      if (x0 <= -0.999) x0 = -0.99;
     }
     return x0;
   };
+
   try {
-    if (
-      values.length === 0 ||
-      values.every((v) => v >= 0) ||
-      values.every((v) => v <= 0)
-    )
-      return 0;
-    const result = xirr(values, dates, guess);
-    return isNaN(result) || !isFinite(result) ? 0 : result * 100;
+    let result = xirr(flows, guess);
+
+    if (isNaN(result) || !isFinite(result) || Math.abs(result) > 10 || result <= -1) {
+      const guesses = [0.05, -0.05, 0.2, -0.2, 0.5];
+      for (const g of guesses) {
+        const altResult = xirr(flows, g);
+        if (!isNaN(altResult) && isFinite(altResult) && Math.abs(altResult) <= 10 && altResult > -1) {
+          result = altResult;
+          break;
+        }
+      }
+    }
+
+    if (isNaN(result) || !isFinite(result) || result <= -1) return 0;
+
+    const annualRatePct = result * 100;
+    if (diffDays < 30 && Math.abs(annualRatePct) > 500) {
+      const totalOutflow = flows.filter((f) => f.amount < 0).reduce((acc, f) => acc + Math.abs(f.amount), 0);
+      const totalInflow = flows.filter((f) => f.amount > 0).reduce((acc, f) => acc + f.amount, 0);
+      if (totalOutflow > 0) {
+        return ((totalInflow - totalOutflow) / totalOutflow) * 100;
+      }
+    }
+
+    return annualRatePct;
   } catch (e) {
     return 0;
   }
@@ -251,6 +306,52 @@ const toIsoDateStr = (input: string | Date | undefined): string => {
     return d.toISOString().split("T")[0];
   }
   return new Date().toISOString().split("T")[0];
+};
+
+const safeFormatPtBR = (dateVal: any, options?: Intl.DateTimeFormatOptions): string => {
+  if (!dateVal) return "--/--/----";
+  try {
+    const iso = toIsoDateStr(dateVal);
+    const parts = iso.split("-");
+    if (parts.length === 3) {
+      const year = Number(parts[0]);
+      const month = Number(parts[1]);
+      const day = Number(parts[2]);
+      if (!isNaN(year) && !isNaN(month) && !isNaN(day) && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        const d = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString("pt-BR", options);
+        }
+      }
+    }
+    const d = new Date(dateVal);
+    if (!isNaN(d.getTime())) return d.toLocaleDateString("pt-BR", options);
+  } catch {
+    // fallback
+  }
+  return String(dateVal || "");
+};
+
+const safeFormatMonthPtBR = (monthStr: string | null | undefined, options?: Intl.DateTimeFormatOptions): string => {
+  if (!monthStr) return "";
+  try {
+    const parts = String(monthStr).trim().split("-");
+    if (parts.length >= 2) {
+      const year = Number(parts[0]);
+      const month = Number(parts[1]);
+      if (!isNaN(year) && !isNaN(month) && month >= 1 && month <= 12) {
+        const d = new Date(Date.UTC(year, month - 1, 2, 12, 0, 0));
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString("pt-BR", options);
+        }
+      }
+    }
+    const d = new Date(monthStr);
+    if (!isNaN(d.getTime())) return d.toLocaleDateString("pt-BR", options);
+  } catch {
+    // fallback
+  }
+  return String(monthStr);
 };
 
 const calculateRealFixedIncome = (
@@ -539,8 +640,16 @@ export const Investments: React.FC<InvestmentsProps> = ({
   );
 
   const portfolioData = useMemo(() => {
-    const usdPriceObj = assetPrices.find((p) => p.ticker === "USDBRL");
-    const currentUsdRate = usdPriceObj ? usdPriceObj.currentPrice : 1;
+    const usdPriceObj = assetPrices.find(
+      (p) => p.ticker === "USDBRL" || p.ticker === "USD/BRL" || p.ticker === "USDBRL=X" || p.ticker === "BRL=X",
+    );
+    let currentUsdRate = usdPriceObj && usdPriceObj.currentPrice > 1 ? usdPriceObj.currentPrice : 0;
+    if (currentUsdRate <= 1) {
+      const txWithPtax = investmentTransactions.find(
+        (t) => t.investmentDetails?.currency === "USD" && t.investmentDetails?.ptax && t.investmentDetails.ptax > 1,
+      );
+      currentUsdRate = txWithPtax?.investmentDetails?.ptax || 5.5;
+    }
     const assets: Record<string, any> = {};
     const profitMap: Record<string, number> = {};
     let totalRealizedProfit = 0;
@@ -556,6 +665,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
         broker,
         newTicker,
         yieldRate,
+        maturityDate,
+        hasDailyLiquidity,
       } = t.investmentDetails;
       const tDate = new Date(t.date);
 
@@ -579,35 +690,41 @@ export const Investments: React.FC<InvestmentsProps> = ({
           broker: broker || "Carteira",
           cashFlows: [],
           yieldRate: yieldRate || undefined,
+          maturityDate: maturityDate || undefined,
+          hasDailyLiquidity: hasDailyLiquidity !== undefined ? hasDailyLiquidity : undefined,
           earliestDate: tDate,
           lots: [], // FIFO Tracking: Array of { date: Date, q: number, cost: number, yieldRate?: string }
         };
       }
       const a = assets[ticker];
+      if (maturityDate) a.maturityDate = maturityDate;
+      if (hasDailyLiquidity !== undefined) a.hasDailyLiquidity = hasDailyLiquidity;
       if (tDate < a.earliestDate) a.earliestDate = tDate;
 
+      const effectiveTxAmount = getTxAmountBrl(t, currentUsdRate);
+
       if (["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(event)) {
-        a.totalProventos += t.amount;
+        a.totalProventos += effectiveTxAmount;
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-        if (tDate >= oneYearAgo) a.totalProventos12m += t.amount;
+        if (tDate >= oneYearAgo) a.totalProventos12m += effectiveTxAmount;
 
-        a.cashFlows.push({ date: tDate, amount: t.amount });
+        a.cashFlows.push({ date: tDate, amount: effectiveTxAmount });
       } else if (event === "AMORTIZACAO") {
-        a.totalCost -= t.amount;
-        a.historicalCost -= t.amount;
-        a.cashFlows.push({ date: tDate, amount: t.amount });
+        a.totalCost -= effectiveTxAmount;
+        a.historicalCost -= effectiveTxAmount;
+        a.cashFlows.push({ date: tDate, amount: effectiveTxAmount });
       } else if (event === "BUY") {
         a.quantity += quantity;
-        a.totalCost += t.amount;
-        a.historicalCost += t.amount;
-        a.cashFlows.push({ date: tDate, amount: -t.amount });
+        a.totalCost += effectiveTxAmount;
+        a.historicalCost += effectiveTxAmount;
+        a.cashFlows.push({ date: tDate, amount: -effectiveTxAmount });
         // Add to FIFO Lots
         const rateForLot = yieldRate || a.yieldRate;
         a.lots.push({
           date: tDate,
           q: quantity,
-          cost: t.amount,
+          cost: effectiveTxAmount,
           yieldRate: rateForLot,
         });
         if (yieldRate) a.yieldRate = yieldRate;
@@ -741,7 +858,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           a.lots = [];
         }
 
-        const transactionProfit = t.amount - costOfSold;
+        const transactionProfit = effectiveTxAmount - costOfSold;
 
         const previousTotalCost = a.totalCost;
         const reductionRatio =
@@ -770,7 +887,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           a.lots = [];
         }
 
-        a.cashFlows.push({ date: tDate, amount: t.amount });
+        a.cashFlows.push({ date: tDate, amount: effectiveTxAmount });
       } else if (event === "BONUS") {
         const bonusValue = quantity * price;
         a.quantity += quantity;
@@ -937,9 +1054,9 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 calcBal += curVal;
 
                 const lotDateStr =
-                  lot.date instanceof Date
+                  lot.date instanceof Date && !isNaN(lot.date.getTime())
                     ? lot.date.toISOString()
-                    : String(lot.date);
+                    : String(lot.date || "");
                 if (lotDateStr <= yesterdayStr) {
                   calcYesterday += calculateRealFixedIncome(
                     lot.cost,
@@ -1030,6 +1147,10 @@ export const Investments: React.FC<InvestmentsProps> = ({
               m2.date.localeCompare(m1.date),
             );
             closingDate = new Date(sortedH[0].date);
+          }
+          const maxFlowTime = Math.max(...a.cashFlows.map((f: any) => new Date(f.date).getTime()));
+          if (closingDate.getTime() < maxFlowTime) {
+            closingDate = new Date(maxFlowTime);
           }
           const flows = [
             ...a.cashFlows,
@@ -1278,8 +1399,40 @@ export const Investments: React.FC<InvestmentsProps> = ({
       return "Outros";
     };
 
-    const getLiquidityTerm = (strategy: string) => {
-      if (strategy === "Liquidez") return "0 a 1 dia";
+    const getLiquidityTerm = (
+      strategy: string,
+      hasDailyLiquidity?: boolean,
+      maturityDate?: string,
+      referenceDate?: Date
+    ) => {
+      if (hasDailyLiquidity === true || strategy === "Liquidez") {
+        return "0 a 1 dia";
+      }
+
+      if (maturityDate && typeof maturityDate === "string") {
+        const ref = (referenceDate && !isNaN(referenceDate.getTime())) ? referenceDate : new Date();
+        const refStart = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate());
+        const matParts = maturityDate.split("-");
+        if (matParts.length === 3) {
+          const year = parseInt(matParts[0], 10);
+          const month = parseInt(matParts[1], 10);
+          const day = parseInt(matParts[2], 10);
+          if (!isNaN(year) && !isNaN(month) && !isNaN(day) && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+            const matDate = new Date(year, month - 1, day);
+            if (!isNaN(matDate.getTime())) {
+              const diffMs = matDate.getTime() - refStart.getTime();
+              const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+              if (diffDays <= 1) return "0 a 1 dia";
+              if (diffDays <= 5) return "2 a 5 dias";
+              if (diffDays <= 30) return "6 a 30 dias";
+              if (diffDays <= 180) return "31 a 180 dias";
+              return "Mais de 180 dias";
+            }
+          }
+        }
+      }
+
       if (
         ["Renda Variável", "Fundos Listados", "Global", "Cripto"].includes(
           strategy,
@@ -1288,7 +1441,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
         return "2 a 5 dias";
       if (["Pós-fixado", "Prefixado", "Título Público"].includes(strategy))
         return "Mais de 180 dias";
-      return "16 a 30 dias";
+      return "6 a 30 dias";
     };
 
     const firstDate = new Date(filteredTxs[0].date);
@@ -1393,6 +1546,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
         firstDate?: Date;
         categoryId?: string;
         subCategoryId?: string;
+        hasDailyLiquidity?: boolean;
+        maturityDate?: string;
       }
     > = {};
     const assetValuesPrevMonth: Record<string, number> = {};
@@ -1424,9 +1579,9 @@ export const Investments: React.FC<InvestmentsProps> = ({
             "SELL",
           ].includes(event)
         ) {
-          cumulativeCashFlows.push({ date: tDate, amount: t.amount });
+          cumulativeCashFlows.push({ date: tDate, amount: getTxAmountBrl(t, portfolioData.usdRate) });
         } else if (event === "BUY") {
-          cumulativeCashFlows.push({ date: tDate, amount: -t.amount });
+          cumulativeCashFlows.push({ date: tDate, amount: -getTxAmountBrl(t, portfolioData.usdRate) });
         }
       });
 
@@ -1453,7 +1608,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
       monthTxs.forEach((t) => {
         const det = t.investmentDetails!;
-        const amount = t.amount;
+        const amount = getTxAmountBrl(t, portfolioData.usdRate);
         const ticker = det.ticker;
         if (!runningAssets[ticker]) {
           const catName =
@@ -1499,10 +1654,18 @@ export const Investments: React.FC<InvestmentsProps> = ({
             firstDate: new Date(t.date),
             categoryId: t.categoryId,
             subCategoryId: t.subCategoryId,
+            hasDailyLiquidity: det.hasDailyLiquidity,
+            maturityDate: det.maturityDate,
           };
           assetRealized[ticker] = 0;
         }
         const asset = runningAssets[ticker];
+        if (det.hasDailyLiquidity !== undefined) {
+          asset.hasDailyLiquidity = det.hasDailyLiquidity;
+        }
+        if (det.maturityDate) {
+          asset.maturityDate = det.maturityDate;
+        }
 
         const txDate = new Date(t.date);
         const day = txDate.getDate();
@@ -1601,6 +1764,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
               firstDate: asset.firstDate,
               categoryId: asset.categoryId,
               subCategoryId: asset.subCategoryId,
+              hasDailyLiquidity: asset.hasDailyLiquidity,
+              maturityDate: asset.maturityDate,
             };
           const multiplier =
             det.quantity && det.quantity > 0 ? det.quantity : 1;
@@ -1667,9 +1832,9 @@ export const Investments: React.FC<InvestmentsProps> = ({
           assetEndValue = pData ? pData.currentTotal : 0;
         } else if (asset.yieldRate && manualPriceFound <= 0) {
           let val = 0;
-          const monthEndUtc = new Date(
-            Date.UTC(y, m, 0, 23, 59, 59, 999),
-          ).toISOString();
+          const monthEndUtc = (!isNaN(y) && !isNaN(m) && m >= 1 && m <= 12)
+            ? new Date(Date.UTC(y, m, 0, 23, 59, 59, 999)).toISOString()
+            : new Date().toISOString();
           investmentTransactions
             .filter(
               (t) =>
@@ -1765,7 +1930,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
           txsInMonth.forEach((t) => {
             const det = t.investmentDetails!;
-            const amount = t.amount;
+            const amount = getTxAmountBrl(t, portfolioData.usdRate);
 
             if (det.event === "BUY" || det.event === "SELL") {
               const txPrice = det.quantity > 0 ? amount / det.quantity : 0;
@@ -1855,6 +2020,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
         monthAssetDetails.push({
           ticker,
           strategy,
+          hasDailyLiquidity: asset.hasDailyLiquidity,
+          maturityDate: asset.maturityDate,
           quantity: adjQuantity,
           qtyStart: adjQtyStart,
           eventsQty,
@@ -1924,9 +2091,10 @@ export const Investments: React.FC<InvestmentsProps> = ({
       let ipcaIndex = prevChartPoint ? (prevChartPoint.ipcaAccum + 100) : 100;
       ipcaIndex = ipcaIndex * (1 + ipcaMonthPct);
 
-      const displayDate = new Date(y, m - 1, 2).toLocaleDateString("pt-BR", {
+      const displayDate = safeFormatMonthPtBR(monthKey, {
         month: "short",
         year: "2-digit",
+        timeZone: "UTC",
       });
       const totalProfitAccumulated =
         monthMarketValue +
@@ -2162,9 +2330,9 @@ export const Investments: React.FC<InvestmentsProps> = ({
               "SELL",
             ].includes(event)
           ) {
-            horizonFlows.push({ date: tDate, amount: t.amount });
+            horizonFlows.push({ date: tDate, amount: getTxAmountBrl(t, portfolioData.usdRate) });
           } else if (event === "BUY") {
-            horizonFlows.push({ date: tDate, amount: -t.amount });
+            horizonFlows.push({ date: tDate, amount: -getTxAmountBrl(t, portfolioData.usdRate) });
           }
         }
       });
@@ -2347,12 +2515,16 @@ export const Investments: React.FC<InvestmentsProps> = ({
     const liquidityTerms = [
       "0 a 1 dia",
       "2 a 5 dias",
-      "16 a 30 dias",
+      "6 a 30 dias",
+      "31 a 180 dias",
       "Mais de 180 dias",
     ];
     const liquidityData = liquidityTerms.map((term) => {
       const value = lastMonth.assetDetails
-        .filter((d: any) => getLiquidityTerm(d.strategy) === term)
+        .filter(
+          (d: any) =>
+            getLiquidityTerm(d.strategy, d.hasDailyLiquidity, d.maturityDate) === term
+        )
         .reduce((sum: number, a: any) => sum + a.endValue, 0);
       return { term, value, percent: (value / (lastMonth.market || 1)) * 100 };
     });
@@ -2374,9 +2546,9 @@ export const Investments: React.FC<InvestmentsProps> = ({
           "SELL",
         ].includes(event)
       ) {
-        portfolioCashFlows.push({ date: tDate, amount: t.amount });
+        portfolioCashFlows.push({ date: tDate, amount: getTxAmountBrl(t, portfolioData.usdRate) });
       } else if (event === "BUY") {
-        portfolioCashFlows.push({ date: tDate, amount: -t.amount });
+        portfolioCashFlows.push({ date: tDate, amount: -getTxAmountBrl(t, portfolioData.usdRate) });
       }
     });
     if (portfolioCashFlows.length > 0 && lastMonth.market > 0) {
@@ -2930,13 +3102,14 @@ export const Investments: React.FC<InvestmentsProps> = ({
     let netFlow = 0;
     filteredHistoryTransactions.forEach((t) => {
       const event = t.investmentDetails?.event || "";
+      const amt = getTxAmountBrl(t, portfolioData.usdRate);
       if (["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(event))
-        proventos += t.amount;
+        proventos += amt;
       else if (event === "SELL") {
         const profit = portfolioData.profitMap[t.id] || 0;
         realizedProfit += profit;
-        netFlow -= t.amount;
-      } else if (event === "BUY") netFlow += t.amount;
+        netFlow -= amt;
+      } else if (event === "BUY") netFlow += amt;
     });
     return { proventos, realizedProfit, netFlow };
   }, [filteredHistoryTransactions, portfolioData.profitMap]);
@@ -2983,7 +3156,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
         )
       ) {
         group.proventos.push(t);
-        group.totalProventosValue += t.amount;
+        group.totalProventosValue += getTxAmountBrl(t, portfolioData.usdRate);
       } else {
         group.trades.push(t);
         if (t.investmentDetails?.event === "SELL") {
@@ -3249,9 +3422,9 @@ export const Investments: React.FC<InvestmentsProps> = ({
     sorted.forEach((t) => {
       if (t.investmentDetails?.event !== "SELL") return;
 
-      const date = new Date(t.date);
-      const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
-      const dayKey = `${t.investmentDetails.ticker.toUpperCase()}-${t.date.split("T")[0]}`;
+      const isoStr = toIsoDateStr(t.date);
+      const monthKey = isoStr.substring(0, 7); // YYYY-MM
+      const dayKey = `${t.investmentDetails.ticker.toUpperCase()}-${isoStr}`;
       const isDayTrade = dayTrades.has(dayKey);
 
       if (!report[monthKey])
@@ -3671,8 +3844,9 @@ export const Investments: React.FC<InvestmentsProps> = ({
         return;
 
       const ticker = t.investmentDetails?.ticker.toUpperCase() || "";
+      const amtBrl = getTxAmountBrl(t, portfolioData.usdRate);
       if (positions[ticker]) {
-        positions[ticker].totalProventos += t.amount;
+        positions[ticker].totalProventos += amtBrl;
       } else {
         positions[ticker] = {
           ticker,
@@ -3683,7 +3857,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           longName: ticker,
           broker: t.investmentDetails?.broker || "",
           cnpj: t.investmentDetails?.cnpj || "",
-          totalProventos: t.amount,
+          totalProventos: amtBrl,
           prevQuantity: 0,
           prevTotalCost: 0,
         };
@@ -3792,9 +3966,10 @@ export const Investments: React.FC<InvestmentsProps> = ({
     const oneYearAgo = oneYearAgoStr.toISOString();
 
     filteredDividendsList.forEach((t) => {
-      total += t.amount;
+      const amt = getTxAmountBrl(t, portfolioData.usdRate);
+      total += amt;
       if (t.date >= oneYearAgo) {
-        total12m += t.amount;
+        total12m += amt;
       }
     });
 
@@ -3818,24 +3993,24 @@ export const Investments: React.FC<InvestmentsProps> = ({
     const data: Record<string, number> = {};
     filteredDividendsList.forEach((t) => {
       const key = t.date.slice(0, 7);
-      data[key] = (data[key] || 0) + t.amount;
+      data[key] = (data[key] || 0) + getTxAmountBrl(t, portfolioData.usdRate);
     });
     return Object.entries(data)
       .sort()
       .map(([date, amount]) => ({ date, amount }));
-  }, [filteredDividendsList]);
+  }, [filteredDividendsList, portfolioData.usdRate]);
 
   const topPayers = useMemo(() => {
     const data: Record<string, number> = {};
     filteredDividendsList.forEach((t) => {
       const ticker = t.investmentDetails?.ticker || "Outros";
-      data[ticker] = (data[ticker] || 0) + t.amount;
+      data[ticker] = (data[ticker] || 0) + getTxAmountBrl(t, portfolioData.usdRate);
     });
     return Object.entries(data)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 10);
-  }, [filteredDividendsList]);
+  }, [filteredDividendsList, portfolioData.usdRate]);
 
   const monthlyDividendsTable = useMemo(() => {
     const grouped: Record<
@@ -3846,11 +4021,53 @@ export const Investments: React.FC<InvestmentsProps> = ({
       const monthKey = t.date.slice(0, 7);
       if (!grouped[monthKey])
         grouped[monthKey] = { date: monthKey, total: 0, items: [] };
-      grouped[monthKey].total += t.amount;
+      grouped[monthKey].total += getTxAmountBrl(t, portfolioData.usdRate);
       grouped[monthKey].items.push(t);
     });
     return Object.values(grouped).sort((a, b) => b.date.localeCompare(a.date));
   }, [filteredDividendsList]);
+
+  const expiredOrExpiringAssets = useMemo(() => {
+    if (!portfolioData || !portfolioData.assets) return [];
+    const todayStr = new Date().toISOString().split("T")[0];
+    const thirtyDaysLater = new Date();
+    thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
+    const thirtyDaysLaterStr = thirtyDaysLater.toISOString().split("T")[0];
+
+    return portfolioData.assets
+      .filter((a: any) => {
+        if (!a.maturityDate || typeof a.maturityDate !== "string") return false;
+        const isActive = a.isFixedIncome ? a.currentTotal > 1 : a.quantity > 0.000001;
+        return isActive && a.maturityDate <= thirtyDaysLaterStr;
+      })
+      .map((a: any) => {
+        const isExpired = a.maturityDate <= todayStr;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let diffDays = 0;
+        if (typeof a.maturityDate === "string") {
+          const matParts = a.maturityDate.split("-");
+          if (matParts.length === 3) {
+            const y = parseInt(matParts[0], 10);
+            const m = parseInt(matParts[1], 10);
+            const d = parseInt(matParts[2], 10);
+            if (!isNaN(y) && !isNaN(m) && !isNaN(d) && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+              const matDate = new Date(y, m - 1, d);
+              if (!isNaN(matDate.getTime())) {
+                const diffTime = matDate.getTime() - today.getTime();
+                diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              }
+            }
+          }
+        }
+        return {
+          ...a,
+          isExpired,
+          diffDays,
+        };
+      })
+      .sort((a: any, b: any) => (a.maturityDate || "").localeCompare(b.maturityDate || ""));
+  }, [portfolioData]);
 
   return (
     <div className="space-y-4 animate-in fade-in pb-24">
@@ -3894,6 +4111,57 @@ export const Investments: React.FC<InvestmentsProps> = ({
           </button>
         </div>
       </div>
+
+      {/* AVISO DE VENCIMENTO DE ATIVOS DE RENDA FIXA */}
+      {expiredOrExpiringAssets.length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-2xl p-4 shadow-sm animate-in fade-in space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-bold text-sm">
+              <AlertTriangle className="text-amber-600 dark:text-amber-400 shrink-0" size={18} />
+              <span>Aviso de Vencimento de Ativos ({expiredOrExpiringAssets.length})</span>
+            </div>
+            <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-800">
+              Renda Fixa
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            {expiredOrExpiringAssets.map((asset: any) => (
+              <div
+                key={asset.ticker}
+                className={`p-3 rounded-xl border flex flex-col justify-between text-xs transition-all ${
+                  asset.isExpired
+                    ? "bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800/80 text-rose-900 dark:text-rose-200 shadow-sm"
+                    : "bg-white dark:bg-zinc-900 border-amber-200 dark:border-amber-800/50 text-amber-900 dark:text-amber-200"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="font-bold text-sm block">{asset.ticker}</span>
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate block max-w-[150px]">{asset.longName || asset.ticker}</span>
+                  </div>
+                  {asset.isExpired ? (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-600 text-white shrink-0 animate-pulse">
+                      VENCIDO!
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-900/80 text-amber-800 dark:text-amber-200 shrink-0">
+                      {asset.diffDays === 0 ? "Vence Hoje" : `Vence em ${asset.diffDays}d`}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 flex items-center justify-between text-[11px]">
+                  <span className="text-zinc-600 dark:text-zinc-400 font-medium">
+                    Vencimento: <strong className="font-bold text-zinc-900 dark:text-zinc-100">{safeFormatPtBR(asset.maturityDate, { timeZone: "UTC" })}</strong>
+                  </span>
+                  <span className="font-extrabold text-zinc-900 dark:text-zinc-100">
+                    {formatCurrency(asset.currentTotal)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
 
       {/* GLOBAL FILTERS BAR */}
@@ -4698,11 +4966,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     ))}
                   </div>
                   <div className="text-[10px] text-gray-600 italic bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    A liquidez é estimada com base na classe do ativo. Renda
-                    Variável e FIIs são considerados D+2 a D+5. Títulos Públicos
-                    e Renda Fixa com carência são considerados longo prazo
-                    (&gt;180 dias) para fins de disponibilidade imediata, exceto
-                    reserva de emergência.
+                    A liquidez é calculada considerando ativos com Liquidez Diária (0 a 1 dia), os prazos de vencimento cadastrados para Renda Fixa e a liquidez estimada de mercado para Renda Variável e FIIs (2 a 5 dias).
                   </div>
                 </div>
               </div>
@@ -5477,7 +5741,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     <th className="px-3 py-3 w-[13%] text-right">
                       Resultado Total
                     </th>
-                    <th className="px-3 py-3 w-[9%] text-right">XTIR</th>
+                    <th className="px-3 py-3 w-[9%] text-right" title="Taxa Interna de Retorno Anualizada">XTIR (a.a.)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -5592,14 +5856,43 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                             >
                                               {item.longName}
                                             </p>
-                                            {item.yieldRate && (
-                                              <span
-                                                className="text-[10px] bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-900 dark:text-zinc-100 font-bold border border-zinc-200 dark:border-zinc-700 inline-block mt-0.5"
-                                                title="Rentabilidade Contratada"
-                                              >
-                                                {item.yieldRate}
-                                              </span>
-                                            )}
+                                            <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                                              {item.yieldRate && (
+                                                <span
+                                                  className="text-[10px] bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-900 dark:text-zinc-100 font-bold border border-zinc-200 dark:border-zinc-700 inline-block"
+                                                  title="Rentabilidade Contratada"
+                                                >
+                                                  {item.yieldRate}
+                                                </span>
+                                              )}
+                                              {item.hasDailyLiquidity && (
+                                                <span
+                                                  className="text-[10px] bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded font-bold border border-amber-200 dark:border-amber-800/60 inline-flex items-center gap-0.5"
+                                                  title="Possui Liquidez Diária"
+                                                >
+                                                  <Zap size={9} className="fill-amber-500 text-amber-500" /> Liq. Diária
+                                                </span>
+                                              )}
+                                              {item.maturityDate && (() => {
+                                                const todayStr = new Date().toISOString().split("T")[0];
+                                                const isExpired = item.maturityDate <= todayStr;
+                                                return isExpired ? (
+                                                  <span
+                                                    className="text-[10px] bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded font-extrabold border border-rose-300 dark:border-rose-800 inline-flex items-center gap-1 animate-pulse"
+                                                    title={`Ativo vencido em ${safeFormatPtBR(item.maturityDate, { timeZone: "UTC" })}`}
+                                                  >
+                                                    <AlertTriangle size={9} /> Vencido ({safeFormatPtBR(item.maturityDate, { timeZone: "UTC" })})
+                                                  </span>
+                                                ) : (
+                                                  <span
+                                                    className="text-[10px] bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-semibold border border-blue-200 dark:border-blue-800 inline-flex items-center gap-1"
+                                                    title={`Vencimento em ${safeFormatPtBR(item.maturityDate, { timeZone: "UTC" })}`}
+                                                  >
+                                                    <Calendar size={9} /> Vence {safeFormatPtBR(item.maturityDate, { timeZone: "UTC" })}
+                                                  </span>
+                                                );
+                                              })()}
+                                            </div>
                                           </div>
                                         </div>
                                       </td>
@@ -5883,6 +6176,17 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                               L/P
                                             </span>
                                           )}
+                                          {(() => {
+                                            const pData = portfolioData.list.find((p: any) => p.ticker === ticker);
+                                            return pData && pData.xtir !== undefined ? (
+                                              <span
+                                                className={`px-1.5 py-0.5 rounded font-bold ${pData.xtir >= 0 ? "text-emerald-700 bg-emerald-100" : "text-rose-700 bg-rose-100"}`}
+                                              >
+                                                {pData.xtir >= 0 ? "+" : ""}
+                                                {pData.xtir.toFixed(1)}% XTIR a.a.
+                                              </span>
+                                            ) : null;
+                                          })()}
                                         </div>
                                       </div>
                                     </div>
@@ -5943,12 +6247,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                                       className="hover:bg-slate-50/50 text-slate-600"
                                                     >
                                                       <td className="px-2 py-1.5 font-mono text-[10px] text-gray-900">
-                                                        {new Date(
-                                                          t.date,
-                                                        ).toLocaleDateString(
-                                                          "pt-BR",
-                                                          { timeZone: "UTC" },
-                                                        )}
+                                                        {safeFormatPtBR(t.date, { timeZone: "UTC" })}
                                                       </td>
                                                       <td className="px-2 py-1.5">
                                                         <span
@@ -6078,12 +6377,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                                     className="hover:bg-emerald-50/30 text-slate-600"
                                                   >
                                                     <td className="px-2 py-1.5 font-mono text-[10px] text-gray-900">
-                                                      {new Date(
-                                                        p.date,
-                                                      ).toLocaleDateString(
-                                                        "pt-BR",
-                                                        { timeZone: "UTC" },
-                                                      )}
+                                                      {safeFormatPtBR(p.date, { timeZone: "UTC" })}
                                                     </td>
                                                     <td className="px-2 py-1.5">
                                                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase bg-emerald-100 text-emerald-700">
@@ -6176,22 +6470,23 @@ export const Investments: React.FC<InvestmentsProps> = ({
                       {(() => {
                         let currentMonth = "";
                         return historyOperationsList.map((t) => {
-                          const dateObj = new Date(t.date);
-                          const monthKey = dateObj
-                            .toLocaleDateString("pt-BR", {
-                              month: "long",
-                              year: "numeric",
-                              timeZone: "UTC",
-                            })
-                            .toUpperCase();
+                          const iso = toIsoDateStr(t.date);
+                          const parts = iso.split("-");
+                          const year = Number(parts[0]);
+                          const month = Number(parts[1]);
+                          const dateObj = (!isNaN(year) && !isNaN(month)) ? new Date(Date.UTC(year, month - 1, 2, 12, 0, 0)) : new Date(t.date);
+                          const monthKey = !isNaN(dateObj.getTime())
+                            ? dateObj.toLocaleDateString("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" }).toUpperCase()
+                            : iso.substring(0, 7);
                           const showSeparator = monthKey !== currentMonth;
                           if (showSeparator) currentMonth = monthKey;
 
                           const isSell = t.investmentDetails?.event === "SELL";
+                          const displayAmt = getTxAmountBrl(t, portfolioData.usdRate);
                           const profit = isSell
                             ? portfolioData.profitMap[t.id] || 0
                             : 0;
-                          const cost = t.amount - profit;
+                          const cost = displayAmt - profit;
                           const profitPercent =
                             cost > 0 ? (profit / cost) * 100 : 0;
 
@@ -6219,7 +6514,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                   />
                                 </td>
                                 <td className="px-4 py-3 font-mono text-[10px] text-gray-900">
-                                  {dateObj.toLocaleDateString("pt-BR", {
+                                  {safeFormatPtBR(t.date, {
                                     timeZone: "UTC",
                                   })}
                                 </td>
@@ -6256,7 +6551,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                     {t.investmentDetails?.event ===
                                     "TICKER_UPDATE"
                                       ? "-"
-                                      : formatCurrency(t.amount)}
+                                      : formatCurrency(displayAmt)}
                                   </div>
                                   {isSell && (
                                     <div
@@ -6328,9 +6623,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                           className="hover:bg-slate-50 transition-colors"
                         >
                           <td className="px-4 py-3 font-mono text-[10px] text-gray-900">
-                            {new Date(t.date).toLocaleDateString("pt-BR", {
-                              timeZone: "UTC",
-                            })}
+                            {safeFormatPtBR(t.date, { timeZone: "UTC" })}
                           </td>
                           <td className="px-4 py-3 font-bold text-slate-700">
                             {t.investmentDetails?.ticker}
@@ -6340,8 +6633,16 @@ export const Investments: React.FC<InvestmentsProps> = ({
                               {t.investmentDetails?.event}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right font-bold text-emerald-600">
-                            {formatCurrency(t.amount)}
+                          <td className="px-4 py-3 text-right">
+                            <div className="font-bold text-emerald-600">
+                              {formatCurrency(getTxAmountBrl(t, portfolioData.usdRate))}
+                            </div>
+                            {t.investmentDetails?.currency === "USD" && (
+                              <div className="text-[10px] text-blue-600 font-semibold font-mono">
+                                USD { (t.investmentDetails.grossAmount ? (t.investmentDetails.grossAmount - (t.investmentDetails.tax || 0)) : t.amount).toFixed(2) }
+                                {t.investmentDetails.ptax ? ` (PTAX R$ ${t.investmentDetails.ptax.toFixed(4)})` : ''}
+                              </div>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-right flex justify-end gap-2">
                             <button
@@ -6483,7 +6784,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           {/* Actions */}
           <div className="flex gap-3 justify-end">
             <button
-              onClick={() => onOpenDividendForm()}
+              onClick={() => onOpenDividendForm?.()}
               className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-emerald-700 shadow-md flex items-center gap-2 text-xs"
             >
               <Plus size={14} /> Novo Provento
@@ -6541,10 +6842,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 >
                   <div className="bg-slate-50 px-4 py-2 flex justify-between items-center sticky top-0 z-10">
                     <span className="text-[10px] font-bold text-gray-900 uppercase tracking-wider">
-                      {new Date(group.date + "-02").toLocaleDateString(
-                        "pt-BR",
-                        { month: "long", year: "numeric" },
-                      )}
+                      {safeFormatMonthPtBR(group.date, { month: "long", year: "numeric" })}
                     </span>
                     <span className="text-xs font-bold text-emerald-600">
                       {formatCurrency(group.total)}
@@ -6558,9 +6856,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                           className="hover:bg-slate-50 transition-colors group"
                         >
                           <td className="px-4 py-2 w-24 font-mono text-[10px] text-gray-600">
-                            {new Date(t.date).toLocaleDateString("pt-BR", {
-                              timeZone: "UTC",
-                            })}
+                            {safeFormatPtBR(t.date, { timeZone: "UTC" })}
                           </td>
                           <td className="px-4 py-2">
                             <div className="font-bold text-slate-700">
@@ -6570,8 +6866,15 @@ export const Investments: React.FC<InvestmentsProps> = ({
                               {t.investmentDetails?.event}
                             </div>
                           </td>
-                          <td className="px-4 py-2 text-right font-bold text-emerald-600">
-                            {formatCurrency(t.amount)}
+                          <td className="px-4 py-2 text-right">
+                            <div className="font-bold text-emerald-600">
+                              {formatCurrency(getTxAmountBrl(t, portfolioData.usdRate))}
+                            </div>
+                            {t.investmentDetails?.currency === "USD" && (
+                              <div className="text-[10px] text-blue-600 font-semibold font-mono">
+                                USD { (t.investmentDetails.grossAmount ? (t.investmentDetails.grossAmount - (t.investmentDetails.tax || 0)) : t.amount).toFixed(2) }
+                              </div>
+                            )}
                           </td>
                           <td className="px-4 py-2 text-right w-16 opacity-0 group-hover:opacity-100 transition-opacity">
                             <div className="flex justify-end gap-2">
@@ -6746,12 +7049,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                               ) : (
                                 <ChevronDown size={12} />
                               )}
-                              {new Date(r.month + "-02")
-                                .toLocaleDateString("pt-BR", {
-                                  month: "short",
-                                  year: "numeric",
-                                })
-                                .toUpperCase()}
+                              {safeFormatMonthPtBR(r.month, { month: "short", year: "numeric" }).toUpperCase()}
                             </td>
                             <td className="px-4 py-3 text-right font-medium">
                               {formatCurrency(r.salesTotal)}
@@ -6893,11 +7191,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                           className="hover:bg-slate-50"
                                         >
                                           <td className="px-3 py-2 font-mono text-[10px] text-gray-900">
-                                            {new Date(
-                                              item.transaction.date,
-                                            ).toLocaleDateString("pt-BR", {
-                                              timeZone: "UTC",
-                                            })}
+                                            {safeFormatPtBR(item.transaction.date, { timeZone: "UTC" })}
                                           </td>
                                           <td className="px-3 py-2 font-bold text-slate-700">
                                             {
@@ -7069,10 +7363,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                   <Calendar className="text-blue-600" size={24} />
                   Ativos em{" "}
-                  {new Date(selectedMonth + "-02").toLocaleDateString("pt-BR", {
-                    month: "long",
-                    year: "numeric",
-                  })}
+                  {safeFormatMonthPtBR(selectedMonth, { month: "long", year: "numeric" })}
                 </h3>
                 <p className="text-xs text-gray-900 font-medium mt-1">
                   Detalhamento de posição e performance mensal por ativo
@@ -7630,9 +7921,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                   </button>
                                 </td>
                                 <td className="px-4 py-2 font-medium">
-                                  {new Date(
-                                    h.date + "T12:00:00",
-                                  ).toLocaleDateString("pt-BR")}
+                                  {safeFormatPtBR(h.date)}
                                 </td>
                                 <td className="px-4 py-2 font-bold text-slate-800">
                                   {formatCurrency(h.price)}
