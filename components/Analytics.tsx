@@ -2,9 +2,10 @@
 import React, { useMemo, useState } from 'react';
 import { Transaction, Category, SubCategory, TransactionType, UserSettings, CreditCard, PaymentMethod } from '../types';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, Legend, ComposedChart, Line, LineChart
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, Legend, Line, LineChart
 } from 'recharts';
-import { TrendingUp, Calendar, Target, PieChart as PieIcon, Activity, ArrowUp, ArrowDown, Wallet, ShieldCheck, AlertTriangle, List, ChevronLeft, ChevronRight, Filter, Search, X, Check, Layers, ArrowRight, Utensils, Car, Home, Gamepad, User, Dog, Banknote, Circle, ShoppingBag, Coffee, Smartphone, Hammer, Plane, Music, Gift, Wifi, Zap, Book, Briefcase, Shirt, CheckSquare, Square, Percent, ChevronDown, ChevronUp, Merge, Calculator, Hash, Maximize, Minimize, Map as MapIcon, Users } from 'lucide-react';
+import { TrendingUp, PieChart as PieIcon, Activity, ArrowUp, ArrowDown, Wallet, ShieldCheck, AlertTriangle, List, ChevronLeft, ChevronRight, Filter, Search, X, Check, Layers, ArrowRight, CheckSquare, Square, Percent, ChevronDown, ChevronUp, Merge, Calculator, Hash, Maximize, Minimize, Map as MapIcon, Users } from 'lucide-react';
+import { calculateEffectiveDate } from '../utils/dateUtils';
 
 interface AnalyticsProps {
   transactions: Transaction[];
@@ -21,9 +22,6 @@ const COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#0ea5e9'
 const formatCurrency = (val: number) => 
   (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-const formatPercent = (val: number) => 
-  `${val.toFixed(1)}%`;
-
 const normalizeText = (text: string) => 
   text.normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
@@ -31,43 +29,7 @@ const normalizeText = (text: string) =>
       .replace(/\s+/g, ' ')
       .trim();
 
-const IconRenderer = ({ iconName, className }: { iconName: string; className?: string }) => {
-  const icons: any = { utensils: Utensils, car: Car, home: Home, gamepad: Gamepad, activity: Activity, user: User, dog: Dog, banknote: Banknote, 'trending-up': TrendingUp, circle: Circle, 'shopping-bag': ShoppingBag, coffee: Coffee, smartphone: Smartphone, hammer: Hammer, plane: Plane, music: Music, gift: Gift, wifi: Wifi, zap: Zap, book: Book, briefcase: Briefcase, shirt: Shirt, users: Users };
-  const IconComponent = icons[iconName] || Circle;
-  return <IconComponent className={className} />;
-};
-
-function calculateEffectiveDate(t: Transaction, creditCards: CreditCard[] = [], settings: UserSettings): Date {
-    if (t.manualAccountingDate) return new Date(t.manualAccountingDate);
-    const date = new Date(t.date);
-    const dayOfMonth = t.originalDay || date.getUTCDate();
-    const month = date.getUTCMonth();
-    const year = date.getUTCFullYear();
-    const comparisonDate = new Date(year, month, 1, 12, 0, 0);
-    
-    if (t.type === TransactionType.INVESTMENT) {
-        return comparisonDate;
-    }
-    
-    if (t.type === TransactionType.EXPENSE && t.paymentMethod === PaymentMethod.CREDIT_CARD && t.creditCardId) {
-        const card = creditCards?.find(c => c.id === t.creditCardId);
-        if (card && dayOfMonth > card.closingDay) comparisonDate.setMonth(comparisonDate.getMonth() + 1);
-    } else {
-        const salaryDay = settings.salaryDay || 1;
-        const shift = settings.salaryShift ?? (salaryDay >= 20 ? 1 : 0);
-        const lastDayOfMonth = new Date(comparisonDate.getFullYear(), comparisonDate.getMonth() + 1, 0).getDate();
-        const effectiveSalaryDay = Math.min(salaryDay, lastDayOfMonth);
-        
-        if (dayOfMonth >= effectiveSalaryDay) {
-            comparisonDate.setMonth(comparisonDate.getMonth() + shift);
-        } else {
-            comparisonDate.setMonth(comparisonDate.getMonth() + shift - 1);
-        }
-    }
-    return comparisonDate;
-}
-
-export const Analytics: React.FC<AnalyticsProps> = ({ 
+export const Analytics: React.FC<AnalyticsProps> = ({
   transactions = [], 
   categories = [], 
   subCategories = [], 
@@ -76,7 +38,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({
   settings,
   onDateChange
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'categories' | 'trends' | 'annual'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'categories' | 'trends'>('overview');
   
   // Time Range States
   const [timeRange, setTimeRange] = useState<'month' | 'year' | 'custom' | 'all'>('month');
@@ -258,26 +220,29 @@ export const Analytics: React.FC<AnalyticsProps> = ({
           const [yearStr, monthStr] = monthKey.split('-');
           const year = parseInt(yearStr);
           const month = parseInt(monthStr);
+          // monthKey usa mês 0-indexado (getMonth()). Valores vindos de <input type="month">
+          // (customStartMonth/customEndMonth, settings.resgatesResetMonth) usam o padrão
+          // HTML 1-12, então convertemos aqui para comparar igual em ambos os lados.
+          const isoMonthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
 
-          if (settings.resgatesResetMonth && monthKey === settings.resgatesResetMonth) {
+          if (settings.resgatesResetMonth && isoMonthKey === settings.resgatesResetMonth) {
               resgatesPool = 0;
           }
 
           let isTarget = false;
           let isBefore = false;
-          
-          if (timeRange === 'month') { 
-              isTarget = (month === currentDate.getMonth() && year === currentDate.getFullYear()); 
+
+          if (timeRange === 'month') {
+              isTarget = (month === currentDate.getMonth() && year === currentDate.getFullYear());
               isBefore = (year < currentDate.getFullYear() || (year === currentDate.getFullYear() && month < currentDate.getMonth()));
-          } 
-          else if (timeRange === 'year') { 
-              isTarget = (year === selectedYear); 
+          }
+          else if (timeRange === 'year') {
+              isTarget = (year === selectedYear);
               isBefore = (year < selectedYear);
           }
           else if (timeRange === 'custom') {
-              const tIso = `${year}-${String(month + 1).padStart(2, '0')}`; 
-              isTarget = (tIso >= customStartMonth && tIso <= customEndMonth);
-              isBefore = (tIso < customStartMonth);
+              isTarget = (isoMonthKey >= customStartMonth && isoMonthKey <= customEndMonth);
+              isBefore = (isoMonthKey < customStartMonth);
           }
 
           const monthlySavings = data.income - data.expense;
@@ -293,18 +258,21 @@ export const Analytics: React.FC<AnalyticsProps> = ({
           let reinvestedResgates = 0;
           let aporteNovo = 0;
 
+          // Ordem de prioridade: resgates primeiro, depois proventos, e só o que
+          // sobrar sai do bolso (dinheiro novo) — mesma ordem usada na tabela
+          // "Resumo Financeiro Anual" de Lançamentos, pra não divergir entre telas.
           if (remainingInvested > 0) {
-              aporteNovo = Math.min(remainingInvested, Math.max(0, activePool));
-              activePool -= aporteNovo;
-              remainingInvested -= aporteNovo;
+              reinvestedResgates = Math.min(remainingInvested, Math.max(0, resgatesPool));
+              resgatesPool -= reinvestedResgates;
+              remainingInvested -= reinvestedResgates;
 
               reinvestedProventos = Math.min(remainingInvested, Math.max(0, proventosPool));
               proventosPool -= reinvestedProventos;
               remainingInvested -= reinvestedProventos;
 
-              reinvestedResgates = Math.min(remainingInvested, Math.max(0, resgatesPool));
-              resgatesPool -= reinvestedResgates;
-              remainingInvested -= reinvestedResgates;
+              aporteNovo = Math.min(remainingInvested, Math.max(0, activePool));
+              activePool -= aporteNovo;
+              remainingInvested -= aporteNovo;
 
               if (remainingInvested > 0) {
                   aporteNovo += remainingInvested;
@@ -435,7 +403,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({
           map.set(key, { ...current, total: current.total + t.amount, count: current.count + 1, categoryId: t.categoryId });
       });
       const grandTotal = analysisType === TransactionType.EXPENSE ? globalStats.expense : (analysisType === TransactionType.INVESTMENT ? globalStats.investment : globalStats.income);
-      return Array.from(map.values())
+      const allItems = Array.from(map.values())
           .map(item => {
               const catTotal = categoryTotalMap.get(item.categoryId) || 0;
               return {
@@ -444,8 +412,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                   shareOfCategory: catTotal > 0 ? (item.total / catTotal) * 100 : 0
               };
           })
-          .sort((a, b) => b.total - a.total)
-          .slice(0, 15);
+          .sort((a, b) => b.total - a.total);
+      const items = allItems.slice(0, 15);
+      const hidden = allItems.slice(15);
+      // A tabela mostra só os 15 maiores; guardamos quantos ficaram de fora e a soma
+      // deles para não deixar o card "Total no Período" (que soma tudo) parecer
+      // inconsistente com as linhas visíveis, sem nenhuma explicação.
+      return { items, hiddenCount: hidden.length, hiddenTotal: hidden.reduce((acc, i) => acc + i.total, 0) };
   }, [analysisFilteredData, categories, subCategories, groupMode, analysisType, categoryTotalMap, globalStats]);
 
   const selectionSummary = useMemo(() => {
@@ -562,7 +535,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({
     for (let i = monthsToLookBack; i >= 0; i--) {
       const d = new Date(); d.setMonth(d.getMonth() - i); d.setDate(1); 
       const label = d.toLocaleDateString('pt-BR', { month: 'short' });
-      let inc = 0, exp = 0;
+      let inc = 0, exp = 0, resg = 0;
       transactions.forEach(t => {
         const effDate = calculateEffectiveDate(t, creditCards, settings);
         if (effDate.getMonth() === d.getMonth() && effDate.getFullYear() === d.getFullYear()) {
@@ -571,14 +544,20 @@ export const Analytics: React.FC<AnalyticsProps> = ({
           if (t.type === TransactionType.INCOME) inc += t.amount;
           else if (t.type === TransactionType.INVESTMENT) {
               const event = t.investmentDetails?.event;
-              if (['DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO', 'AMORTIZACAO', 'SELL'].includes(event || '')) {
+              // DIVIDEND/JCP/RENDIMENTO/REEMBOLSO são ganho real (não reduzem posição).
+              // SELL/AMORTIZACAO devolvem capital + ganho misturados — contar como
+              // "Receita" infla o gráfico com o próprio principal resgatado, então vão
+              // para uma série separada ("Resgates"), não para receita.
+              if (['DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(event || '')) {
                   inc += t.amount;
+              } else if (['SELL', 'AMORTIZACAO'].includes(event || '')) {
+                  resg += t.amount;
               }
           }
           else if (t.type === TransactionType.EXPENSE && !t.fundedByResgate) exp += t.amount;
         }
       });
-      data.push({ name: label, Receita: inc, Despesa: exp });
+      data.push({ name: label, Receita: inc, Despesa: exp, Resgates: resg });
     }
     return data;
   }, [transactions, categories, creditCards, settings, filterCategoryIds, filterTag, includeNathy]);
@@ -616,9 +595,11 @@ export const Analytics: React.FC<AnalyticsProps> = ({
               if (analysisType === TransactionType.INVESTMENT) {
                   if (t.type !== TransactionType.INVESTMENT || t.investmentDetails?.event !== 'BUY') return;
               } else {
-                  const isInvestmentIncome = t.type === TransactionType.INVESTMENT && 
-                      ['DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO', 'AMORTIZACAO', 'SELL'].includes(t.investmentDetails?.event || '');
-                  
+                  // SELL/AMORTIZACAO ficam de fora: devolvem capital (não são ganho),
+                  // ver mesma justificativa em trendsHistoryData.
+                  const isInvestmentIncome = t.type === TransactionType.INVESTMENT &&
+                      ['DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(t.investmentDetails?.event || '');
+
                   if (t.type !== analysisType && !isInvestmentIncome) return;
                   if (analysisType === TransactionType.EXPENSE && isInvestmentIncome) return;
                   if (analysisType === TransactionType.EXPENSE && t.fundedByResgate) return;
@@ -640,30 +621,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({
       }
       return { data, lines: isFiltering ? ['Selecionado'] : Array.from(relevantCategories) };
   }, [transactions, categories, creditCards, settings, isFiltering, filterCategoryIds, filterTag, includeNathy, analysisType]);
-
-  const annualComparisonData = useMemo(() => {
-    const data = [];
-    const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    const nathyId = categories?.find(c => c.name.toLowerCase() === 'nathy')?.id;
-    for (let m = 0; m < 12; m++) {
-      let totalExpense = 0;
-      let filteredExpense = 0;
-      transactions.forEach(t => {
-        const effDate = calculateEffectiveDate(t, creditCards, settings);
-        if (effDate.getFullYear() === selectedYear && effDate.getMonth() === m) {
-          if (t.type === analysisType) {
-             if (analysisType === TransactionType.INVESTMENT && t.investmentDetails?.event !== 'BUY') return;
-             if (!includeNathy && isNathyTransaction(t, nathyId)) return;
-             totalExpense += t.amount;
-             if (matchesFilters(t)) filteredExpense += t.amount;
-          }
-        }
-      });
-      const ratio = totalExpense > 0 ? (filteredExpense / totalExpense) * 100 : 0;
-      data.push({ name: labels[m], Total: totalExpense, Filtrado: filteredExpense, Ratio: Math.round(ratio) });
-    }
-    return data;
-  }, [transactions, selectedYear, categories, creditCards, settings, filterCategoryIds, filterTag, includeNathy, analysisType]);
 
   const renderCategoryFilterSection = (type: TransactionType) => {
       const cats = categories.filter(c => c.type === type);
@@ -812,7 +769,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({
       )}
 
       <div className="flex bg-white dark:bg-zinc-900 p-1 rounded-full border border-zinc-200 dark:border-zinc-800 shadow-sm w-fit max-w-full overflow-x-auto custom-scrollbar">
-          {[{ id: 'overview', label: 'Resumo e Agrupamentos', icon: Activity }, { id: 'categories', label: 'Distribuição', icon: PieIcon }, { id: 'trends', label: 'Histórico Mensal', icon: TrendingUp }, { id: 'annual', label: 'Comparativo Anual', icon: Calendar }].map(tab => (
+          {[{ id: 'overview', label: 'Resumo e Agrupamentos', icon: Activity }, { id: 'categories', label: 'Distribuição', icon: PieIcon }, { id: 'trends', label: 'Histórico Mensal', icon: TrendingUp }].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center whitespace-nowrap gap-2 px-6 py-2 text-sm font-bold rounded-full transition-all ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-md' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'}`}><tab.icon size={16} /> {tab.label}</button>
           ))}
       </div>
@@ -843,7 +800,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                               </tr>
                           </thead>
                           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
-                              {groupedDataList?.map((item, idx) => (
+                              {groupedDataList?.items.map((item, idx) => (
                                   <tr key={idx} className="hover:bg-zinc-50 dark:bg-zinc-950/40 transition-colors group">
                                       <td className="px-6 py-4 font-semibold text-zinc-800 dark:text-zinc-200 max-w-[200px] truncate" title={item.label}>{item.label}</td>
                                       <td className="px-6 py-4 text-xs text-zinc-500 dark:text-zinc-400 max-w-[150px] truncate" title={item.secondary}>{item.secondary}</td>
@@ -873,7 +830,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({
                                       <td className="px-6 py-4 text-right font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(item.total)}</td>
                                   </tr>
                               ))}
-                              {(!groupedDataList || groupedDataList.length === 0) && (<tr><td colSpan={6} className="p-12 text-center text-zinc-500 dark:text-zinc-400">Nenhum dado encontrado para o período.</td></tr>)}
+                              {groupedDataList && groupedDataList.hiddenCount > 0 && (
+                                  <tr className="bg-zinc-50/60 dark:bg-zinc-950/30">
+                                      <td colSpan={5} className="px-6 py-3 text-xs text-zinc-500 dark:text-zinc-400 italic">+ {groupedDataList.hiddenCount} outros itens não exibidos (fora do Top 15)</td>
+                                      <td className="px-6 py-3 text-right font-bold text-zinc-600 dark:text-zinc-400">{formatCurrency(groupedDataList.hiddenTotal)}</td>
+                                  </tr>
+                              )}
+                              {(!groupedDataList || groupedDataList.items.length === 0) && (<tr><td colSpan={6} className="p-12 text-center text-zinc-500 dark:text-zinc-400">Nenhum dado encontrado para o período.</td></tr>)}
                           </tbody>
                       </table>
                   </div>
@@ -1150,9 +1113,9 @@ export const Analytics: React.FC<AnalyticsProps> = ({
       {activeTab === 'trends' && (
           <div className="space-y-6">
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm h-[400px]">
-                  <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 mb-6 flex items-center gap-2 uppercase tracking-wider"><TrendingUp size={16} className="text-zinc-500 dark:text-zinc-400"/> Histórico de Receitas vs Despesas (Filtros Ativos)</h3>
+                  <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 mb-6 flex items-center gap-2 uppercase tracking-wider"><TrendingUp size={16} className="text-zinc-500 dark:text-zinc-400"/> Histórico de Receitas, Despesas e Resgates (Filtros Ativos)</h3>
                   <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={trendsHistoryData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" /><XAxis dataKey="name" stroke="#94a3b8" fontSize={10} /><YAxis stroke="#94a3b8" fontSize={10} /><Tooltip formatter={(v: number) => formatCurrency(v)} /><Legend /><Bar dataKey="Receita" fill="#10b981" radius={[4, 4, 0, 0]} /><Bar dataKey="Despesa" fill="#f43f5e" radius={[4, 4, 0, 0]} /></BarChart>
+                      <BarChart data={trendsHistoryData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" /><XAxis dataKey="name" stroke="#94a3b8" fontSize={10} /><YAxis stroke="#94a3b8" fontSize={10} /><Tooltip formatter={(v: number) => formatCurrency(v)} /><Legend /><Bar dataKey="Receita" fill="#10b981" radius={[4, 4, 0, 0]} /><Bar dataKey="Despesa" fill="#f43f5e" radius={[4, 4, 0, 0]} /><Bar dataKey="Resgates" fill="#3b82f6" radius={[4, 4, 0, 0]} /></BarChart>
                   </ResponsiveContainer>
               </div>
 
@@ -1188,26 +1151,6 @@ export const Analytics: React.FC<AnalyticsProps> = ({
           </div>
       )}
 
-      {activeTab === 'annual' && (
-          <div className="space-y-6">
-              <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl md:rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm h-[450px]">
-                  <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 mb-6 flex items-center gap-2 uppercase tracking-wider"><Target size={16} className="text-zinc-500 dark:text-zinc-400"/> Comparativo: Total Geral vs Filtros Selecionados ({selectedYear})</h3>
-                  <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={annualComparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                          <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} />
-                          <YAxis yAxisId="left" stroke="#94a3b8" fontSize={10} tickFormatter={(val) => `R$${val/1000}k`} />
-                          <YAxis yAxisId="right" orientation="right" stroke="#6366f1" fontSize={10} tickFormatter={(val) => `${val}%`} domain={[0, 100]} />
-                          <Tooltip formatter={(value: number, name: string) => name === 'Ratio' ? formatPercent(value) : formatCurrency(value)} />
-                          <Legend />
-                          <Bar yAxisId="left" dataKey="Total" name="Despesa Geral" fill="#cbd5e1" radius={[4, 4, 0, 0]} barSize={20} />
-                          <Bar yAxisId="left" dataKey="Filtrado" name="Despesa Filtrada" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={20} />
-                          <Line yAxisId="right" type="monotone" dataKey="Ratio" name="% Representativo" stroke="#6366f1" strokeWidth={3} dot={{r: 4, strokeWidth: 2, fill: "#fff"}} />
-                      </ComposedChart>
-                  </ResponsiveContainer>
-              </div>
-          </div>
-      )}
     </div>
   );
 };

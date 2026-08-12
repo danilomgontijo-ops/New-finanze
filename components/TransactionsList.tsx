@@ -9,6 +9,7 @@ import {
   Landmark, DollarSign, Euro, Bitcoin, Gem, Rocket, Star, Heart, Shield, Lock, Key, Globe, Map as MapIcon, Navigation, Flag, Crown, Trophy, Award, ShoppingCart, Truck, Package, Ghost, Smile, ThumbsUp, Tag, Hash, CheckSquare, Square, Save, Loader2, Table, Eye, EyeOff
 } from 'lucide-react';
 import { StorageService } from '../services/storageService';
+import { calculateEffectiveDate } from '../utils/dateUtils';
 
 // Full Icon Mapping for Transactions List
 const IconRenderer = ({ iconName, className }: { iconName: string; className?: string }) => {
@@ -28,42 +29,6 @@ const IconRenderer = ({ iconName, className }: { iconName: string; className?: s
 
 const formatCurrency = (val: number) => 
   (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-function calculateEffectiveDate(t: Transaction, creditCards: CreditCard[], settings: UserSettings): Date {
-    if (t.manualAccountingDate) {
-        const mDate = new Date(t.manualAccountingDate);
-        if (!isNaN(mDate.getTime())) return mDate;
-    }
-    let date = new Date(t.date);
-    if (isNaN(date.getTime())) date = new Date();
-    const dayOfMonth = t.originalDay || date.getUTCDate();
-    const month = date.getUTCMonth();
-    const year = date.getUTCFullYear();
-    const comparisonDate = new Date(year, month, 1, 12, 0, 0);
-    
-    if (t.type === TransactionType.INVESTMENT) {
-        return comparisonDate;
-    }
-    
-    if (t.type === TransactionType.EXPENSE && t.paymentMethod === PaymentMethod.CREDIT_CARD && t.creditCardId) {
-        const card = creditCards.find(c => c.id === t.creditCardId);
-        if (card && dayOfMonth > card.closingDay) {
-            comparisonDate.setMonth(comparisonDate.getMonth() + 1);
-        }
-    } else {
-        const salaryDay = settings.salaryDay || 1;
-        const shift = settings.salaryShift ?? (salaryDay >= 20 ? 1 : 0);
-        const lastDayOfMonth = new Date(comparisonDate.getFullYear(), comparisonDate.getMonth() + 1, 0).getDate();
-        const effectiveSalaryDay = Math.min(salaryDay, lastDayOfMonth);
-
-        if (dayOfMonth >= effectiveSalaryDay) {
-            comparisonDate.setMonth(comparisonDate.getMonth() + shift);
-        } else {
-            comparisonDate.setMonth(comparisonDate.getMonth() + shift - 1);
-        }
-    }
-    return comparisonDate;
-}
 
 const PaymentConfirmationModal = ({ isOpen, onClose, transaction, onConfirm }: { isOpen: boolean, onClose: () => void, transaction: Transaction | null, onConfirm: (t: Transaction) => void }) => {
     if (!isOpen || !transaction) return null;
@@ -133,20 +98,21 @@ const DuplicateResolverModal = ({ isOpen, onClose, duplicateGroups, onDelete }: 
     );
 };
 
-interface TransactionGroupProps { 
-    title: string | React.ReactNode; 
-    items: Transaction[]; 
-    icon?: React.ReactNode; 
-    colorClass?: string; 
-    total: number; 
-    secondaryTotal?: number; 
+interface TransactionGroupProps {
+    title: string | React.ReactNode;
+    items: Transaction[];
+    icon?: React.ReactNode;
+    colorClass?: string;
+    accentColor?: string; // cor (hex) da forma de pagamento/grupo, usada como fundo discreto do cabeçalho
+    total: number;
+    secondaryTotal?: number;
     renderRow: (t: Transaction) => React.ReactNode;
     selectedIds: string[];
     onToggleSelectAll: (items: Transaction[]) => void;
 }
 
-const TransactionGroup: React.FC<TransactionGroupProps> = ({ 
-    title, items, icon, colorClass, total, secondaryTotal, renderRow, selectedIds, onToggleSelectAll
+const TransactionGroup: React.FC<TransactionGroupProps> = ({
+    title, items, icon, colorClass, accentColor, total, secondaryTotal, renderRow, selectedIds, onToggleSelectAll
 }) => {
     const [isOpen, setIsOpen] = useState(true);
     if (items.length === 0) return null;
@@ -154,35 +120,36 @@ const TransactionGroup: React.FC<TransactionGroupProps> = ({
     const allSelected = items.length > 0 && items.every(i => selectedIds.includes(i.id));
 
     return (
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border border-zinc-200 dark:border-zinc-800/60 dark:border-zinc-800/80 overflow-hidden mb-4">
-            <div 
-                className="w-full bg-white dark:bg-zinc-900 px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950 transition-colors border-b border-zinc-200 dark:border-zinc-800"
+        <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm shadow-zinc-200/5 border border-zinc-200/70 dark:border-zinc-800/80 overflow-hidden mb-4">
+            <div
+                className={`w-full px-4 py-3.5 flex justify-between items-center cursor-pointer transition-colors border-b border-zinc-100 dark:border-zinc-800/80 ${!accentColor ? 'hover:bg-zinc-50/70 dark:hover:bg-zinc-800/30' : ''}`}
+                style={{ backgroundColor: accentColor ? `${accentColor}14` : undefined }}
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <div className="flex items-center gap-3">
-                    <button 
+                    <button
                         onClick={(e) => { e.stopPropagation(); onToggleSelectAll(items); }}
-                        className={`p-1 rounded-md transition-all ${allSelected ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-500 dark:text-zinc-400 dark:text-zinc-500'}`}
+                        className={`p-1 rounded-md transition-all ${allSelected ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'}`}
                         title={allSelected ? "Desmarcar Todos" : "Marcar Todos do Grupo"}
                     >
                         {allSelected ? <CheckSquare size={18} /> : <Square size={18} />}
                     </button>
                     <div className={`flex items-center gap-2 ${colorClass}`}>
                         {icon}
-                        <span className="font-medium text-sm text-zinc-800 dark:text-zinc-200">{title}</span>
+                        <span className="font-semibold text-sm text-zinc-800 dark:text-zinc-200">{title}</span>
                     </div>
-                    {isOpen ? <ChevronUp size={14} className="text-zinc-700 dark:text-zinc-300" /> : <ChevronDown size={14} className="text-zinc-700 dark:text-zinc-300" />}
+                    {isOpen ? <ChevronUp size={14} className="text-zinc-400 dark:text-zinc-500" /> : <ChevronDown size={14} className="text-zinc-400 dark:text-zinc-500" />}
                 </div>
                 <div className="text-right">
-                    <span className={`font-medium text-sm ${colorClass}`}>R$ {(total || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                    <span className={`font-bold text-sm tabular-nums ${colorClass}`}>R$ {(total || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
                     {secondaryTotal !== undefined && Math.abs(secondaryTotal - total) > 0.01 && (
-                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 font-medium block">Minha parte: R$ {(secondaryTotal || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                        <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium block tabular-nums">Minha parte: R$ {(secondaryTotal || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
                     )}
                 </div>
             </div>
-            
+
             {isOpen && (
-                <div className="p-2 space-y-2 bg-zinc-50 dark:bg-zinc-950/30 animate-in slide-in-from-top-1">
+                <div className="divide-y divide-zinc-100 dark:divide-zinc-800/70 animate-in slide-in-from-top-1">
                     {items.map(t => renderRow(t))}
                 </div>
             )}
@@ -245,6 +212,12 @@ const YearlyView = ({ transactions, allTransactions, categories, subCategories, 
         sortedMonths.forEach(ym => {
             const ymYear = parseInt(ym.slice(0, 4));
             const ymMth = parseInt(ym.slice(5, 7)) - 1; // 0-indexed
+
+            // `ym` já vem no formato YYYY-MM (1-12) direto do ISO de t.date, igual ao
+            // valor salvo por <input type="month"> em resgatesResetMonth — compara direto.
+            if (settings.resgatesResetMonth && ym === settings.resgatesResetMonth) {
+                currentResgatesPool = 0;
+            }
 
             const monthTxs = txByMonth.get(ym)!;
 
@@ -331,7 +304,7 @@ const YearlyView = ({ transactions, allTransactions, categories, subCategories, 
             const amountToUse = t.isShared ? (t.amount / 2) : t.amount;
 
             if (t.type === TransactionType.INCOME) {
-                summary[m].income += t.amount;
+                summary[m].income += amountToUse;
             } else if (t.type === TransactionType.EXPENSE && !t.fundedByResgate) {
                 summary[m].expense += amountToUse;
             }
@@ -632,10 +605,12 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<'monthly' | 'yearly'>('monthly');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [categoryFilter, setCategoryFilter] = useState<string[]>([]); 
-  const [creditCardFilter, setCreditCardFilter] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  // Substitui o antigo seletor "Cartões": clicar num card do resumo por forma de
+  // pagamento filtra a lista por aquela forma/cartão específico (id do cartão,
+  // ou PaymentMethod.DEBIT_CASH/CREDIT_CARD para os agregados).
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isCardFilterOpen, setIsCardFilterOpen] = useState(false);
   const [catSearchTerm, setCatSearchTerm] = useState('');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
@@ -662,8 +637,14 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
   const [showMonthInvestments, setShowMonthInvestments] = useState(false);
 
   const toggleCategoryFilter = (catId: string) => { setCategoryFilter(prev => prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]); };
-  const toggleCreditCardFilter = (cardId: string) => { setCreditCardFilter(prev => prev.includes(cardId) ? prev.filter(id => id !== cardId) : [...prev, cardId]); };
-  const clearFilter = () => { setCategoryFilter([]); setCreditCardFilter([]); setFilterStartDate(''); setFilterEndDate(''); setFilterOnlyInstallments(false); setFilterOnlyShared(false); setFilterTag(''); setCatSearchTerm(''); setSelectedIds([]); };
+  const togglePaymentMethodFilter = (key: string) => { setPaymentMethodFilter(prev => prev === key ? null : key); };
+  const matchesPaymentMethodFilter = (t: Transaction) => {
+      if (!paymentMethodFilter) return true;
+      if (paymentMethodFilter === PaymentMethod.DEBIT_CASH) return !t.paymentMethod || t.paymentMethod === PaymentMethod.DEBIT_CASH;
+      if (paymentMethodFilter === PaymentMethod.CREDIT_CARD) return t.paymentMethod === PaymentMethod.CREDIT_CARD;
+      return t.creditCardId === paymentMethodFilter;
+  };
+  const clearFilter = () => { setCategoryFilter([]); setPaymentMethodFilter(null); setFilterStartDate(''); setFilterEndDate(''); setFilterOnlyInstallments(false); setFilterOnlyShared(false); setFilterTag(''); setCatSearchTerm(''); setSelectedIds([]); };
 
   const handleToggleSelection = (id: string) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -729,7 +710,10 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
       onDateChange(newDate);
   };
 
-  const currentMonthTransactions = useMemo(() => {
+  // Tudo que vai para a lista/resumo do mês, exceto o filtro por forma de pagamento —
+  // o resumo por forma de pagamento precisa ver todos os métodos (não só o
+  // selecionado) para continuar clicável e permitir trocar/limpar a seleção.
+  const baseMonthTransactions = useMemo(() => {
       const isCustomRangeActive = filterStartDate || filterEndDate;
 
       return transactions.filter(t => {
@@ -740,7 +724,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
               if (filterEndDate && tDateStr > filterEndDate) return false;
           } else {
               const effectiveDate = calculateEffectiveDate(t, creditCards, settings);
-              if (effectiveDate.getMonth() !== currentDate.getMonth() || 
+              if (effectiveDate.getMonth() !== currentDate.getMonth() ||
                   effectiveDate.getFullYear() !== currentDate.getFullYear()) {
                   return false;
               }
@@ -762,16 +746,20 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
 
           // C) Outros filtros
           if (categoryFilter.length > 0 && !categoryFilter.includes(t.categoryId)) return false;
-          if (creditCardFilter.length > 0 && (!t.creditCardId || !creditCardFilter.includes(t.creditCardId))) return false;
           if (filterOnlyInstallments && (!t.totalInstallments || t.totalInstallments <= 1)) return false;
           if (filterOnlyShared && !t.isShared) return false;
-          
+
           // We now exclude investments from the main list to avoid duplication
           if (t.type === TransactionType.INVESTMENT) return false;
 
           return true;
       });
-  }, [transactions, currentDate, creditCards, settings, categoryFilter, creditCardFilter, filterStartDate, filterEndDate, filterOnlyInstallments, filterOnlyShared, filterTag]);
+  }, [transactions, currentDate, creditCards, settings, categoryFilter, filterStartDate, filterEndDate, filterOnlyInstallments, filterOnlyShared, filterTag]);
+
+  const currentMonthTransactions = useMemo(
+      () => baseMonthTransactions.filter(matchesPaymentMethodFilter),
+      [baseMonthTransactions, paymentMethodFilter]
+  );
 
   // Investment Summary Calculation (For Widget)
   const investmentSummary = useMemo(() => {
@@ -840,7 +828,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
   const yearlyFilteredTransactions = useMemo(() => {
       return transactions.filter(t => {
           if (categoryFilter.length > 0 && !categoryFilter.includes(t.categoryId)) return false;
-          if (creditCardFilter.length > 0 && (!t.creditCardId || !creditCardFilter.includes(t.creditCardId))) return false;
+          if (!matchesPaymentMethodFilter(t)) return false;
           if (filterOnlyInstallments && (!t.totalInstallments || t.totalInstallments <= 1)) return false;
           if (filterOnlyShared && !t.isShared) return false;
           if (filterTag) {
@@ -851,7 +839,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
           }
           return true;
       });
-  }, [transactions, categoryFilter, creditCardFilter, filterOnlyInstallments, filterOnlyShared, filterTag]);
+  }, [transactions, categoryFilter, paymentMethodFilter, filterOnlyInstallments, filterOnlyShared, filterTag]);
 
   const estimatedFixedExpenses = useMemo(() => {
       const now = new Date();
@@ -961,96 +949,100 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
   };
 
   const renderTransactionRow = (t: Transaction) => {
-    const isI = (t.totalInstallments || 1) > 1; 
-    const category = categories.find(c => c.id === t.categoryId); 
+    const isI = (t.totalInstallments || 1) > 1;
+    const category = categories.find(c => c.id === t.categoryId);
     const sub = subCategories.find(s => s.id === t.subCategoryId);
-    const catColor = category?.color || '#cbd5e1'; 
-    const isEst = estimatedFixedExpenses[t.id] !== undefined; 
+    const catColor = category?.color || '#cbd5e1';
+    const isEst = estimatedFixedExpenses[t.id] !== undefined;
     const amountToD = isEst ? estimatedFixedExpenses[t.id] : t.amount;
-    
-    // Row background logic
-    let rowBg = 'bg-white dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'; 
-    if (t.isFixed) rowBg = 'bg-amber-50/40 border-amber-100 hover:bg-amber-100/50';
-    else if (isI) rowBg = 'bg-purple-50/40 border-purple-100 hover:bg-purple-100/50';
-    
     const isSelected = selectedIds.includes(t.id);
-    const finalClass = isSelected ? 'bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700' : rowBg;
-    
+
+    // Barra de destaque à esquerda no lugar de fundo/borda coloridos por linha —
+    // evita "caixa dentro de caixa" quando várias linhas fixas/parceladas se
+    // acumulam e ficam todas com fundo pastel ao mesmo tempo.
+    let accentColor: string | null = null;
+    if (isSelected) accentColor = '#3b82f6';
+    else if (t.isFixed) accentColor = '#f59e0b';
+    else if (isI) accentColor = '#a855f7';
+
+    let d = new Date(t.date);
+    if (isNaN(d.getTime())) d = new Date();
+
     return (
-        <div key={t.id} className={`px-4 py-3 flex items-center justify-between rounded-xl border transition-all group cursor-pointer ${finalClass}`} onClick={() => onEditTransaction(t)}>
+        <div
+            key={t.id}
+            className={`relative flex items-center justify-between gap-3 pl-5 pr-4 py-3 transition-colors group cursor-pointer ${isSelected ? 'bg-blue-50/60 dark:bg-blue-950/20' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/30'}`}
+            onClick={() => onEditTransaction(t)}
+        >
+            {accentColor && (
+                <span className="absolute left-1.5 top-2 bottom-2 w-[3px] rounded-full" style={{ backgroundColor: accentColor }} />
+            )}
+
             <div className="flex items-center gap-3 overflow-hidden min-w-0">
                 {/* Selection */}
-                <button 
+                <button
                     onClick={(e) => { e.stopPropagation(); handleToggleSelection(t.id); }}
-                    className={`p-1 -ml-2 rounded-full transition-all ${isSelected ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-700 dark:text-zinc-300 opacity-0 group-hover:opacity-100 hover:bg-zinc-200 dark:bg-zinc-700'}`}
+                    className={`p-1 -ml-1 rounded-full transition-all ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 hover:bg-zinc-100 dark:hover:bg-zinc-700'}`}
                 >
                     {isSelected ? <CheckSquare size={18} /> : <Square size={18} />}
                 </button>
 
-                {/* Date & Icon */}
-                <div className="flex flex-col items-center justify-center min-w-[32px]">
-                    <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 leading-none">
-                        {(() => {
-                            let d = new Date(t.date);
-                            if (isNaN(d.getTime())) d = new Date();
-                            return d.getUTCDate().toString().padStart(2, '0');
-                        })()}
+                {/* Date chip */}
+                <div className="flex flex-col items-center justify-center min-w-[36px] py-1 rounded-lg bg-zinc-100/80 dark:bg-zinc-800/60 shrink-0">
+                    <span className="text-sm font-bold text-zinc-700 dark:text-zinc-200 leading-none">
+                        {d.getUTCDate().toString().padStart(2, '0')}
                     </span>
-                    <span className="text-[9px] font-medium text-zinc-700 dark:text-zinc-300 uppercase leading-none mt-0.5">
-                        {(() => {
-                            let d = new Date(t.date);
-                            if (isNaN(d.getTime())) d = new Date();
-                            return d.toLocaleDateString('pt-BR', {month: 'short'}).replace('.','');
-                        })()}
+                    <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase leading-none mt-0.5">
+                        {d.toLocaleDateString('pt-BR', {month: 'short'}).replace('.','')}
                     </span>
                 </div>
 
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm shadow-zinc-200/5 text-white`} style={{ backgroundColor: catColor }}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white ring-2 ring-white dark:ring-zinc-900 shadow-sm shadow-zinc-200/10" style={{ backgroundColor: catColor }}>
                     <IconRenderer iconName={category?.icon || 'circle'} className="w-5 h-5" />
                 </div>
 
                 {/* Content */}
                 <div className="flex flex-col min-w-0 pr-2">
-                    <p className={`font-medium text-sm truncate ${isSelected ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-900 dark:text-zinc-100'}`}>
-                        {t.type === TransactionType.INVESTMENT && t.investmentDetails?.ticker 
-                            ? <><span className="font-semibold text-zinc-900 dark:text-zinc-100">{t.investmentDetails.ticker}</span> - {t.description.replace(t.investmentDetails.ticker, '').replace(/^-/, '').trim()}</>
+                    <p className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                        {t.type === TransactionType.INVESTMENT && t.investmentDetails?.ticker
+                            ? <><span className="font-bold">{t.investmentDetails.ticker}</span> - {t.description.replace(t.investmentDetails.ticker, '').replace(/^-/, '').trim()}</>
                             : t.description.replace(/\s\(\d+\/\d+\)$/, '')
                         }
                     </p>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                        <span className="text-[10px] font-medium truncate max-w-[120px]" style={{ color: catColor }}>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <span className="text-[10px] font-semibold truncate max-w-[120px]" style={{ color: catColor }}>
                             {category?.name || 'Sem categoria'}
                         </span>
-                        {sub && <span className="text-[10px] text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 font-medium truncate">› {sub.name}</span>}
-                        {isI && <span className="text-[9px] font-medium bg-purple-100 text-purple-700 px-1.5 rounded flex items-center gap-0.5 h-4"><Repeat size={8}/> {t.installmentIndex}/{t.totalInstallments}</span>}
-                        {t.isFixed && <span className="text-[9px] font-medium bg-amber-100 text-amber-700 px-1.5 rounded flex items-center gap-0.5 h-4">FIXO</span>}
-                        {t.fundedByResgate && <span className="text-[9px] font-medium bg-purple-100 text-purple-700 px-1.5 rounded flex items-center gap-0.5 h-4">RESGATE</span>}
-                        {t.excludeFromBudget && <span className="text-[9px] font-medium bg-rose-100 text-rose-700 px-1.5 rounded flex items-center gap-0.5 h-4"><Target size={8} /> FORA DA META</span>}
+                        {sub && <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium truncate">› {sub.name}</span>}
+                        {isI && <span className="text-[9px] font-semibold bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 px-1.5 rounded flex items-center gap-0.5 h-4"><Repeat size={8}/> {t.installmentIndex}/{t.totalInstallments}</span>}
+                        {t.isFixed && <span className="text-[9px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 rounded flex items-center gap-0.5 h-4">FIXO</span>}
+                        {t.fundedByResgate && <span className="text-[9px] font-semibold bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 px-1.5 rounded flex items-center gap-0.5 h-4">RESGATE</span>}
+                        {t.excludeFromBudget && <span className="text-[9px] font-semibold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 px-1.5 rounded flex items-center gap-0.5 h-4"><Target size={8} /> FORA DA META</span>}
                         {!t.isPaid && t.type === TransactionType.EXPENSE && t.paymentMethod !== PaymentMethod.CREDIT_CARD && (
-                            <button 
+                            <button
                                 onClick={(e) => { e.stopPropagation(); setPaymentConfirmationTx(t); }}
-                                className="text-[9px] font-medium bg-amber-100 text-amber-700 px-1.5 rounded border border-amber-200 uppercase flex items-center gap-1 hover:bg-amber-200 transition-colors h-4"
+                                className="text-[9px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 rounded border border-amber-200 dark:border-amber-900/50 uppercase flex items-center gap-1 hover:bg-amber-200 dark:hover:bg-amber-900/40 transition-colors h-4"
                             >
                                 <AlertCircle size={8} /> Pendente
                             </button>
                         )}
                         {t.isPaid && t.type === TransactionType.EXPENSE && t.paymentMethod !== PaymentMethod.CREDIT_CARD && (
-                            <span className="text-[9px] font-semibold text-emerald-600 bg-emerald-100 px-1.5 rounded h-4 flex items-center">Pago</span>
+                            <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/40 px-1.5 rounded h-4 flex items-center">Pago</span>
                         )}
-                        {t.tags?.map((tag, i) => <span key={i} className="text-[9px] text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-1 rounded h-4 flex items-center">#{tag}</span>)}
+                        {t.tags?.map((tag, i) => <span key={i} className="text-[9px] text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1 rounded h-4 flex items-center">#{tag}</span>)}
                     </div>
                 </div>
             </div>
 
             {/* Amount & Actions */}
-            <div className="flex flex-col items-end gap-1">
-                <span className={`font-medium text-sm tabular-nums ${t.type === TransactionType.INCOME ? 'text-emerald-600' : (t.amount < 0 ? 'text-emerald-600' : 'text-zinc-900 dark:text-zinc-100')}`}>
+            <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className={`font-bold text-sm tabular-nums ${t.type === TransactionType.INCOME ? 'text-emerald-600' : (t.amount < 0 ? 'text-emerald-600' : 'text-zinc-900 dark:text-zinc-100')}`}>
                     {t.type === TransactionType.INCOME ? '+' : (t.type === TransactionType.EXPENSE ? '-' : '')} R$ {(amountToD || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
-                
+
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={(e) => { e.stopPropagation(); onEditTransaction(t); }} className="text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 dark:text-zinc-100 p-1 hover:bg-zinc-200 dark:bg-zinc-700 rounded-md transition-colors"><Pencil size={14} /></button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDeleteRequest(t); }} className="text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-red-600 p-1 hover:bg-zinc-200 dark:bg-zinc-700 rounded-md transition-colors"><Trash2 size={14} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); onEditTransaction(t); }} className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 p-1 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-md transition-colors"><Pencil size={14} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDeleteRequest(t); }} className="text-zinc-400 dark:text-zinc-500 hover:text-red-600 p-1 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-md transition-colors"><Trash2 size={14} /></button>
                 </div>
             </div>
         </div>
@@ -1061,7 +1053,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
       c.name.toLowerCase().includes(catSearchTerm.toLowerCase())
   );
 
-  const activeFilterCount = (categoryFilter.length > 0 ? 1 : 0) + (creditCardFilter.length > 0 ? 1 : 0) + (filterStartDate ? 1 : 0) + (filterEndDate ? 1 : 0) + (filterOnlyInstallments ? 1 : 0) + (filterOnlyShared ? 1 : 0) + (filterTag ? 1 : 0);
+  const activeFilterCount = (categoryFilter.length > 0 ? 1 : 0) + (paymentMethodFilter ? 1 : 0) + (filterStartDate ? 1 : 0) + (filterEndDate ? 1 : 0) + (filterOnlyInstallments ? 1 : 0) + (filterOnlyShared ? 1 : 0) + (filterTag ? 1 : 0);
 
   // Quick Summary Stats for current Filter
   const quickStats = useMemo(() => {
@@ -1083,29 +1075,33 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
   }, [currentMonthTransactions, categories]);
 
   const paymentMethodSummary = useMemo(() => {
-      const summary: Record<string, { total: number; color?: string; isCard?: boolean; cardName: string }> = {};
-      currentMonthTransactions.forEach(t => {
+      const summary: Record<string, { total: number; color?: string; isCard?: boolean; cardName: string; filterKey: string }> = {};
+      baseMonthTransactions.forEach(t => {
           if (t.type !== TransactionType.EXPENSE) return;
           const key = t.paymentMethod || PaymentMethod.DEBIT_CASH;
           let name = 'Outros';
           let cardColor: string | undefined;
           let isCard = false;
+          let filterKey: string = key;
           if (key === PaymentMethod.CREDIT_CARD) {
               const card = t.creditCardId ? creditCards.find(c => c.id === t.creditCardId) : null;
               name = card ? `Cartão ${card.name}` : 'Cartão de Crédito';
               cardColor = card?.color;
               isCard = true;
+              // Agrupa (e filtra) por cartão específico quando conhecido; cai no
+              // agregado genérico "Cartão de Crédito" só quando não há cartão vinculado.
+              filterKey = card ? card.id : PaymentMethod.CREDIT_CARD;
           } else if (key === PaymentMethod.DEBIT_CASH) {
               name = 'Débito / Dinheiro';
           }
-          
+
           if (!summary[name]) {
-              summary[name] = { total: 0, color: cardColor, isCard, cardName: name };
+              summary[name] = { total: 0, color: cardColor, isCard, cardName: name, filterKey };
           }
           summary[name].total += t.amount;
       });
       return Object.values(summary).sort((a, b) => b.total - a.total);
-  }, [currentMonthTransactions, creditCards]);
+  }, [baseMonthTransactions, creditCards]);
 
     return (
     <div className="space-y-6 animate-in fade-in pb-24">
@@ -1199,33 +1195,6 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                         )}
                     </div>
 
-                    <div className="relative">
-                        <button 
-                            onClick={() => setIsCardFilterOpen(!isCardFilterOpen)} 
-                            className={`flex items-center gap-2 px-3.5 py-2 border rounded-full text-xs font-semibold whitespace-nowrap transition-all ${creditCardFilter.length > 0 ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}
-                        >
-                            <CardIcon size={14} /> {creditCardFilter.length > 0 ? `${creditCardFilter.length} Cartões` : 'Cartões'}
-                        </button>
-                        {isCardFilterOpen && (
-                            <>
-                                <div className="fixed inset-0 z-20" onClick={() => setIsCardFilterOpen(false)}></div>
-                                <div className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-30 overflow-hidden animate-in fade-in slide-in-from-top-2 p-2">
-                                    <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-1">
-                                        <button onClick={() => setCreditCardFilter([])} className="w-full text-left px-3 py-2 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg">Limpar Seleção</button>
-                                        {creditCards.map(card => (
-                                            <button key={card.id} onClick={() => toggleCreditCardFilter(card.id)} className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg ${creditCardFilter.includes(card.id) ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full" style={{backgroundColor: card.color}}></div>
-                                                    <span className="truncate max-w-[150px]">{card.name}</span>
-                                                </div>
-                                                {creditCardFilter.includes(card.id) && <Check size={12} />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
 
                     <button
                         onClick={() => setFilterOnlyInstallments(!filterOnlyInstallments)}
@@ -1274,16 +1243,26 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
             {/* PAYMENT METHOD SUMMARY WIDGET */}
             {paymentMethodSummary.length > 0 && (
                 <div className="pt-4 mt-2 border-t border-zinc-100 dark:border-zinc-800 pb-1">
-                    <h4 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Resumo por Forma de Pagamento</h4>
+                    <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Resumo por Forma de Pagamento</h4>
+                        {paymentMethodFilter && (
+                            <button onClick={() => setPaymentMethodFilter(null)} className="text-[10px] font-bold text-blue-600 hover:underline">Limpar seleção</button>
+                        )}
+                    </div>
                     <div className="flex flex-wrap gap-3">
-                        {paymentMethodSummary.map(({ cardName, total, color, isCard }) => {
+                        {paymentMethodSummary.map(({ cardName, total, color, isCard, filterKey }) => {
                             const hasColor = isCard && color;
+                            const isActive = paymentMethodFilter === filterKey;
+                            const isDimmed = !!paymentMethodFilter && !isActive;
                             return (
-                                <div 
-                                    key={cardName} 
-                                    className="bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200/40 dark:border-zinc-800/80 rounded-2xl px-4 py-2.5 flex items-center justify-between min-w-[150px] flex-1 sm:flex-none transition-all hover:scale-[1.01] hover:shadow-sm"
+                                <button
+                                    key={cardName}
+                                    type="button"
+                                    onClick={() => togglePaymentMethodFilter(filterKey)}
+                                    title={isActive ? `Clique para remover o filtro de ${cardName}` : `Filtrar lançamentos de ${cardName}`}
+                                    className={`bg-zinc-50 dark:bg-zinc-950/40 border rounded-2xl px-4 py-2.5 flex items-center justify-between min-w-[150px] flex-1 sm:flex-none transition-all hover:scale-[1.01] hover:shadow-sm text-left ${isActive ? 'ring-2 ring-blue-500 border-blue-500' : 'border-zinc-200/40 dark:border-zinc-800/80'} ${isDimmed ? 'opacity-50' : ''}`}
                                     style={{
-                                        borderColor: hasColor ? `${color}40` : undefined,
+                                        borderColor: hasColor && !isActive ? `${color}40` : undefined,
                                         backgroundColor: hasColor ? `${color}0d` : undefined,
                                     }}
                                 >
@@ -1296,7 +1275,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                                         <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 line-clamp-1" title={cardName}>{cardName}</span>
                                     </div>
                                     <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(total)}</span>
-                                </div>
+                                </button>
                             );
                         })}
                     </div>
@@ -1338,45 +1317,49 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
 
                 {showMonthInvestments && (
                     <div className="animate-in slide-in-from-top-2 space-y-4">
-                        <TransactionGroup 
-                            title="Novos Aportes" 
-                            items={monthlyInvestments.buys} 
-                            icon={<TrendingUp size={18}/>} 
-                            colorClass="text-blue-800" 
-                            total={monthlyInvestments.buys.reduce((a,b) => a + b.amount, 0)} 
-                            renderRow={renderTransactionRow} 
-                            selectedIds={selectedIds} 
-                            onToggleSelectAll={handleToggleSelectAllGroup} 
+                        <TransactionGroup
+                            title="Novos Aportes"
+                            items={monthlyInvestments.buys}
+                            icon={<TrendingUp size={18}/>}
+                            colorClass="text-blue-800"
+                            accentColor="#2563eb"
+                            total={monthlyInvestments.buys.reduce((a,b) => a + b.amount, 0)}
+                            renderRow={renderTransactionRow}
+                            selectedIds={selectedIds}
+                            onToggleSelectAll={handleToggleSelectAllGroup}
                         />
-                        <TransactionGroup 
-                            title="Proventos Recebidos" 
-                            items={monthlyInvestments.divs} 
-                            icon={<Gift size={18}/>} 
-                            colorClass="text-emerald-700" 
-                            total={monthlyInvestments.divs.reduce((a,b) => a + b.amount, 0)} 
-                            renderRow={renderTransactionRow} 
-                            selectedIds={selectedIds} 
-                            onToggleSelectAll={handleToggleSelectAllGroup} 
+                        <TransactionGroup
+                            title="Proventos Recebidos"
+                            items={monthlyInvestments.divs}
+                            icon={<Gift size={18}/>}
+                            colorClass="text-emerald-700"
+                            accentColor="#059669"
+                            total={monthlyInvestments.divs.reduce((a,b) => a + b.amount, 0)}
+                            renderRow={renderTransactionRow}
+                            selectedIds={selectedIds}
+                            onToggleSelectAll={handleToggleSelectAllGroup}
                         />
-                        <TransactionGroup 
-                            title="Resgates / Vendas" 
-                            items={monthlyInvestments.sells} 
-                            icon={<Banknote size={18}/>} 
-                            colorClass="text-zinc-700 dark:text-zinc-300" 
-                            total={monthlyInvestments.sells.reduce((a,b) => a + b.amount, 0)} 
-                            renderRow={renderTransactionRow} 
-                            selectedIds={selectedIds} 
-                            onToggleSelectAll={handleToggleSelectAllGroup} 
+                        <TransactionGroup
+                            title="Resgates / Vendas"
+                            items={monthlyInvestments.sells}
+                            icon={<Banknote size={18}/>}
+                            colorClass="text-zinc-700 dark:text-zinc-300"
+                            accentColor="#71717a"
+                            total={monthlyInvestments.sells.reduce((a,b) => a + b.amount, 0)}
+                            renderRow={renderTransactionRow}
+                            selectedIds={selectedIds}
+                            onToggleSelectAll={handleToggleSelectAllGroup}
                         />
-                        <TransactionGroup 
-                            title="Eventos Corporativos" 
-                            items={monthlyInvestments.corporate} 
-                            icon={<Layers size={18}/>} 
-                            colorClass="text-amber-700" 
-                            total={0} 
-                            renderRow={renderTransactionRow} 
-                            selectedIds={selectedIds} 
-                            onToggleSelectAll={handleToggleSelectAllGroup} 
+                        <TransactionGroup
+                            title="Eventos Corporativos"
+                            items={monthlyInvestments.corporate}
+                            icon={<Layers size={18}/>}
+                            colorClass="text-amber-700"
+                            accentColor="#d97706"
+                            total={0}
+                            renderRow={renderTransactionRow}
+                            selectedIds={selectedIds}
+                            onToggleSelectAll={handleToggleSelectAllGroup}
                         />
                     </div>
                 )}
@@ -1405,43 +1388,46 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                 )}
                 
                 <div className="space-y-6">
-                    <TransactionGroup 
-                        title={<span>Entradas <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 ml-1">({myGrouped.incomes.length})</span></span>} 
-                        items={myGrouped.incomes} 
-                        icon={<ArrowUpCircle size={20}/>} 
-                        colorClass="text-emerald-700" 
-                        total={myGrouped.incomes.reduce((a,b) => a + b.amount, 0)} 
-                        renderRow={renderTransactionRow} 
-                        selectedIds={selectedIds} 
-                        onToggleSelectAll={handleToggleSelectAllGroup} 
+                    <TransactionGroup
+                        title={<span>Entradas <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 ml-1">({myGrouped.incomes.length})</span></span>}
+                        items={myGrouped.incomes}
+                        icon={<ArrowUpCircle size={20}/>}
+                        colorClass="text-emerald-700"
+                        accentColor="#059669"
+                        total={myGrouped.incomes.reduce((a,b) => a + b.amount, 0)}
+                        renderRow={renderTransactionRow}
+                        selectedIds={selectedIds}
+                        onToggleSelectAll={handleToggleSelectAllGroup}
                     />
-                    
-                    <TransactionGroup 
-                        title={<span>Débito & Dinheiro <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 ml-1">({myGrouped.debits.length})</span></span>} 
-                        items={myGrouped.debits} 
-                        icon={<Banknote size={20}/>} 
-                        colorClass="text-zinc-800 dark:text-zinc-200" 
-                        total={myGrouped.debits.reduce((a,b) => a + b.amount, 0)} 
-                        renderRow={renderTransactionRow} 
-                        selectedIds={selectedIds} 
-                        onToggleSelectAll={handleToggleSelectAllGroup} 
+
+                    <TransactionGroup
+                        title={<span>Débito & Dinheiro <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 ml-1">({myGrouped.debits.length})</span></span>}
+                        items={myGrouped.debits}
+                        icon={<Banknote size={20}/>}
+                        colorClass="text-zinc-800 dark:text-zinc-200"
+                        accentColor="#71717a"
+                        total={myGrouped.debits.reduce((a,b) => a + b.amount, 0)}
+                        renderRow={renderTransactionRow}
+                        selectedIds={selectedIds}
+                        onToggleSelectAll={handleToggleSelectAllGroup}
                     />
-                    
+
                     {myGrouped.groupedCredit.map(group => (
-                        <TransactionGroup 
-                            key={group.id} 
+                        <TransactionGroup
+                            key={group.id}
                             title={
                                 <div className="flex items-center gap-2">
                                     <span style={{ color: group.color }}>{group.name}</span>
                                     <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">({group.items.length})</span>
                                 </div>
-                            } 
-                            items={group.items} 
+                            }
+                            items={group.items}
                             icon={<CardIcon size={18} style={{ color: group.color }} />}
-                            total={group.total} 
-                            secondaryTotal={group.myTotal} 
-                            renderRow={renderTransactionRow} 
-                            selectedIds={selectedIds} 
+                            accentColor={group.color}
+                            total={group.total}
+                            secondaryTotal={group.myTotal}
+                            renderRow={renderTransactionRow}
+                            selectedIds={selectedIds}
                             onToggleSelectAll={handleToggleSelectAllGroup} 
                         />
                     ))}
@@ -1472,9 +1458,9 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                         </button>
                         {isNathyExpanded && (
                             <div className="mt-4 space-y-4 pl-4 border-l-2 border-zinc-200 dark:border-zinc-800 animate-in fade-in slide-in-from-top-2">
-                                <TransactionGroup title="Entradas (Nathy)" items={nathyGrouped.incomes} icon={<ArrowUpCircle size={18}/>} colorClass="text-pink-700" total={nathyGrouped.incomes.reduce((a,b) => a + b.amount, 0)} renderRow={renderTransactionRow} selectedIds={selectedIds} onToggleSelectAll={handleToggleSelectAllGroup} />
-                                <TransactionGroup title="Débito (Nathy)" items={nathyGrouped.debits} icon={<Banknote size={18}/>} colorClass="text-pink-700" total={nathyGrouped.debits.reduce((a,b) => a + b.amount, 0)} renderRow={renderTransactionRow} selectedIds={selectedIds} onToggleSelectAll={handleToggleSelectAllGroup} />
-                                {nathyGrouped.groupedCredit.map(group => (<TransactionGroup key={group.id} title={`Cartão: ${group.name}`} items={group.items} icon={<CardIcon size={16}/>} colorClass="text-pink-700" total={group.items.reduce((acc, t) => acc + t.amount, 0)} renderRow={renderTransactionRow} selectedIds={selectedIds} onToggleSelectAll={handleToggleSelectAllGroup} />))}
+                                <TransactionGroup title="Entradas (Nathy)" items={nathyGrouped.incomes} icon={<ArrowUpCircle size={18}/>} colorClass="text-pink-700" accentColor="#db2777" total={nathyGrouped.incomes.reduce((a,b) => a + b.amount, 0)} renderRow={renderTransactionRow} selectedIds={selectedIds} onToggleSelectAll={handleToggleSelectAllGroup} />
+                                <TransactionGroup title="Débito (Nathy)" items={nathyGrouped.debits} icon={<Banknote size={18}/>} colorClass="text-pink-700" accentColor="#db2777" total={nathyGrouped.debits.reduce((a,b) => a + b.amount, 0)} renderRow={renderTransactionRow} selectedIds={selectedIds} onToggleSelectAll={handleToggleSelectAllGroup} />
+                                {nathyGrouped.groupedCredit.map(group => (<TransactionGroup key={group.id} title={`Cartão: ${group.name}`} items={group.items} icon={<CardIcon size={16}/>} colorClass="text-pink-700" accentColor="#db2777" total={group.items.reduce((acc, t) => acc + t.amount, 0)} renderRow={renderTransactionRow} selectedIds={selectedIds} onToggleSelectAll={handleToggleSelectAllGroup} />))}
                             </div>
                         )}
                     </div>

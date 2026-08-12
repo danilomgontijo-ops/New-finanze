@@ -18,6 +18,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ComposedChart, Line, Legend
 } from 'recharts';
 import { BankLogo, BrandLogo } from './CreditCardManager';
+import { calculateEffectiveDate } from '../utils/dateUtils';
 
 interface DashboardProps {
   cdiHistory?: { date: string; value: number }[];
@@ -195,37 +196,6 @@ const calculateXIRR = (values: number[], dates: Date[], guess: number = 0.1): nu
   }
 };
 
-function calculateEffectiveDate(t: Transaction, creditCards: CreditCard[], settings: UserSettings): Date {
-    if (t.manualAccountingDate) return new Date(t.manualAccountingDate);
-    const date = new Date(t.date);
-    const dayOfMonth = t.originalDay || date.getUTCDate();
-    const month = date.getUTCMonth();
-    const year = date.getUTCFullYear();
-    const comparisonDate = new Date(year, month, 1, 12, 0, 0);
-    
-    if (t.type === TransactionType.INVESTMENT) {
-        return comparisonDate;
-    }
-    
-    if (t.type === TransactionType.EXPENSE && t.paymentMethod === PaymentMethod.CREDIT_CARD && t.creditCardId) {
-        const card = creditCards.find(c => c.id === t.creditCardId);
-        if (card && dayOfMonth > card.closingDay) {
-            comparisonDate.setMonth(comparisonDate.getMonth() + 1);
-        }
-    } else {
-        const salaryDay = settings.salaryDay || 1;
-        const shift = settings.salaryShift ?? (salaryDay >= 20 ? 1 : 0);
-        const lastDayOfMonth = new Date(comparisonDate.getFullYear(), comparisonDate.getMonth() + 1, 0).getDate();
-        const effectiveSalaryDay = Math.min(salaryDay, lastDayOfMonth);
-
-        if (dayOfMonth >= effectiveSalaryDay) {
-            comparisonDate.setMonth(comparisonDate.getMonth() + shift);
-        } else {
-            comparisonDate.setMonth(comparisonDate.getMonth() + shift - 1);
-        }
-    }
-    return comparisonDate;
-}
 
 const getYearMonthKey = (date: Date) => {
     const y = date.getFullYear();

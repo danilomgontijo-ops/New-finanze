@@ -598,7 +598,10 @@ export function usePortfolioData(
           a.lots = [];
         }
 
-        const transactionProfit = effectiveTxAmount - costOfSold;
+        // IRRF já foi subtraído de `amount` na origem (TransactionForm calcula
+        // amount = bruto - taxas - imposto); somamos `tax` de volta para comparar
+        // contra o custo de aquisição, que é sempre bruto.
+        const transactionProfit = effectiveTxAmount + tax - costOfSold;
 
         const previousTotalCost = a.totalCost;
         const reductionRatio =

@@ -913,7 +913,12 @@ export const Investments: React.FC<InvestmentsProps> = ({
           a.lots = [];
         }
 
-        const transactionProfit = effectiveTxAmount - costOfSold;
+        // IRRF/imposto retido na fonte já foi subtraído de `amount` na origem
+        // (TransactionForm calcula amount = bruto - taxas - imposto). Como o custo
+        // de aquisição (costOfSold) é sempre bruto, comparar o valor líquido direto
+        // contra ele subtrai o imposto como se fosse prejuízo do ativo — por isso
+        // somamos `tax` de volta para reconstituir o valor bruto na apuração do lucro.
+        const transactionProfit = effectiveTxAmount + tax - costOfSold;
 
         const previousTotalCost = a.totalCost;
         const reductionRatio =
@@ -1661,6 +1666,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
       const assetQtyAtStart: Record<string, number> = {};
       const assetRealized: Record<string, number> = {};
+      const assetCostSold: Record<string, number> = {};
       Object.entries(runningAssets).forEach(([ticker, asset]) => {
         assetQtyAtStart[ticker] = asset.qty;
         assetRealized[ticker] = 0;
@@ -1759,42 +1765,61 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
           cumulativeBonusCost += costIncrease;
         } else if (det.event === "SELL") {
+          // `amount` já vem líquido de IRRF (o formulário subtrai o imposto na
+          // origem); somamos de volta para comparar contra um custo/valor sempre
+          // bruto, senão o imposto retido aparece como prejuízo do ativo.
+          const grossAmount = amount + (det.tax || 0);
           const avgPrice = asset.qty > 0 ? asset.cost / asset.qty : 0;
           const costSold = avgPrice * det.quantity;
-          const profit = amount - costSold;
+          // Custo médio simples (avgPrice*quantity) não serve para renda fixa aqui:
+          // em CDBs/LCIs, `quantity` costuma ser preenchido em "reais" (na compra,
+          // igual ao valor investido; na venda, igual ao valor bruto resgatado), o
+          // que faz costSold coincidir com o próprio valor bruto vendido e zera o
+          // lucro. portfolioData.profitMap já apura isso corretamente por lote,
+          // usando o valor projetado via CDI (calculateRealFixedIncome) — reusamos
+          // esse valor sempre que disponível.
+          const mappedProfit = portfolioData.profitMap[t.id];
+          const profit = mappedProfit !== undefined ? mappedProfit : grossAmount - costSold;
+          // Custo "verdadeiro" derivado do lucro já apurado (grossAmount - profit),
+          // para manter o custo restante do ativo (asset.cost) consistente com o
+          // lucro reportado, em vez de arrastar o erro do custo médio simples.
+          const trueCostSold = mappedProfit !== undefined ? grossAmount - mappedProfit : costSold;
           monthRealized += profit;
           cumulativeRealized += profit;
           assetRealized[ticker] = (assetRealized[ticker] || 0) + profit;
+          assetCostSold[ticker] = (assetCostSold[ticker] || 0) + trueCostSold;
           asset.qty -= det.quantity;
-          asset.cost -= costSold;
-          cumulativeInvested -= costSold;
-          monthNetFlow -= amount;
-          monthSales += amount;
-          monthWeightedFlow -= amount * weight;
+          asset.cost -= trueCostSold;
+          cumulativeInvested -= trueCostSold;
+          monthNetFlow -= grossAmount;
+          monthSales += grossAmount;
+          monthWeightedFlow -= grossAmount * weight;
           assetWeightedFlow[ticker] =
-            (assetWeightedFlow[ticker] || 0) - amount * weight;
-          assetSales[ticker] = (assetSales[ticker] || 0) + amount;
+            (assetWeightedFlow[ticker] || 0) - grossAmount * weight;
+          assetSales[ticker] = (assetSales[ticker] || 0) + grossAmount;
           assetSalesQty[ticker] = (assetSalesQty[ticker] || 0) + det.quantity;
           if (asset.qty < 0.000001) {
             asset.qty = 0;
             asset.cost = 0;
           }
         } else if (det.event === "AMORTIZACAO") {
+          const grossAmount = amount + (det.tax || 0);
           const avgPrice = asset.qty > 0 ? asset.cost / asset.qty : 0;
-          const costReduction = Math.min(asset.cost, amount);
-          const profit = amount - costReduction;
+          const costReduction = Math.min(asset.cost, grossAmount);
+          const profit = grossAmount - costReduction;
 
           asset.cost -= costReduction;
           cumulativeInvested -= costReduction;
-          monthNetFlow -= amount;
-          monthSales += amount;
-          monthWeightedFlow -= amount * weight;
+          monthNetFlow -= grossAmount;
+          monthSales += grossAmount;
+          monthWeightedFlow -= grossAmount * weight;
           assetWeightedFlow[ticker] =
-            (assetWeightedFlow[ticker] || 0) - amount * weight;
+            (assetWeightedFlow[ticker] || 0) - grossAmount * weight;
           monthRealized += profit;
           cumulativeRealized += profit;
           assetRealized[ticker] = (assetRealized[ticker] || 0) + profit;
-          assetSales[ticker] = (assetSales[ticker] || 0) + amount;
+          assetCostSold[ticker] = (assetCostSold[ticker] || 0) + costReduction;
+          assetSales[ticker] = (assetSales[ticker] || 0) + grossAmount;
         } else if (
           ["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(det.event)
         ) {
@@ -1913,8 +1938,12 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   ipcaHistory,
                 );
               else if (ev === "SELL" || ev === "AMORTIZACAO")
+                // Soma o imposto de volta: `t.amount` já saiu líquido de IRRF do
+                // formulário, mas o valor acumulado (val) é bruto — sem isso, um
+                // resgate total deixaria um resíduo negativo crescendo a CDI em vez
+                // de zerar a posição.
                 val -= calculateRealFixedIncome(
-                  t.amount,
+                  t.amount + (t.investmentDetails?.tax || 0),
                   t.date,
                   asset.yieldRate!,
                   cdiHistory,
@@ -2106,6 +2135,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           netFlow,
           dividends,
           realized: assetRealized[ticker] || 0,
+          realizedCostBasis: assetCostSold[ticker] || 0,
           twr: assetTwr,
           gain: assetGain,
         });
@@ -5562,6 +5592,18 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                               {item.realized !== 0
                                                 ? formatCurrency(item.realized)
                                                 : "-"}
+                                              {item.realized !== 0 &&
+                                                item.realizedCostBasis > 0 && (
+                                                  <span className="text-[10px] ml-1.5 opacity-70">
+                                                    (
+                                                    {(
+                                                      (item.realized /
+                                                        item.realizedCostBasis) *
+                                                      100
+                                                    ).toFixed(2)}
+                                                    %)
+                                                  </span>
+                                                )}
                                             </td>
                                             <td
                                               className={`py-1 text-right font-bold ${item.gain >= 0 ? "text-emerald-600" : "text-rose-600"}`}

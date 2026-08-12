@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Transaction, Category, TransactionType, PaymentMethod, CreditCard, UserSettings, SubCategory } from '../types';
 import { X, Printer, Calendar, Filter, FileText, PieChart, ArrowRight, Check, Hash, Square, CheckSquare, Tag, CreditCard as CreditCardIcon, Banknote, Repeat, Users, Layers, TrendingDown, AlertCircle } from 'lucide-react';
+import { calculateEffectiveDate } from '../utils/dateUtils';
 
 interface ReportGeneratorProps {
   isOpen: boolean;
@@ -12,36 +13,6 @@ interface ReportGeneratorProps {
   settings?: UserSettings;
 }
 
-// Logic duplicated from Dashboard to ensure consistency
-function calculateEffectiveDate(t: Transaction, creditCards: CreditCard[], settings?: UserSettings): Date {
-    if (t.manualAccountingDate) return new Date(t.manualAccountingDate);
-    const date = new Date(t.date);
-    const dayOfMonth = t.originalDay || date.getUTCDate();
-    const month = date.getUTCMonth();
-    const year = date.getUTCFullYear();
-    const comparisonDate = new Date(year, month, 1, 12, 0, 0);
-    
-    if (t.type === TransactionType.INVESTMENT) {
-        return comparisonDate;
-    }
-    
-    if (t.type === TransactionType.EXPENSE && t.paymentMethod === PaymentMethod.CREDIT_CARD && t.creditCardId) {
-        const card = creditCards.find(c => c.id === t.creditCardId);
-        if (card && dayOfMonth > card.closingDay) comparisonDate.setMonth(comparisonDate.getMonth() + 1);
-    } else {
-        const salaryDay = settings?.salaryDay || 1;
-        const shift = settings?.salaryShift ?? (salaryDay >= 20 ? 1 : 0);
-        const lastDayOfMonth = new Date(comparisonDate.getFullYear(), comparisonDate.getMonth() + 1, 0).getDate();
-        const effectiveSalaryDay = Math.min(salaryDay, lastDayOfMonth);
-
-        if (dayOfMonth >= effectiveSalaryDay) {
-            comparisonDate.setMonth(comparisonDate.getMonth() + shift);
-        } else {
-            comparisonDate.setMonth(comparisonDate.getMonth() + shift - 1);
-        }
-    }
-    return comparisonDate;
-}
 
 export const ReportGenerator: React.FC<ReportGeneratorProps> = ({
   isOpen, onClose, transactions, categories, subCategories, creditCards = [], settings
