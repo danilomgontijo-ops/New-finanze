@@ -32,7 +32,14 @@ async function startServer() {
 
       const response = await fetch(url);
       if (!response.ok) {
-        return res.status(response.status).json({ error: "Failed to fetch from Brapi" });
+        // Repassa o corpo real da Brapi (ex: code "FEATURE_NOT_AVAILABLE") em vez de
+        // substituir por uma mensagem genérica, para o front conseguir distinguir os motivos.
+        try {
+          const errorBody = await response.json();
+          return res.status(response.status).json(errorBody);
+        } catch {
+          return res.status(response.status).json({ error: "Failed to fetch from Brapi" });
+        }
       }
       const data = await response.json();
       res.json(data);
@@ -183,6 +190,29 @@ async function startServer() {
       }
     } catch (e) {
       console.error("IPCA proxy error:", e);
+      res.status(500).json({ error: "Server error" });
+    }
+  });
+
+  // Ibovespa (^BVSP) Proxy via Yahoo Finance.
+  // Nota: BCB SGS 7832 NÃO é o fechamento diário do Ibovespa (é uma série mensal
+  // descontinuada em 08/2019) — o Yahoo é a fonte real de cotação diária do índice.
+  app.get("/api/yahoo/ibov", async (req, res) => {
+    try {
+      const range = typeof req.query.range === 'string' ? req.query.range : '10y';
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/%5EBVSP?interval=1d&range=${range}`;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+        }
+      });
+      if (!response.ok) {
+        return res.status(response.status).json({ error: "Failed to fetch Ibovespa from Yahoo Finance" });
+      }
+      const data = await response.json();
+      res.json(data);
+    } catch (e) {
+      console.error("Ibovespa (Yahoo) proxy error:", e);
       res.status(500).json({ error: "Server error" });
     }
   });

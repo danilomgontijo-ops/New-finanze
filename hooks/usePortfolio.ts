@@ -168,7 +168,8 @@ export const calculateRealFixedIncome = (
   startDateInput: string | Date,
   rateStr: string,
   cdiData: { date: string; value: number }[],
-  endDateInput?: string | Date
+  endDateInput?: string | Date,
+  ipcaData?: { date: string; value: number }[]
 ): number => {
   if (!principal || principal <= 0) return 0;
   if (!rateStr || typeof rateStr !== "string") rateStr = "100% CDI";
@@ -179,22 +180,32 @@ export const calculateRealFixedIncome = (
   const upperStr = rateStr.toUpperCase().trim();
   let pctCDI = 0;
   let isCDI = false;
+  let isIPCA = false;
   let fixedRate = 0;
+  let ipcaSpread = 0;
 
   const numbers = upperStr.match(/(\d+(?:[.,]\d+)?)/g);
 
-  const hasCdiExplicit =
-    upperStr.includes("CDI") ||
-    upperStr.includes("INTER") ||
-    upperStr.includes("CDB") ||
-    upperStr.includes("LCI") ||
-    upperStr.includes("LCA") ||
-    upperStr.includes("CRI") ||
-    upperStr.includes("CRA") ||
-    upperStr.includes("POUPA") ||
-    upperStr.includes("DO CDI");
+  // IPCA é verificado primeiro: um título "IPCA+X%" é indexado à inflação, nunca
+  // deve cair no ramo de taxa prefixada nem no de %CDI.
+  const hasIpcaExplicit = upperStr.includes("IPCA");
 
-  if (hasCdiExplicit) {
+  const hasCdiExplicit =
+    !hasIpcaExplicit &&
+    (upperStr.includes("CDI") ||
+      upperStr.includes("INTER") ||
+      upperStr.includes("CDB") ||
+      upperStr.includes("LCI") ||
+      upperStr.includes("LCA") ||
+      upperStr.includes("CRI") ||
+      upperStr.includes("CRA") ||
+      upperStr.includes("POUPA") ||
+      upperStr.includes("DO CDI"));
+
+  if (hasIpcaExplicit) {
+    isIPCA = true;
+    ipcaSpread = numbers && numbers.length > 0 ? parseFloat(numbers[0].replace(",", ".")) : 0;
+  } else if (hasCdiExplicit) {
     isCDI = true;
     if (upperStr.includes("POUPA")) {
       pctCDI = numbers && numbers.length > 0 ? parseFloat(numbers[0].replace(",", ".")) : 70;
@@ -205,7 +216,7 @@ export const calculateRealFixedIncome = (
     }
   } else if (numbers && numbers.length > 0) {
     const val = parseFloat(numbers[0].replace(",", "."));
-    if (val >= 50 && !upperStr.includes("IPCA")) {
+    if (val >= 50) {
       isCDI = true;
       pctCDI = val;
     } else {
@@ -226,6 +237,23 @@ export const calculateRealFixedIncome = (
       accumulatedFactor *= dailyFactor;
     }
     return principal * accumulatedFactor;
+  } else if (isIPCA) {
+    const relevantRates = cdiData ? cdiData.filter((d) => d.date >= startIso && d.date <= endIso) : [];
+    const businessDays = relevantRates.length > 0 ? relevantRates.length : Math.ceil(Math.abs(new Date(endIso).getTime() - new Date(startIso).getTime()) / (1000 * 60 * 60 * 24)) * (252 / 365);
+    const years = businessDays / 252;
+
+    // Composição da série real mensal de IPCA (BCB SGS 433) no período do título.
+    const relevantIpca = ipcaData ? ipcaData.filter((d) => d.date >= startIso && d.date <= endIso) : [];
+    let ipcaFactor: number;
+    if (relevantIpca.length > 0) {
+      ipcaFactor = relevantIpca.reduce((acc, m) => acc * (1 + m.value / 100), 1);
+    } else {
+      // Sem série de IPCA disponível para o período: aproxima pela inflação média histórica (~4% a.a.)
+      ipcaFactor = Math.pow(1.04, years);
+    }
+
+    const spreadFactor = Math.pow(1 + ipcaSpread / 100, years);
+    return principal * ipcaFactor * spreadFactor;
   } else {
     const relevantRates = cdiData ? cdiData.filter((d) => d.date >= startIso && d.date <= endIso) : [];
 
@@ -309,7 +337,8 @@ export function usePortfolioData(
   assetPrices: AssetPrice[],
   categories: Category[],
   subCategories: SubCategory[],
-  cdiHistory: { date: string; value: number }[]
+  cdiHistory: { date: string; value: number }[],
+  ipcaHistory: { date: string; value: number }[] = []
 ) {
   const isNathyTransaction = (t: Transaction) => {
     const nathyCategory = categories.find(
@@ -471,6 +500,7 @@ export function usePortfolioData(
               a.yieldRate || lot.yieldRate || "100% CDI",
               cdiHistory,
               t.date,
+              ipcaHistory,
             );
           });
           if (estimatedTotalValue === 0) estimatedTotalValue = a.totalCost;
@@ -509,6 +539,7 @@ export function usePortfolioData(
               a.yieldRate || lot.yieldRate || "100% CDI",
               cdiHistory,
               t.date,
+              ipcaHistory,
             );
             if (lotCurrentValue <= lot.cost && tax > 0) {
               lotCurrentValue = lot.cost + tax / ESTIMATED_FIXED_INCOME_TAX_RATE;
@@ -744,6 +775,8 @@ export function usePortfolioData(
                   lot.date,
                   rateToUse,
                   cdiHistory,
+                  undefined,
+                  ipcaHistory,
                 );
                 calcBal += curVal;
 
@@ -758,6 +791,7 @@ export function usePortfolioData(
                     rateToUse,
                     cdiHistory,
                     yesterdayStr,
+                    ipcaHistory,
                   );
                 } else {
                   todayNetFlow += lot.cost;
@@ -772,6 +806,8 @@ export function usePortfolioData(
                 startDate,
                 rateToUse,
                 cdiHistory,
+                undefined,
+                ipcaHistory,
               );
               calcYesterday = calculateRealFixedIncome(
                 a.totalCost,
@@ -779,6 +815,7 @@ export function usePortfolioData(
                 rateToUse,
                 cdiHistory,
                 yesterdayStr,
+                ipcaHistory,
               );
             }
 
@@ -831,6 +868,9 @@ export function usePortfolioData(
 
         let xtir = 0;
         if (a.cashFlows.length > 0 && currentTotal > 0) {
+          // Fechamento em "hoje" (ou na data da última cotação manual, quando o preço
+          // vem de lá) — nunca estendido para acomodar um fluxo de caixa futuro, senão
+          // o XTIR vira uma projeção em vez do retorno até a data atual.
           let closingDate = new Date();
           if (
             priceObj &&
@@ -841,10 +881,6 @@ export function usePortfolioData(
               m2.date.localeCompare(m1.date),
             );
             closingDate = new Date(sortedH[0].date);
-          }
-          const maxFlowTime = Math.max(...a.cashFlows.map((f: any) => new Date(f.date).getTime()));
-          if (closingDate.getTime() < maxFlowTime) {
-            closingDate = new Date(maxFlowTime);
           }
           const flows = [
             ...a.cashFlows,
@@ -1014,11 +1050,10 @@ export function usePortfolioData(
 
     let portfolioXTIR = 0;
     if (portfolioCashFlows.length > 0 && summary.marketValue > 0) {
-      let closingDate = new Date();
-      const maxFlowTime = Math.max(...portfolioCashFlows.map((f: any) => new Date(f.date).getTime()));
-      if (closingDate.getTime() < maxFlowTime) {
-        closingDate = new Date(maxFlowTime);
-      }
+      // Fechamento sempre em "hoje": o XTIR mostra o retorno até a data atual,
+      // não uma projeção estendida até um fluxo futuro (ex: aporte lançado com
+      // data adiantada dentro do mês).
+      const closingDate = new Date();
       const flows = [
         ...portfolioCashFlows,
         { date: closingDate, amount: summary.marketValue },

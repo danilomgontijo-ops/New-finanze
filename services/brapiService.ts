@@ -322,11 +322,17 @@ export const BrapiService = {
 
   fetchPtax: async (): Promise<number | null> => {
       try {
+          // Formato MM-DD-YYYY com zero-padding, igual ao usado em fetchPtaxForDate (exigido pela API OData do BCB)
+          const formatBcbDate = (d: Date) => {
+              const mm = String(d.getMonth() + 1).padStart(2, '0');
+              const dd = String(d.getDate()).padStart(2, '0');
+              return `${mm}-${dd}-${d.getFullYear()}`;
+          };
           const today = new Date();
           const startDateObj = new Date();
           startDateObj.setDate(today.getDate() - 5);
-          const startDate = startDateObj.toLocaleDateString('en-US');
-          const endDateUS = today.toLocaleDateString('en-US');
+          const startDate = formatBcbDate(startDateObj);
+          const endDateUS = formatBcbDate(today);
 
           const urlRaw = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='${startDate}'&@dataFinalCotacao='${endDateUS}'&$top=1&$format=json&$select=cotacaoVenda,dataHoraCotacao&$orderby=dataHoraCotacao desc`;
           const url = `/api/bcb/ptax?url=${encodeURIComponent(urlRaw)}`;
@@ -348,33 +354,36 @@ export const BrapiService = {
   
   
   fetchIbovHistory: async (): Promise<{ date: string, value: number }[]> => {
-      // Since brapi history is not available, we generate a fallback pseudo-IBOV
-      // based on typical historical values (starting at ~100k, ending at ~130k).
-      // Or we can try to fetch the IPCA approach. Let's just generate a plausible curve.
-      const list: { date: string, value: number }[] = [];
-      const today = new Date();
-      let currentVal = 100000;
-      
-      const current = new Date();
-      current.setFullYear(today.getFullYear() - 10);
-      
-      while (current <= today) {
-          const dayOfWeek = current.getDay();
-          if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-              // add a tiny bit of random walk + upward drift
-              const drift = 0.0001; // small upward drift
-              const volatility = 0.01; // 1% daily volatility
-              const change = drift + volatility * (Math.random() - 0.5);
-              currentVal = currentVal * (1 + change);
-              
-              const dd = String(current.getDate()).padStart(2, '0');
-              const mm = String(current.getMonth() + 1).padStart(2, '0');
-              const yyyy = current.getFullYear();
-              list.push({ date: `${yyyy}-${mm}-${dd}`, value: currentVal });
+      // Cotação diária real do Ibovespa (^BVSP) via Yahoo Finance.
+      // BCB SGS 7832 NÃO serve para isso: é uma série mensal descontinuada em 08/2019,
+      // não o índice de fechamento diário.
+      try {
+          const response = await fetch('/api/yahoo/ibov?range=10y');
+          if (!response.ok) {
+              console.warn("Erro ao buscar histórico do Ibovespa (Yahoo indisponível)");
+              return [];
           }
-          current.setDate(current.getDate() + 1);
+
+          const data = await response.json();
+          const result = data?.chart?.result?.[0];
+          const timestamps: number[] = result?.timestamp || [];
+          const closes: (number | null)[] = result?.indicators?.quote?.[0]?.close || [];
+          if (timestamps.length === 0) return [];
+
+          const list: { date: string, value: number }[] = [];
+          timestamps.forEach((ts, i) => {
+              const close = closes[i];
+              if (close === null || close === undefined) return;
+              list.push({
+                  date: new Date(ts * 1000).toISOString().split('T')[0],
+                  value: close,
+              });
+          });
+          return list;
+      } catch (e) {
+          console.warn("Erro fetchIbovHistory Yahoo:", e);
+          return [];
       }
-      return list;
   },
 
   fetchIpcaHistory: async (): Promise<{ date: string, value: number }[]> => {
@@ -503,23 +512,30 @@ export const BrapiService = {
   fetchDividends: async (ticker: string): Promise<any[]> => {
     try {
       const response = await fetch(`${BASE_URL}/${ticker.toUpperCase()}?dividends=true`);
-      
-      // Se a resposta não for ok, tenta ler o JSON para ver se é erro de plano
+
+      // Se a resposta não for ok, tenta ler o JSON para ver se é erro de plano.
+      // O throw aqui precisa escapar deste bloco (não pode ser recapturado por um catch
+      // interno), senão o chamador nunca sabe que o motivo foi restrição de plano.
       if (!response.ok) {
+        let errorData: any = null;
         try {
-          const errorData = await response.json();
-          if (errorData.code === 'FEATURE_NOT_AVAILABLE') {
-            throw new Error(`O plano atual da Brapi não suporta dividendos para o ativo ${ticker} (geralmente FIIs).`);
-          }
-        } catch (parseError) {
-          // Ignora erro de parse se não for JSON
+          errorData = await response.json();
+        } catch {
+          // corpo não é JSON, segue sem detalhe
+        }
+        if (errorData?.code === 'FEATURE_NOT_AVAILABLE') {
+          const planError: any = new Error(`O plano atual da Brapi não suporta dividendos para o ativo ${ticker}.`);
+          planError.code = 'FEATURE_NOT_AVAILABLE';
+          throw planError;
         }
         return [];
       }
 
       const data = await response.json();
       if (data.error && data.code === 'FEATURE_NOT_AVAILABLE') {
-          throw new Error(`O plano atual da Brapi não suporta dividendos para o ativo ${ticker} (geralmente FIIs).`);
+          const planError: any = new Error(`O plano atual da Brapi não suporta dividendos para o ativo ${ticker}.`);
+          planError.code = 'FEATURE_NOT_AVAILABLE';
+          throw planError;
       }
 
       if (data.results && data.results[0] && data.results[0].dividendsData) {
@@ -540,7 +556,7 @@ export const BrapiService = {
     } catch (e: any) {
       console.error(`Erro ao buscar proventos Brapi para ${ticker}:`, e);
       // Repassa o erro de plano para o chamador
-      if (e.message && e.message.includes('plano atual da Brapi')) {
+      if (e.code === 'FEATURE_NOT_AVAILABLE') {
           throw e;
       }
     }

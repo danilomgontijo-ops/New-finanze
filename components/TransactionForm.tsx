@@ -126,10 +126,22 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       return name.includes('renda fixa') || name.includes('tesouro') || name.includes('cdb') || name.includes('lci') || name.includes('lca') || name.includes('título') || name.includes('poupança');
   }, [categoryId, categories, invTicker]);
 
+  // Título do Tesouro Direto: o valor de mercado vem da cotação real (PU de venda),
+  // não do cálculo teórico por indexador — então o indexador/taxa é irrelevante e
+  // não deve ser pedido/exibido (evita salvar um indexador errado tipo "CDI" à toa).
+  const isTesouroDireto = useMemo(() => {
+      if (!invTicker) return false;
+      const tickUpper = invTicker.toUpperCase();
+      if (tickUpper.startsWith('TD:') || tickUpper.includes('TESOURO')) return true;
+      if (!categoryId) return false;
+      const cat = categories.find(c => c.id === categoryId);
+      return !!cat && cat.name.toLowerCase().includes('tesouro');
+  }, [categoryId, categories, invTicker]);
+
   // Update yield rate when builder changes
   useEffect(() => {
-      if (!isFixedIncome || fixedIncomeIndexer === 'CUSTOM') return;
-      
+      if (!isFixedIncome || isTesouroDireto || fixedIncomeIndexer === 'CUSTOM') return;
+
       if (fixedIncomeIndexer === 'CDI' || fixedIncomeIndexer === 'SELIC') {
           setInvYieldRate(`${fixedIncomeRate ? fixedIncomeRate + '% ' : ''}${fixedIncomeIndexer}`);
           setInvProfitabilityType('POS');
@@ -140,7 +152,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           setInvYieldRate(`${fixedIncomeRate}% a.a.`);
           setInvProfitabilityType('PRE');
       }
-  }, [fixedIncomeIndexer, fixedIncomeRate, isFixedIncome]);
+  }, [fixedIncomeIndexer, fixedIncomeRate, isFixedIncome, isTesouroDireto]);
 
   // Lista única de ativos já cadastrados para autocomplete
   const existingAssets = useMemo(() => {
@@ -326,7 +338,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           }
           
           const total = subtotal + (invEvent === 'BUY' ? (feesBRL + taxBRL) : -(feesBRL + taxBRL));
-          if (total >= 0) setAmount(total.toFixed(2));
+          // Sempre atualiza (mesmo se negativo, clampando a 0) para nunca deixar `amount` desatualizado
+          // em relação à quantidade/preço atuais do formulário.
+          setAmount(Math.max(0, total).toFixed(2));
       }
   }, [invQuantity, invPrice, invFees, invTax, type, invCurrency, forexRate, invEvent, invPtax, invGrossAmount]);
 
@@ -393,9 +407,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           setInvYieldRate(det.yieldRate || '');
           
           if (det.yieldRate) {
+              // Quando a taxa foi salva vazia (ex: "CDI" puro, sem "% "), o replace de sufixo não
+              // encontra nada para remover; removemos o token isolado e validamos que sobrou um número.
               if (det.yieldRate.includes('CDI')) {
                   setFixedIncomeIndexer('CDI');
-                  setFixedIncomeRate(det.yieldRate.replace('% CDI', '').replace(' CDI', '').trim());
+                  const rate = det.yieldRate.replace('% CDI', '').replace(' CDI', '').replace('CDI', '').trim();
+                  setFixedIncomeRate(/^\d+([.,]\d+)?$/.test(rate) ? rate : '');
               } else if (det.yieldRate.includes('IPCA')) {
                   setFixedIncomeIndexer('IPCA');
                   setFixedIncomeRate(det.yieldRate.replace('IPCA +', '').replace('%', '').trim());
@@ -404,7 +421,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                   setFixedIncomeRate(det.yieldRate.replace('% a.a.', '').trim());
               } else if (det.yieldRate.includes('SELIC')) {
                   setFixedIncomeIndexer('SELIC');
-                  setFixedIncomeRate(det.yieldRate.replace('% SELIC', '').replace(' SELIC', '').trim());
+                  const rate = det.yieldRate.replace('% SELIC', '').replace(' SELIC', '').replace('SELIC', '').trim();
+                  setFixedIncomeRate(/^\d+([.,]\d+)?$/.test(rate) ? rate : '');
               } else {
                   setFixedIncomeIndexer('CUSTOM');
               }
@@ -472,7 +490,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                       const rateStr = det.yieldRate;
                       if (rateStr.includes('CDI')) {
                           setFixedIncomeIndexer('CDI');
-                          setFixedIncomeRate(rateStr.replace('% CDI', '').replace(' CDI', '').trim());
+                          const rate = rateStr.replace('% CDI', '').replace(' CDI', '').replace('CDI', '').trim();
+                          setFixedIncomeRate(/^\d+([.,]\d+)?$/.test(rate) ? rate : '');
                       } else if (rateStr.includes('IPCA')) {
                           setFixedIncomeIndexer('IPCA');
                           setFixedIncomeRate(rateStr.replace('IPCA +', '').replace('%', '').trim());
@@ -481,7 +500,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                           setFixedIncomeRate(rateStr.replace('% a.a.', '').trim());
                       } else if (rateStr.includes('SELIC')) {
                           setFixedIncomeIndexer('SELIC');
-                          setFixedIncomeRate(rateStr.replace('% SELIC', '').replace(' SELIC', '').trim());
+                          const rate = rateStr.replace('% SELIC', '').replace(' SELIC', '').replace('SELIC', '').trim();
+                          setFixedIncomeRate(/^\d+([.,]\d+)?$/.test(rate) ? rate : '');
                       } else {
                           setFixedIncomeIndexer('CUSTOM');
                       }
@@ -666,7 +686,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           tax: parseFloat(invTax) || 0,
           grossAmount: parseFloat(invGrossAmount) || 0,
           currency: invCurrency,
-          yieldRate: isFixedIncome ? invYieldRate : undefined,
+          // Tesouro Direto não usa indexador/taxa (o valor vem da cotação real de mercado),
+          // então nunca salvamos esse campo para esses títulos — inclusive limpa registros
+          // antigos com indexador errado (ex: "% do CDI") ao serem reeditados e salvos.
+          yieldRate: isFixedIncome && !isTesouroDireto ? invYieldRate : undefined,
           ptax: invCurrency === 'USD' ? (parseFloat(invPtax) || 0) : undefined,
           newTicker: invNewTicker ? invNewTicker.toUpperCase() : undefined,
           bonusRatio: invBonusRatio !== '' ? parseFloat(invBonusRatio) : null,
@@ -941,7 +964,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                             <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">
                                 {invEvent === 'SPLIT' || invEvent === 'MERGE' ? 'Fator (Ex: 3 para 1:3)' : (invEvent === 'TICKER_UPDATE' ? 'Proporção (Ex: 1 para 1:1, 0.5 para 2:1)' : 'Quantidade')}
                             </label>
-                            <input type="number" step="0.000001" required value={invQuantity} onChange={(e) => setInvQuantity(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-medium" placeholder={invEvent === 'SPLIT' ? "Ex: 2 (para 1:2)" : (invEvent === 'TICKER_UPDATE' ? "Ex: 1" : "0,00")} />
+                            <input type="number" step="0.000001" min="0" required value={invQuantity} onChange={(e) => setInvQuantity(e.target.value)} className="w-full px-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-medium" placeholder={invEvent === 'SPLIT' ? "Ex: 2 (para 1:2)" : (invEvent === 'TICKER_UPDATE' ? "Ex: 1" : "0,00")} />
                         </div>
                         
                         {invEvent !== 'SPLIT' && invEvent !== 'MERGE' && invEvent !== 'TICKER_UPDATE' && (
@@ -949,7 +972,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                 <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2">{invEvent === 'BONUS' ? 'Custo Atribuído (Unit.)' : 'Preço Unitário'}</label>
                                 <div className="relative flex items-center">
                                 <select value={invCurrency} onChange={(e) => setInvCurrency(e.target.value)} className="absolute left-2 text-[10px] bg-zinc-100/80 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700 rounded-xl px-2 font-semibold h-8 outline-none text-zinc-600 appearance-none cursor-pointer focus:ring-2 focus:ring-blue-500/20"><option value="BRL">R$</option><option value="USD">U$</option></select>
-                                <input type="number" step="0.0001" required value={invPrice} onChange={(e) => setInvPrice(e.target.value)} className="w-full pl-16 pr-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl outline-none font-semibold text-zinc-900 dark:text-zinc-50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 placeholder:font-medium" placeholder="0,00" />
+                                <input type="number" step="0.0001" min="0" required value={invPrice} onChange={(e) => setInvPrice(e.target.value)} className="w-full pl-16 pr-4 py-3 bg-zinc-50/50 dark:bg-zinc-800/50 border border-zinc-200/60 dark:border-zinc-700 rounded-xl outline-none font-semibold text-zinc-900 dark:text-zinc-50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm shadow-zinc-200/5 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 placeholder:font-medium" placeholder="0,00" />
                                 </div>
                             </div>
                         )}
@@ -1038,6 +1061,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 {/* Exibe Rentabilidade APENAS se for Renda Fixa */}
                 {!isDividendEvent && isFixedIncome && (
                     <div className="space-y-5 animate-in fade-in bg-zinc-50/40 dark:bg-zinc-800/30 p-5 rounded-3xl border border-zinc-200/60 dark:border-zinc-700">
+                        {!isTesouroDireto && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
                                 <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Percent size={14} className="text-blue-400"/> Indexador</label>
@@ -1063,6 +1087,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                 )}
                             </div>
                         </div>
+                        )}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
                                 <label className="block text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Calendar size={14} className="text-blue-400"/> Vencimento</label>

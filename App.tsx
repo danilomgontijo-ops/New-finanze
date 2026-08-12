@@ -412,8 +412,9 @@ const App: React.FC = () => {
                      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
                    >
                        {currentView === 'dashboard' && (
-                   <Dashboard 
+                   <Dashboard
                      cdiHistory={cdiHistory}
+                     ipcaHistory={ipcaHistory}
                      transactions={transactions}
                      categories={categories}
                      subCategories={subCategories}

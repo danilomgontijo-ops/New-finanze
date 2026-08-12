@@ -171,6 +171,50 @@ export const AiDividendRadar: React.FC<AiDividendRadarProps> = ({ isOpen, onClos
                   console.error("Gemini dividend fetch error:", err);
                   warningMessage += "Houve uma falha na busca inteligente do Gemini.";
               }
+
+              // ADD: Fetch from Brapi (fonte oficial B3) e prioriza sobre Yahoo/Gemini para o mesmo
+              // pagamento, pois é a única fonte que distingue corretamente JCP (tributado 15%) de
+              // dividendo comum (isento) — o Yahoo Finance não faz essa distinção.
+              try {
+                  // O token gratuito da Brapi retorna 403 quando muitos tickers são consultados
+                  // em paralelo de uma vez; buscamos em lotes pequenos com um respiro entre eles.
+                  const BRAPI_BATCH_SIZE = 3;
+                  const BRAPI_BATCH_DELAY_MS = 400;
+                  const brapiFlat: any[] = [];
+                  const brapiPlanBlockedTickers: string[] = [];
+                  for (let i = 0; i < selectedTickers.length; i += BRAPI_BATCH_SIZE) {
+                      const batch = selectedTickers.slice(i, i + BRAPI_BATCH_SIZE);
+                      const batchResults = await Promise.allSettled(batch.map(t => BrapiService.fetchDividends(t)));
+                      batchResults.forEach((result, idx) => {
+                          if (result.status === 'fulfilled') {
+                              brapiFlat.push(...result.value);
+                          } else if ((result.reason as any)?.code === 'FEATURE_NOT_AVAILABLE') {
+                              brapiPlanBlockedTickers.push(batch[idx]);
+                          }
+                      });
+                      if (i + BRAPI_BATCH_SIZE < selectedTickers.length) {
+                          await new Promise(resolve => setTimeout(resolve, BRAPI_BATCH_DELAY_MS));
+                      }
+                  }
+                  const brapiFiltered = brapiFlat.filter(d => {
+                      if (!d.paymentDate) return false;
+                      return d.paymentDate >= startStr && d.paymentDate <= endStr;
+                  });
+                  if (brapiFiltered.length > 0) {
+                      allDividends = [...brapiFiltered, ...allDividends];
+                      allSources.push({ uri: 'https://brapi.dev', title: 'Brapi (B3 - classificação oficial JCP/Dividendo)' });
+                  }
+                  // O plano gratuito da Brapi só libera o módulo de dividendos para um punhado
+                  // de tickers "vitrine" (ex: PETR4, VALE3, ITUB4) — não é um problema transitório,
+                  // então avisamos quais ativos ficaram de fora em vez de falhar em silêncio.
+                  if (brapiPlanBlockedTickers.length > 0) {
+                      const preview = brapiPlanBlockedTickers.slice(0, 5).join(', ');
+                      const rest = brapiPlanBlockedTickers.length > 5 ? ` e mais ${brapiPlanBlockedTickers.length - 5}` : '';
+                      warningMessage += `Brapi: plano atual não dá acesso a dividendos para ${preview}${rest}. `;
+                  }
+              } catch (err) {
+                  console.error("Brapi dividend fetch error:", err);
+              }
           }
           
           // Pre-calculate holdings correctly based on chronological order
@@ -280,12 +324,21 @@ export const AiDividendRadar: React.FC<AiDividendRadarProps> = ({ isOpen, onClos
 
           for (let idx = 0; idx < allDividends.length; idx++) {
               const div = allDividends[idx];
-              // If we have dataCom, use it. Otherwise, assume they held it 30 days before payment.
+              // If we have dataCom, use it. Otherwise, estima o intervalo data-com -> pagamento por
+              // classe de ativo: FIIs costumam pagar ~10-15 dias após a data-com, ações/BDRs ~30-45 dias.
               let targetDate = div.dataCom;
               if (!targetDate) {
                   if (div.paymentDate) {
+                      const mapInfo = tickerCategoryMap[div.ticker];
+                      const cat = mapInfo ? categories.find(c => c.id === mapInfo.categoryId) : undefined;
+                      const sub = mapInfo ? subCategories.find(s => s.id === mapInfo.subCategoryId) : undefined;
+                      const catName = (cat?.name || '').toUpperCase();
+                      const subName = (sub?.name || '').toUpperCase();
+                      const isFii = catName.includes('FII') || subName.includes('FII') || /\d11$/.test(div.ticker);
+                      const estimatedDaysBeforePayment = isFii ? 15 : 30;
+
                       const d = new Date(div.paymentDate);
-                      d.setDate(d.getDate() - 30);
+                      d.setDate(d.getDate() - estimatedDaysBeforePayment);
                       targetDate = d.toISOString().split('T')[0];
                   } else {
                       // Fallback to today if both are missing

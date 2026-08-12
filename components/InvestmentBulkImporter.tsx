@@ -34,6 +34,7 @@ interface ParsedInvestment {
   isValid: boolean;
   error?: string;
   isDuplicate: boolean;
+  signInverted: boolean;
 }
 
 export const InvestmentBulkImporter: React.FC<InvestmentBulkImporterProps> = ({ isOpen, onClose, categories, subCategories, transactions, onImport }) => {
@@ -121,17 +122,23 @@ export const InvestmentBulkImporter: React.FC<InvestmentBulkImporterProps> = ({ 
         else if (['AM', 'AMORTIZACAO', 'AMORTIZATION'].includes(rawEvent)) event = 'AMORTIZACAO';
 
         // REGRA: Se quantidade ou preço for negativo em C/V, inverte lógica (apenas se não for evento especial)
+        const originalEvent = event;
         if ((event === 'BUY' || event === 'SELL') && (quantity < 0 || price < 0)) {
             event = 'SELL';
             quantity = Math.abs(quantity);
             price = Math.abs(price);
         }
+        const signInverted = event !== originalEvent;
 
         // 1. Identificar Categoria
-        const category = investmentCategories.find(c => 
-          c.name.toLowerCase().includes(categoryName.toLowerCase()) || 
+        // Só tenta casar com o nome informado se ele foi preenchido; caso contrário usa a
+        // primeira categoria como padrão de conveniência (não é considerado "não mapeado").
+        const matchedCategory = categoryName ? investmentCategories.find(c =>
+          c.name.toLowerCase().includes(categoryName.toLowerCase()) ||
           categoryName.toLowerCase().includes(c.name.toLowerCase())
-        ) || investmentCategories[0];
+        ) : undefined;
+        const categoryMismatch = !!categoryName && !matchedCategory;
+        const category = matchedCategory || investmentCategories[0];
 
         // 2. Identificar Subcategoria (se houver categoria e nome fornecido)
         let subCategoryId = '';
@@ -154,12 +161,12 @@ export const InvestmentBulkImporter: React.FC<InvestmentBulkImporterProps> = ({ 
         }
 
         // Cálculo do Total Financeiro em REAIS (para o campo 'amount' da transação)
-        // (Qtd * Preço * PTAX) + Taxas
+        // (Qtd * Preço * PTAX) + Taxas (taxas também convertidas pela PTAX quando internacional)
         let totalAmount = 0;
         if (event === 'BUY') {
-            totalAmount = (quantity * price * conversionFactor) + fees + tax;
+            totalAmount = (quantity * price * conversionFactor) + (fees + tax) * conversionFactor;
         } else if (event === 'SELL') {
-            totalAmount = (quantity * price * conversionFactor) - fees - tax;
+            totalAmount = (quantity * price * conversionFactor) - (fees + tax) * conversionFactor;
         } else if (event === 'AMORTIZACAO') {
              // Amortization is money coming in.
              totalAmount = (quantity * price * conversionFactor);
@@ -196,9 +203,12 @@ export const InvestmentBulkImporter: React.FC<InvestmentBulkImporterProps> = ({ 
           ptax: isInternational ? ptax : 0,
           totalAmount: Math.abs(totalAmount), 
           newTicker,
-          isValid: ticker.length > 0 && (event === 'TICKER_UPDATE' || quantity > 0 || event === 'AMORTIZACAO'),
-          error: !category ? 'Classe não mapeada' : undefined,
-          isDuplicate
+          isValid: ticker.length > 0 && !categoryMismatch && (event === 'TICKER_UPDATE' || quantity > 0 || event === 'AMORTIZACAO'),
+          error: !category
+            ? 'Classe não mapeada'
+            : (categoryMismatch ? `Categoria "${categoryName}" não encontrada — selecione manualmente` : undefined),
+          isDuplicate,
+          signInverted
         });
       } catch (err) {
         console.error("Erro ao processar linha", i, err);
@@ -213,7 +223,7 @@ export const InvestmentBulkImporter: React.FC<InvestmentBulkImporterProps> = ({ 
     setIsSaving(true);
     setStep('saving');
     
-    const validItems = parsedData.filter(d => d.isValid).map(d => ({
+    const validItems = parsedData.filter(d => d.isValid && !d.isDuplicate).map(d => ({
       type: TransactionType.INVESTMENT,
       description: d.description,
       amount: d.totalAmount, // Valor total em BRL
@@ -312,16 +322,26 @@ export const InvestmentBulkImporter: React.FC<InvestmentBulkImporterProps> = ({ 
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${d.event === 'BUY' ? 'bg-emerald-100 text-emerald-700' : (d.event === 'SELL' ? 'bg-rose-100 text-rose-700' : (d.event === 'AMORTIZACAO' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-800'))}`}>
                             {d.event === 'TICKER_UPDATE' ? 'AT' : (d.event === 'BONUS' ? 'BN' : (d.event === 'SPLIT' ? 'S' : (d.event === 'MERGE' ? 'I' : (d.event === 'AMORTIZACAO' ? 'AM' : d.event))))}
                           </span>
+                          {d.signInverted && (
+                            <div title="Quantidade ou preço veio negativo na planilha: evento foi invertido automaticamente para VENDA. Confira se é o esperado.">
+                              <AlertCircle size={11} className="text-amber-500 inline-block ml-1" />
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-right font-mono text-gray-700">{d.quantity}</td>
                         <td className="px-4 py-3 text-right font-mono text-xs text-gray-700">{(d.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                         <td className="px-4 py-3 text-right font-bold text-gray-900">R$ {(d.totalAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                         <td className="px-4 py-3 text-xs truncate max-w-[120px]" title={d.categoryName}>
-                          <select 
-                            value={d.categoryId} 
+                          <select
+                            value={d.categoryId}
                             onChange={(e) => {
                               const newCatId = e.target.value;
-                              setParsedData(prev => prev.map(item => item.id === d.id ? { ...item, categoryId: newCatId } : item));
+                              setParsedData(prev => prev.map(item => item.id === d.id ? {
+                                ...item,
+                                categoryId: newCatId,
+                                error: newCatId ? undefined : item.error,
+                                isValid: item.ticker.length > 0 && !!newCatId && (item.event === 'TICKER_UPDATE' || item.quantity > 0 || item.event === 'AMORTIZACAO'),
+                              } : item));
                             }}
                             className="w-full border rounded bg-transparent outline-none text-gray-800"
                           >
@@ -351,7 +371,12 @@ export const InvestmentBulkImporter: React.FC<InvestmentBulkImporterProps> = ({ 
               </div>
               <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-200">
                 <span className="text-sm font-medium text-gray-700">
-                  Total de {parsedData.filter(d => d.isValid).length} operações válidas.
+                  {parsedData.filter(d => d.isValid && !d.isDuplicate).length} operações serão importadas.
+                  {parsedData.some(d => d.isDuplicate) && (
+                    <span className="text-amber-600 font-bold">
+                      {' '}{parsedData.filter(d => d.isDuplicate).length} duplicada(s) serão ignoradas.
+                    </span>
+                  )}
                 </span>
                 <div className="flex gap-3">
                   <button onClick={() => setStep('input')} className="px-6 py-2 text-gray-500 font-bold hover:bg-emerald-700 rounded-xl transition-colors">Voltar</button>

@@ -21,6 +21,7 @@ import { BankLogo, BrandLogo } from './CreditCardManager';
 
 interface DashboardProps {
   cdiHistory?: { date: string; value: number }[];
+  ipcaHistory?: { date: string; value: number }[];
   transactions: Transaction[];
   categories: Category[];
   subCategories: SubCategory[];
@@ -100,71 +101,6 @@ const safeFormatPtBR = (dateVal: any, options?: Intl.DateTimeFormatOptions): str
     // fallback
   }
   return String(dateVal || "");
-};
-
-const calculateRealFixedIncome = (principal: number, startDateStr: string, rateStr: string, cdiData: { date: string, value: number }[]): number => {
-    if (!principal || principal <= 0) return 0;
-    if (!rateStr || typeof rateStr !== 'string') rateStr = '100% CDI';
-
-    const startIso = toIsoDateStr(startDateStr);
-    const endIso = new Date().toISOString().split("T")[0];
-
-    const upperStr = rateStr.toUpperCase().trim();
-    let pctCDI = 0;
-    let isCDI = false;
-    let fixedRate = 0;
-
-    const numbers = upperStr.match(/(\d+(?:[.,]\d+)?)/g);
-
-    const hasCdiExplicit =
-        upperStr.includes("CDI") ||
-        upperStr.includes("INTER") ||
-        upperStr.includes("CDB") ||
-        upperStr.includes("LCI") ||
-        upperStr.includes("LCA") ||
-        upperStr.includes("CRI") ||
-        upperStr.includes("CRA") ||
-        upperStr.includes("POUPA") ||
-        upperStr.includes("DO CDI");
-
-    if (hasCdiExplicit) {
-        isCDI = true;
-        if (upperStr.includes("POUPA")) {
-            pctCDI = numbers && numbers.length > 0 ? parseFloat(numbers[0].replace(",", ".")) : 70;
-        } else if (numbers && numbers.length > 0) {
-            pctCDI = parseFloat(numbers[0].replace(",", "."));
-        } else {
-            pctCDI = 100;
-        }
-    } else if (numbers && numbers.length > 0) {
-        const val = parseFloat(numbers[0].replace(",", "."));
-        if (val >= 50 && !upperStr.includes("IPCA")) {
-            isCDI = true;
-            pctCDI = val;
-        } else {
-            fixedRate = val;
-        }
-    } else {
-        isCDI = true;
-        pctCDI = 100;
-    }
-
-    if (isCDI) {
-        if (!cdiData || cdiData.length === 0) return principal;
-        const relevantRates = cdiData.filter(d => d.date >= startIso && d.date <= endIso);
-        let accumulatedFactor = 1;
-        for (const day of relevantRates) {
-            const dailyFactor = 1 + ((day.value / 100) * (pctCDI / 100));
-            accumulatedFactor *= dailyFactor;
-        }
-        return principal * accumulatedFactor;
-    } else {
-        const relevantRates = cdiData ? cdiData.filter((d) => d.date >= startIso && d.date <= endIso) : [];
-        const businessDays = relevantRates.length > 0 ? relevantRates.length : Math.ceil(Math.abs(new Date(endIso).getTime() - new Date(startIso).getTime()) / (1000 * 60 * 60 * 24)) * (252 / 365);
-        const years = businessDays / 252;
-        if (fixedRate > 0) return principal * Math.pow(1 + (fixedRate / 100), years);
-    }
-    return principal;
 };
 
 // Robust XIRR Calculation with fallback
@@ -334,6 +270,7 @@ const KPICard = ({ title, value, icon: Icon, color, subtext, onClick }: { title:
 
 export const Dashboard = ({
   cdiHistory = [],
+  ipcaHistory = [],
   transactions,
   categories,
   subCategories,
@@ -623,7 +560,7 @@ export const Dashboard = ({
 
   // Investment stats
       // Monthly Pocket Investment Stats
-  const { summary: portfolioSummary, list: portfolioList } = usePortfolioData(transactions, assetPrices, categories, subCategories, cdiHistory);
+  const { summary: portfolioSummary, list: portfolioList } = usePortfolioData(transactions, assetPrices, categories, subCategories, cdiHistory, ipcaHistory);
 
   const investmentStats = useMemo(() => {
     // Sort by totalReturnPct to show real highlights, including fixed income (filter out zero balance/cost)
