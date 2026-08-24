@@ -355,8 +355,17 @@ export function usePortfolioData(
   categories: Category[],
   subCategories: SubCategory[],
   cdiHistory: { date: string; value: number }[],
-  ipcaHistory: { date: string; value: number }[] = []
+  ipcaHistory: { date: string; value: number }[] = [],
+  filters?: {
+    categoryFilters?: string[];
+    subCategoryFilters?: string[];
+    searchTerm?: string;
+  },
 ) {
+  const portfolioCategoryFilters = filters?.categoryFilters || [];
+  const portfolioSubCategoryFilters = filters?.subCategoryFilters || [];
+  const portfolioSearchTerm = filters?.searchTerm || "";
+
   const isNathyTransaction = (t: Transaction) => {
     const nathyCategory = categories.find(
       (c) => c.name && c.name.toLowerCase() === "nathy",
@@ -737,8 +746,23 @@ export function usePortfolioData(
 
     const list: PortfolioItem[] = Object.values(assets)
       .filter((a: any) => {
-        
-        
+        if (
+          portfolioCategoryFilters.length > 0 &&
+          !portfolioCategoryFilters.includes(a.categoryId)
+        )
+          return false;
+        if (
+          portfolioSubCategoryFilters.length > 0 &&
+          !portfolioSubCategoryFilters.includes(a.subCategoryId)
+        )
+          return false;
+        if (portfolioSearchTerm) {
+          const searchTerms = portfolioSearchTerm.split(',').map(s => s.trim().toUpperCase()).filter(s => s);
+          if (searchTerms.length > 0) {
+            const matches = searchTerms.some(term => a.ticker.toUpperCase().includes(term));
+            if (!matches) return false;
+          }
+        }
         return true;
       })
       .map((a: any) => {
@@ -1060,8 +1084,23 @@ export function usePortfolioData(
 
     // Calculate realizedProfit and proventosTotal from ALL filtered assets (including sold ones)
     Object.values(assets).forEach((a: any) => {
-      
-      
+      if (
+        portfolioCategoryFilters.length > 0 &&
+        !portfolioCategoryFilters.includes(a.categoryId)
+      )
+        return;
+      if (
+        portfolioSubCategoryFilters.length > 0 &&
+        !portfolioSubCategoryFilters.includes(a.subCategoryId)
+      )
+        return;
+      if (portfolioSearchTerm) {
+        const searchTerms = portfolioSearchTerm.split(',').map(s => s.trim().toUpperCase()).filter(s => s);
+        if (searchTerms.length > 0) {
+          const matches = searchTerms.some(term => a.ticker.toUpperCase().includes(term));
+          if (!matches) return;
+        }
+      }
       summary.realizedProfit += a.realizedProfit;
       summary.proventosTotal += a.totalProventos;
       summary.proventos12mTotal += a.totalProventos12m;
@@ -1110,5 +1149,15 @@ export function usePortfolioData(
     summary.cumulativeReturnPct = summary.investedValue > 0 ? (summary.totalProfit / summary.investedValue) * 100 : 0;
 
     return { list, summary, usdRate: currentUsdRate, profitMap };
-  }, [cleanInvestmentTxs, assetPrices, categories, subCategories, cdiHistory, ipcaHistory]);
+  }, [
+    cleanInvestmentTxs,
+    assetPrices,
+    categories,
+    subCategories,
+    cdiHistory,
+    ipcaHistory,
+    portfolioCategoryFilters,
+    portfolioSubCategoryFilters,
+    portfolioSearchTerm,
+  ]);
 }
