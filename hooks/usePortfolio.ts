@@ -1072,5 +1072,5 @@ export function usePortfolioData(
     summary.cumulativeReturnPct = summary.investedValue > 0 ? (summary.totalProfit / summary.investedValue) * 100 : 0;
 
     return { list, summary, usdRate: currentUsdRate, profitMap };
-  }, [cleanInvestmentTxs, assetPrices, categories, subCategories, cdiHistory]);
+  }, [cleanInvestmentTxs, assetPrices, categories, subCategories, cdiHistory, ipcaHistory]);
 }

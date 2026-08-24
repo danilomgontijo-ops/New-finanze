@@ -1383,6 +1383,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
     subCategories,
     assetPrices,
     cdiHistory,
+    ipcaHistory,
     portfolioCategoryFilters,
     portfolioSubCategoryFilters,
     portfolioSearchTerm,
@@ -2725,6 +2726,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
   }, [
     investmentTransactions,
     cdiHistory,
+    ipcaHistory,
+    ibovHistory,
     assetPrices,
     portfolioData,
     assetHistory,
