@@ -332,6 +332,23 @@ export const getTxAmountBrl = (t: Transaction, currentUsdRate: number = 5.5): nu
   return rawAmount;
 };
 
+// `det.tax` é sempre gravado na moeda original da transação (TransactionForm
+// só converte para BRL o campo `amount`, não o imposto em si) — então, ao
+// somar imposto de volta a um valor já convertido para BRL (getTxAmountBrl),
+// é preciso converter o imposto também, senão o resultado mistura unidades
+// para ativos em USD.
+export const getTaxBrl = (t: Transaction, currentUsdRate: number = 5.5): number => {
+  if (!t) return 0;
+  const det = t.investmentDetails;
+  if (!det) return 0;
+  const tax = det.tax || 0;
+  if (tax <= 0) return 0;
+  if (det.currency !== "USD") return tax;
+
+  const ptax = (det.ptax && det.ptax > 1) ? det.ptax : (currentUsdRate > 1 ? currentUsdRate : 5.5);
+  return tax * ptax;
+};
+
 export function usePortfolioData(
   investmentTransactions: Transaction[],
   assetPrices: AssetPrice[],
@@ -605,8 +622,10 @@ export function usePortfolioData(
 
         // IRRF já foi subtraído de `amount` na origem (TransactionForm calcula
         // amount = bruto - taxas - imposto); somamos `tax` de volta para comparar
-        // contra o custo de aquisição, que é sempre bruto.
-        const transactionProfit = effectiveTxAmount + tax - costOfSold;
+        // contra o custo de aquisição, que é sempre bruto. `tax` está na moeda
+        // original da transação, então usamos getTaxBrl (não a variável `tax`
+        // crua) para não misturar USD com o BRL de effectiveTxAmount/costOfSold.
+        const transactionProfit = effectiveTxAmount + getTaxBrl(t, currentUsdRate) - costOfSold;
 
         const previousTotalCost = a.totalCost;
         const reductionRatio =

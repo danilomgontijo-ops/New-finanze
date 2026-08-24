@@ -16,7 +16,7 @@ import { BrapiService } from "../services/brapiService";
 import { SheetsService } from "../services/sheetsService";
 import { DividendBulkImporter } from "./DividendBulkImporter";
 import { AiDividendRadar } from "./AiDividendRadar";
-import { getTxAmountBrl } from "../hooks/usePortfolio";
+import { getTxAmountBrl, getTaxBrl } from "../hooks/usePortfolio";
 import {
   BarChart,
   Bar,
@@ -923,7 +923,9 @@ export const Investments: React.FC<InvestmentsProps> = ({
         // de aquisição (costOfSold) é sempre bruto, comparar o valor líquido direto
         // contra ele subtrai o imposto como se fosse prejuízo do ativo — por isso
         // somamos `tax` de volta para reconstituir o valor bruto na apuração do lucro.
-        const transactionProfit = effectiveTxAmount + tax - costOfSold;
+        // `tax` está na moeda original da transação; usamos getTaxBrl (não a
+        // variável crua) para não misturar USD com o BRL de effectiveTxAmount.
+        const transactionProfit = effectiveTxAmount + getTaxBrl(t, currentUsdRate) - costOfSold;
 
         const previousTotalCost = a.totalCost;
         const reductionRatio =
@@ -1787,8 +1789,10 @@ export const Investments: React.FC<InvestmentsProps> = ({
         } else if (det.event === "SELL") {
           // `amount` já vem líquido de IRRF (o formulário subtrai o imposto na
           // origem); somamos de volta para comparar contra um custo/valor sempre
-          // bruto, senão o imposto retido aparece como prejuízo do ativo.
-          const grossAmount = amount + (det.tax || 0);
+          // bruto, senão o imposto retido aparece como prejuízo do ativo. `tax` é
+          // gravado na moeda original da transação, então usamos getTaxBrl para
+          // não misturar USD com o BRL de `amount`.
+          const grossAmount = amount + getTaxBrl(t, portfolioData.usdRate);
           const avgPrice = asset.qty > 0 ? asset.cost / asset.qty : 0;
           const costSold = avgPrice * det.quantity;
           // Custo médio simples (avgPrice*quantity) não serve para renda fixa aqui:
@@ -1823,7 +1827,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             asset.cost = 0;
           }
         } else if (det.event === "AMORTIZACAO") {
-          const grossAmount = amount + (det.tax || 0);
+          const grossAmount = amount + getTaxBrl(t, portfolioData.usdRate);
           const avgPrice = asset.qty > 0 ? asset.cost / asset.qty : 0;
           const costReduction = Math.min(asset.cost, grossAmount);
           const profit = grossAmount - costReduction;
@@ -2045,10 +2049,12 @@ export const Investments: React.FC<InvestmentsProps> = ({
             // `rawAmount` já vem líquido de IRRF para SELL/AMORTIZACAO (igual ao resto
             // do bloco, ver grossAmount acima); somamos o imposto de volta para obter o
             // preço/valor de mercado bruto — senão o preço implícito da transação fica
-            // subavaliado e distorce o TWR do ativo quando há retenção na venda.
+            // subavaliado e distorce o TWR do ativo quando há retenção na venda. `tax` é
+            // gravado na moeda original da transação, então usamos getTaxBrl para não
+            // misturar USD com o BRL de `rawAmount`.
             const amount =
               det.event === "SELL" || det.event === "AMORTIZACAO"
-                ? rawAmount + (det.tax || 0)
+                ? rawAmount + getTaxBrl(t, portfolioData.usdRate)
                 : rawAmount;
 
             if (det.event === "BUY" || det.event === "SELL") {
