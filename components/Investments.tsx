@@ -577,7 +577,10 @@ export const Investments: React.FC<InvestmentsProps> = ({
     useState("");
   const overviewSearchTerm = globalSearchTerm;
   const setOverviewSearchTerm = setGlobalSearchTerm;
-  const [overviewFilterDate, setOverviewFilterDate] = useState<string | null>(
+  const [overviewFilterStartDate, setOverviewFilterStartDate] = useState<string | null>(
+    null,
+  );
+  const [overviewFilterEndDate, setOverviewFilterEndDate] = useState<string | null>(
     null,
   );
 
@@ -2218,12 +2221,16 @@ export const Investments: React.FC<InvestmentsProps> = ({
     });
 
     const effectiveStartDateRaw =
-      overviewFilterDate !== null
-        ? overviewFilterDate
+      overviewFilterStartDate !== null
+        ? overviewFilterStartDate
         : settings.historyStartDate;
     const effectiveStartDate = effectiveStartDateRaw
       ? effectiveStartDateRaw.slice(0, 7)
       : undefined;
+    const effectiveEndDate = overviewFilterEndDate
+      ? overviewFilterEndDate.slice(0, 7)
+      : undefined;
+
     if (effectiveStartDate && chartData.length > 0) {
       const startIndex = chartData.findIndex(
         (d) => d.fullDate >= effectiveStartDate,
@@ -2248,22 +2255,32 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 : d.cdiAccum,
           };
         });
-
-        tableData = tableData
-          .filter((d) => d.fullDate >= effectiveStartDate)
-          .map((d) => {
-            const originalD = chartData.find((c) => c.fullDate === d.fullDate);
-            if (!originalD) return d;
-            return {
-              ...d,
-              twrAccum: originalD.twrAccum,
-              cdiAccum: originalD.cdiAccum,
-            };
-          });
       } else if (startIndex === -1) {
         chartData = [];
         tableData = [];
       }
+    }
+
+    if (effectiveEndDate && chartData.length > 0) {
+      chartData = chartData.filter((d) => d.fullDate <= effectiveEndDate);
+    }
+
+    if (chartData.length > 0) {
+      const chartFullDates = new Set(chartData.map((c) => c.fullDate));
+      const chartMap = new Map(chartData.map((c) => [c.fullDate, c]));
+      tableData = tableData
+        .filter((d) => chartFullDates.has(d.fullDate))
+        .map((d) => {
+          const cd = chartMap.get(d.fullDate);
+          if (!cd) return d;
+          return {
+            ...d,
+            twrAccum: cd.twrAccum,
+            cdiAccum: cd.cdiAccum,
+          };
+        });
+    } else {
+      tableData = [];
     }
 
     if (chartData.length === 0)
@@ -2662,7 +2679,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
     categories,
     subCategories,
     settings.historyStartDate,
-    overviewFilterDate,
+    overviewFilterStartDate,
+    overviewFilterEndDate,
   ]);
 
   const handleSyncHistory = async (syncType: "all" | "current_month" = "all") => {
@@ -4329,29 +4347,65 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
       {activeTab === "overview" && (
         <div className="space-y-6 animate-in fade-in">
-          <div className="bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2">
-              <Calendar size={14} className="text-gray-600" />
-              <span className="text-xs font-bold text-slate-600 uppercase">
-                Período:
-              </span>
+          <div className="bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm flex flex-wrap gap-3 items-center justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Calendar size={14} className="text-zinc-500" />
+                <span className="text-xs font-bold text-zinc-600 dark:text-zinc-300 uppercase tracking-wider">
+                  Período:
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-zinc-500 font-semibold">De:</span>
+                <input
+                  type="month"
+                  value={
+                    overviewFilterStartDate !== null
+                      ? overviewFilterStartDate
+                      : settings.historyStartDate
+                        ? settings.historyStartDate.slice(0, 7)
+                        : ""
+                  }
+                  onChange={(e) => setOverviewFilterStartDate(e.target.value || null)}
+                  className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 text-xs font-bold rounded-xl px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-blue-500"
+                  title="Mês Inicial (De)"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-zinc-500 font-semibold">Até:</span>
+                <input
+                  type="month"
+                  value={overviewFilterEndDate || ""}
+                  min={
+                    overviewFilterStartDate !== null
+                      ? overviewFilterStartDate
+                      : settings.historyStartDate
+                        ? settings.historyStartDate.slice(0, 7)
+                        : undefined
+                  }
+                  onChange={(e) => setOverviewFilterEndDate(e.target.value || null)}
+                  className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 text-xs font-bold rounded-xl px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-blue-500"
+                  title="Mês Final (Até)"
+                  placeholder="Mês Final"
+                />
+              </div>
+              {(overviewFilterStartDate !== null || overviewFilterEndDate !== null) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOverviewFilterStartDate(null);
+                    setOverviewFilterEndDate(null);
+                  }}
+                  className="text-[11px] font-bold text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 px-2 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  title="Limpar filtro de período"
+                >
+                  Limpar
+                </button>
+              )}
             </div>
-            <input
-              type="month"
-              value={
-                overviewFilterDate !== null
-                  ? overviewFilterDate
-                  : settings.historyStartDate
-                    ? settings.historyStartDate.slice(0, 7)
-                    : ""
-              }
-              onChange={(e) => setOverviewFilterDate(e.target.value)}
-              className="bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px]"
-              title="Mês Inicial"
-            />
             <button
               onClick={() => setShowDetailedReport(!showDetailedReport)}
-              className={`ml-auto flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${showDetailedReport ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-zinc-900 text-blue-600 border-blue-200 hover:bg-blue-50 dark:bg-blue-950/60"}`}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold border transition-all ${showDetailedReport ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-zinc-900 text-blue-600 border-blue-200 hover:bg-blue-50 dark:bg-blue-950/60"}`}
             >
               <FileText size={14} />
               {showDetailedReport

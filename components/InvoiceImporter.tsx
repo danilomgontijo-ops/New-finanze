@@ -111,29 +111,44 @@ export const InvoiceImporter: React.FC<InvoiceImporterProps> = ({
           }
 
           const original = (updatedItem.originalDescription || updatedItem.description).trim();
-          let mapping = descriptionMappings[original];
-          
-          if (!mapping) {
-              const lowerOriginal = original.toLowerCase();
-              const foundKey = Object.keys(descriptionMappings).find(k => k.trim().toLowerCase() === lowerOriginal);
-              if (foundKey) mapping = descriptionMappings[foundKey];
+          let mapping: typeof descriptionMappings[string] | undefined = undefined;
+
+          // Helper to check if category is Nathy
+          const isNathy = (catId?: string) => {
+              if (!catId) return false;
+              const cat = categories.find(c => c.id === catId);
+              return cat ? cat.name.toLowerCase().includes('nathy') : false;
+          };
+
+          // 1. Direct exact key match
+          if (descriptionMappings[original]) {
+              mapping = descriptionMappings[original];
           }
 
+          // 2. Case-insensitive exact matches (prioritizing non-nathy category)
           if (!mapping) {
-               const lowerOriginal = original.toLowerCase();
-               const foundKeys = Object.keys(descriptionMappings).filter(k => {
-                   const lowerKey = k.trim().toLowerCase();
-                   return lowerKey.length > 4 && lowerOriginal.includes(lowerKey);
-               });
-               
-               if (foundKeys.length > 0) {
-                   let bestKey = foundKeys.find(k => {
-                       const cat = categories.find(c => c.id === descriptionMappings[k].categoryId);
-                       return cat && cat.name.toLowerCase() !== 'nathy';
-                   });
-                   if (!bestKey) bestKey = foundKeys[0];
-                   mapping = descriptionMappings[bestKey];
-               }
+              const lowerOriginal = original.toLowerCase();
+              const exactCandidates = Object.keys(descriptionMappings).filter(k => k.trim().toLowerCase() === lowerOriginal);
+              if (exactCandidates.length > 0) {
+                  const nonNathyKey = exactCandidates.find(k => !isNathy(descriptionMappings[k]?.categoryId));
+                  mapping = descriptionMappings[nonNathyKey || exactCandidates[0]];
+              }
+          }
+
+          // 3. Substring match (longest key first, strongly prioritizing non-nathy category)
+          if (!mapping) {
+              const lowerOriginal = original.toLowerCase();
+              const foundKeys = Object.keys(descriptionMappings)
+                  .filter(k => {
+                      const lowerKey = k.trim().toLowerCase();
+                      return lowerKey.length >= 3 && lowerOriginal.includes(lowerKey);
+                  })
+                  .sort((a, b) => b.length - a.length); // Most specific (longest) first
+
+              if (foundKeys.length > 0) {
+                  const nonNathyKey = foundKeys.find(k => !isNathy(descriptionMappings[k]?.categoryId));
+                  mapping = descriptionMappings[nonNathyKey || foundKeys[0]];
+              }
           }
           
           if (mapping) {
