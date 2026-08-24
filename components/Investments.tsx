@@ -731,6 +731,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           quantity: 0,
           totalCost: 0,
           totalProventos: 0,
+          remainingProventos: 0,
           totalProventos12m: 0,
           bonusCost: 0,
           realizedProfit: 0,
@@ -758,6 +759,10 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
       if (["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(event)) {
         a.totalProventos += effectiveTxAmount;
+        // `remainingProventos` acompanha proporcionalmente as vendas (igual a
+        // historicalCost) para representar só os proventos atribuíveis à posição
+        // ainda em carteira — ver uso em avgPriceYield.
+        a.remainingProventos = (a.remainingProventos || 0) + effectiveTxAmount;
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         if (tDate >= oneYearAgo) a.totalProventos12m += effectiveTxAmount;
@@ -928,8 +933,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
         a.totalCost -= costOfSold;
 
-        if (a.quantity <= 0.000001) a.historicalCost = 0;
-        else a.historicalCost = a.historicalCost * reductionRatio;
+        if (a.quantity <= 0.000001) {
+          a.historicalCost = 0;
+          a.remainingProventos = 0;
+        } else {
+          a.historicalCost = a.historicalCost * reductionRatio;
+          a.remainingProventos = (a.remainingProventos || 0) * reductionRatio;
+        }
 
         profitMap[t.id] = transactionProfit;
         a.realizedProfit += transactionProfit;
@@ -944,6 +954,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           a.quantity = 0;
           a.totalCost = 0;
           a.historicalCost = 0;
+          a.remainingProventos = 0;
           a.lots = [];
         }
 
@@ -977,6 +988,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
             quantity: 0,
             totalCost: 0,
             totalProventos: 0,
+            remainingProventos: 0,
             totalProventos12m: 0,
             bonusCost: 0,
             realizedProfit: 0,
@@ -998,6 +1010,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
         b.totalCost += a.totalCost;
         b.historicalCost += a.historicalCost;
         b.totalProventos += a.totalProventos;
+        b.remainingProventos = (b.remainingProventos || 0) + (a.remainingProventos || 0);
         b.totalProventos12m += a.totalProventos12m;
         b.bonusCost += a.bonusCost;
         b.realizedProfit += a.realizedProfit;
@@ -1011,6 +1024,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
         a.totalCost = 0;
         a.historicalCost = 0;
         a.totalProventos = 0;
+        a.remainingProventos = 0;
         a.totalProventos12m = 0;
         a.bonusCost = 0;
         a.realizedProfit = 0;
@@ -1304,8 +1318,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
           ...a,
           isFixedIncome,
           avgPriceFiscal: avgPrice,
+          // Usa remainingProventos (proventos já proporcionalmente abatidos nas
+          // vendas), não totalProventos: este último é o total histórico desde
+          // sempre e, após uma venda parcial, ainda inclui proventos recebidos
+          // sobre cotas já vendidas — subtraí-lo do custo só das cotas restantes
+          // inflava artificialmente o "breakeven" (podendo até zerar via Math.max).
           avgPriceYield:
-            a.quantity > 0 ? Math.max(0, (a.totalCost - a.totalProventos) / a.quantity) : 0,
+            a.quantity > 0 ? Math.max(0, (a.totalCost - (a.remainingProventos || 0)) / a.quantity) : 0,
           currentQuote: rawQuote,
           currentPriceBRL: quoteBRL,
           currentTotal,
