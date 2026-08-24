@@ -252,31 +252,6 @@ const ESTIMATED_FIXED_INCOME_TAX_RATE = 0.20;
 // Taxa diária de CDI padrão de fallback caso a consulta online não esteja disponível (equivalente a uma taxa anual estável de 10.75%)
 const FALLBACK_DAILY_CDI_RATE = 0.040168;
 
-// Tabela progressiva de ganho de capital (Lei 13.259/2016), aplicável a ganhos de capital
-// fora da regra de bolsa (ex: criptoativos): 15% / 17,5% / 20% / 22,5% por faixa marginal do ganho.
-const calculateProgressiveCapitalGainsTax = (gain: number): number => {
-  if (gain <= 0) return 0;
-  const brackets = [
-    { limit: 5_000_000, rate: 0.15 },
-    { limit: 10_000_000, rate: 0.175 },
-    { limit: 30_000_000, rate: 0.2 },
-    { limit: Infinity, rate: 0.225 },
-  ];
-  let remaining = gain;
-  let prevLimit = 0;
-  let tax = 0;
-  for (const b of brackets) {
-    const bracketSize = b.limit - prevLimit;
-    const taxableInBracket = Math.min(remaining, bracketSize);
-    if (taxableInBracket <= 0) break;
-    tax += taxableInBracket * b.rate;
-    remaining -= taxableInBracket;
-    prevLimit = b.limit;
-    if (remaining <= 0) break;
-  }
-  return tax;
-};
-
 const getYoCCostBasis = (historicalCost: number, totalCost: number): number => {
   return historicalCost > 0 ? historicalCost : (totalCost > 0 ? totalCost : 0);
 };
@@ -379,13 +354,41 @@ const safeFormatMonthPtBR = (monthStr: string | null | undefined, options?: Intl
   return String(monthStr);
 };
 
+const getIndexerBadgeLabel = (item: any) => {
+  const rateUpper = (item.yieldRate || "").toUpperCase();
+  const tickerUpper = (item.ticker || "").toUpperCase();
+  const catUpper = (item.category || "").toUpperCase();
+  const subCatUpper = (item.subCategory || "").toUpperCase();
+
+  if (rateUpper.includes("PRÉ") || rateUpper.includes("PRE") || rateUpper.includes("FIXO") || tickerUpper.includes("PRÉ") || tickerUpper.includes("PRE")) {
+    return "PRÉ";
+  }
+  if (rateUpper.includes("IPCA") || tickerUpper.includes("IPCA")) {
+    return "IPCA";
+  }
+  if (rateUpper.includes("USD") || rateUpper.includes("DÓLAR") || rateUpper.includes("DOLAR") || item.currency === "USD" || catUpper.includes("EXTERIOR") || subCatUpper.includes("EXTERIOR") || catUpper.includes("INTERNACIONAL")) {
+    if (rateUpper.includes("PRÉ") || rateUpper.includes("PRE")) return "USD PRÉ";
+    return "USD";
+  }
+  if (rateUpper.includes("CDI") || rateUpper.includes("DO CDI") || rateUpper.includes("CDB") || rateUpper.includes("LCI") || rateUpper.includes("LCA")) {
+    return "CDI";
+  }
+  if (rateUpper.includes("SELIC")) {
+    return "SELIC";
+  }
+  if (item.isFixedIncome) {
+    if (rateUpper.includes("POUPA")) return "Poupança";
+    return "PRÉ";
+  }
+  return "Calc";
+};
+
 const calculateRealFixedIncome = (
   principal: number,
   startDateInput: string | Date,
   rateStr: string,
   cdiData: { date: string; value: number }[],
   endDateInput?: string | Date,
-  ipcaData?: { date: string; value: number }[],
 ): number => {
   if (!principal || principal <= 0) return 0;
   if (!rateStr || typeof rateStr !== "string") rateStr = "100% CDI";
@@ -396,32 +399,36 @@ const calculateRealFixedIncome = (
   const upperStr = rateStr.toUpperCase().trim();
   let pctCDI = 0;
   let isCDI = false;
-  let isIPCA = false;
   let fixedRate = 0;
-  let ipcaSpread = 0;
 
   const numbers = upperStr.match(/(\d+(?:[.,]\d+)?)/g);
 
-  // IPCA é verificado primeiro: um título "IPCA+X%" é indexado à inflação, nunca
-  // deve cair no ramo de taxa prefixada nem no de %CDI.
-  const hasIpcaExplicit = upperStr.includes("IPCA");
+  const isExplicitCdi =
+    upperStr.includes("CDI") ||
+    upperStr.includes("DO CDI") ||
+    upperStr.includes("SELIC");
+
+  const isPreOrFixed =
+    upperStr.includes("PRÉ") ||
+    upperStr.includes("PRE") ||
+    upperStr.includes("FIXO") ||
+    upperStr.includes("FIXED") ||
+    upperStr.includes("A.A.") ||
+    upperStr.includes("USD") ||
+    upperStr.includes("DÓLAR") ||
+    upperStr.includes("DOLAR");
 
   const hasCdiExplicit =
-    !hasIpcaExplicit &&
-    (upperStr.includes("CDI") ||
-      upperStr.includes("INTER") ||
+    (isExplicitCdi ||
       upperStr.includes("CDB") ||
       upperStr.includes("LCI") ||
       upperStr.includes("LCA") ||
       upperStr.includes("CRI") ||
       upperStr.includes("CRA") ||
-      upperStr.includes("POUPA") ||
-      upperStr.includes("DO CDI"));
+      upperStr.includes("POUPA")) &&
+    !isPreOrFixed;
 
-  if (hasIpcaExplicit) {
-    isIPCA = true;
-    ipcaSpread = numbers && numbers.length > 0 ? parseFloat(numbers[0].replace(",", ".")) : 0;
-  } else if (hasCdiExplicit) {
+  if (hasCdiExplicit) {
     isCDI = true;
     if (upperStr.includes("POUPA")) {
       pctCDI = numbers && numbers.length > 0 ? parseFloat(numbers[0].replace(",", ".")) : 70;
@@ -432,15 +439,14 @@ const calculateRealFixedIncome = (
     }
   } else if (numbers && numbers.length > 0) {
     const val = parseFloat(numbers[0].replace(",", "."));
-    if (val >= 50) {
+    if (val >= 50 && !upperStr.includes("IPCA") && !isPreOrFixed) {
       isCDI = true;
       pctCDI = val;
     } else {
       fixedRate = val;
     }
   } else {
-    isCDI = true;
-    pctCDI = 100;
+    isCDI = false;
   }
 
   if (isCDI) {
@@ -455,23 +461,6 @@ const calculateRealFixedIncome = (
       accumulatedFactor *= dailyFactor;
     }
     return principal * accumulatedFactor;
-  } else if (isIPCA) {
-    const relevantRates = cdiData ? cdiData.filter((d) => d.date >= startIso && d.date <= endIso) : [];
-    const businessDays = relevantRates.length > 0 ? relevantRates.length : Math.ceil(Math.abs(new Date(endIso).getTime() - new Date(startIso).getTime()) / (1000 * 60 * 60 * 24)) * (252 / 365);
-    const years = businessDays / 252;
-
-    // Composição da série real mensal de IPCA (BCB SGS 433) no período do título.
-    const relevantIpca = ipcaData ? ipcaData.filter((d) => d.date >= startIso && d.date <= endIso) : [];
-    let ipcaFactor: number;
-    if (relevantIpca.length > 0) {
-      ipcaFactor = relevantIpca.reduce((acc, m) => acc * (1 + m.value / 100), 1);
-    } else {
-      // Sem série de IPCA disponível para o período: aproxima pela inflação média histórica (~4% a.a.)
-      ipcaFactor = Math.pow(1.04, years);
-    }
-
-    const spreadFactor = Math.pow(1 + ipcaSpread / 100, years);
-    return principal * ipcaFactor * spreadFactor;
   } else {
     const relevantRates = cdiData ? cdiData.filter((d) => d.date >= startIso && d.date <= endIso) : [];
     const businessDays = relevantRates.length > 0 ? relevantRates.length : Math.ceil(Math.abs(new Date(endIso).getTime() - new Date(startIso).getTime()) / (1000 * 60 * 60 * 24)) * (252 / 365);
@@ -788,7 +777,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
           tickerUpper.startsWith("TD:") ||
           tickerUpper.includes("TESOURO") ||
           tickerUpper.includes("CDB") ||
-          tickerUpper.includes("INTER") ||
           tickerUpper.includes("LCI") ||
           tickerUpper.includes("LCA") ||
           tickerUpper.includes("CRI") ||
@@ -815,7 +803,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
               a.yieldRate || lot.yieldRate || "100% CDI",
               cdiHistory,
               t.date,
-              ipcaHistory,
             );
           });
           if (estimatedTotalValue === 0) estimatedTotalValue = a.totalCost;
@@ -854,7 +841,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
               a.yieldRate || lot.yieldRate || "100% CDI",
               cdiHistory,
               t.date,
-              ipcaHistory,
             );
             if (lotCurrentValue <= lot.cost && tax > 0) {
               lotCurrentValue = lot.cost + tax / ESTIMATED_FIXED_INCOME_TAX_RATE;
@@ -913,12 +899,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
           a.lots = [];
         }
 
-        // IRRF/imposto retido na fonte já foi subtraído de `amount` na origem
-        // (TransactionForm calcula amount = bruto - taxas - imposto). Como o custo
-        // de aquisição (costOfSold) é sempre bruto, comparar o valor líquido direto
-        // contra ele subtrai o imposto como se fosse prejuízo do ativo — por isso
-        // somamos `tax` de volta para reconstituir o valor bruto na apuração do lucro.
-        const transactionProfit = effectiveTxAmount + tax - costOfSold;
+        const transactionProfit = effectiveTxAmount - costOfSold;
 
         const previousTotalCost = a.totalCost;
         const reductionRatio =
@@ -1065,7 +1046,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
           tickerUpper.includes("CRI") ||
           tickerUpper.includes("CRA") ||
           tickerUpper.includes("DEBENTURE") ||
-          tickerUpper.includes("INTER") ||
           tickerUpper.includes("TESOURO") ||
           tickerUpper.includes("TD:") ||
           tickerUpper.includes("CDI") ||
@@ -1110,8 +1090,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   lot.date,
                   rateToUse,
                   cdiHistory,
-                  undefined,
-                  ipcaHistory,
                 );
                 calcBal += curVal;
 
@@ -1126,7 +1104,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
                     rateToUse,
                     cdiHistory,
                     yesterdayStr,
-                    ipcaHistory,
                   );
                 } else {
                   todayNetFlow += lot.cost;
@@ -1141,8 +1118,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 startDate,
                 rateToUse,
                 cdiHistory,
-                undefined,
-                ipcaHistory,
               );
               calcYesterday = calculateRealFixedIncome(
                 a.totalCost,
@@ -1150,7 +1125,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 rateToUse,
                 cdiHistory,
                 yesterdayStr,
-                ipcaHistory,
               );
             }
 
@@ -1203,9 +1177,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
         let xtir = 0;
         if (a.cashFlows.length > 0 && currentTotal > 0) {
-          // Fechamento em "hoje" (ou na data da última cotação manual, quando o preço
-          // vem de lá) — nunca estendido para acomodar um fluxo de caixa futuro, senão
-          // o XTIR vira uma projeção em vez do retorno até a data atual.
           let closingDate = new Date();
           if (
             priceObj &&
@@ -1216,6 +1187,10 @@ export const Investments: React.FC<InvestmentsProps> = ({
               m2.date.localeCompare(m1.date),
             );
             closingDate = new Date(sortedH[0].date);
+          }
+          const maxFlowTime = Math.max(...a.cashFlows.map((f: any) => new Date(f.date).getTime()));
+          if (closingDate.getTime() < maxFlowTime) {
+            closingDate = new Date(maxFlowTime);
           }
           const flows = [
             ...a.cashFlows,
@@ -1666,7 +1641,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
       const assetQtyAtStart: Record<string, number> = {};
       const assetRealized: Record<string, number> = {};
-      const assetCostSold: Record<string, number> = {};
       Object.entries(runningAssets).forEach(([ticker, asset]) => {
         assetQtyAtStart[ticker] = asset.qty;
         assetRealized[ticker] = 0;
@@ -1765,61 +1739,42 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
           cumulativeBonusCost += costIncrease;
         } else if (det.event === "SELL") {
-          // `amount` já vem líquido de IRRF (o formulário subtrai o imposto na
-          // origem); somamos de volta para comparar contra um custo/valor sempre
-          // bruto, senão o imposto retido aparece como prejuízo do ativo.
-          const grossAmount = amount + (det.tax || 0);
           const avgPrice = asset.qty > 0 ? asset.cost / asset.qty : 0;
           const costSold = avgPrice * det.quantity;
-          // Custo médio simples (avgPrice*quantity) não serve para renda fixa aqui:
-          // em CDBs/LCIs, `quantity` costuma ser preenchido em "reais" (na compra,
-          // igual ao valor investido; na venda, igual ao valor bruto resgatado), o
-          // que faz costSold coincidir com o próprio valor bruto vendido e zera o
-          // lucro. portfolioData.profitMap já apura isso corretamente por lote,
-          // usando o valor projetado via CDI (calculateRealFixedIncome) — reusamos
-          // esse valor sempre que disponível.
-          const mappedProfit = portfolioData.profitMap[t.id];
-          const profit = mappedProfit !== undefined ? mappedProfit : grossAmount - costSold;
-          // Custo "verdadeiro" derivado do lucro já apurado (grossAmount - profit),
-          // para manter o custo restante do ativo (asset.cost) consistente com o
-          // lucro reportado, em vez de arrastar o erro do custo médio simples.
-          const trueCostSold = mappedProfit !== undefined ? grossAmount - mappedProfit : costSold;
+          const profit = amount - costSold;
           monthRealized += profit;
           cumulativeRealized += profit;
           assetRealized[ticker] = (assetRealized[ticker] || 0) + profit;
-          assetCostSold[ticker] = (assetCostSold[ticker] || 0) + trueCostSold;
           asset.qty -= det.quantity;
-          asset.cost -= trueCostSold;
-          cumulativeInvested -= trueCostSold;
-          monthNetFlow -= grossAmount;
-          monthSales += grossAmount;
-          monthWeightedFlow -= grossAmount * weight;
+          asset.cost -= costSold;
+          cumulativeInvested -= costSold;
+          monthNetFlow -= amount;
+          monthSales += amount;
+          monthWeightedFlow -= amount * weight;
           assetWeightedFlow[ticker] =
-            (assetWeightedFlow[ticker] || 0) - grossAmount * weight;
-          assetSales[ticker] = (assetSales[ticker] || 0) + grossAmount;
+            (assetWeightedFlow[ticker] || 0) - amount * weight;
+          assetSales[ticker] = (assetSales[ticker] || 0) + amount;
           assetSalesQty[ticker] = (assetSalesQty[ticker] || 0) + det.quantity;
           if (asset.qty < 0.000001) {
             asset.qty = 0;
             asset.cost = 0;
           }
         } else if (det.event === "AMORTIZACAO") {
-          const grossAmount = amount + (det.tax || 0);
           const avgPrice = asset.qty > 0 ? asset.cost / asset.qty : 0;
-          const costReduction = Math.min(asset.cost, grossAmount);
-          const profit = grossAmount - costReduction;
+          const costReduction = Math.min(asset.cost, amount);
+          const profit = amount - costReduction;
 
           asset.cost -= costReduction;
           cumulativeInvested -= costReduction;
-          monthNetFlow -= grossAmount;
-          monthSales += grossAmount;
-          monthWeightedFlow -= grossAmount * weight;
+          monthNetFlow -= amount;
+          monthSales += amount;
+          monthWeightedFlow -= amount * weight;
           assetWeightedFlow[ticker] =
-            (assetWeightedFlow[ticker] || 0) - grossAmount * weight;
+            (assetWeightedFlow[ticker] || 0) - amount * weight;
           monthRealized += profit;
           cumulativeRealized += profit;
           assetRealized[ticker] = (assetRealized[ticker] || 0) + profit;
-          assetCostSold[ticker] = (assetCostSold[ticker] || 0) + costReduction;
-          assetSales[ticker] = (assetSales[ticker] || 0) + grossAmount;
+          assetSales[ticker] = (assetSales[ticker] || 0) + amount;
         } else if (
           ["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(det.event)
         ) {
@@ -1935,20 +1890,14 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   asset.yieldRate!,
                   cdiHistory,
                   monthEndUtc,
-                  ipcaHistory,
                 );
               else if (ev === "SELL" || ev === "AMORTIZACAO")
-                // Soma o imposto de volta: `t.amount` já saiu líquido de IRRF do
-                // formulário, mas o valor acumulado (val) é bruto — sem isso, um
-                // resgate total deixaria um resíduo negativo crescendo a CDI em vez
-                // de zerar a posição.
                 val -= calculateRealFixedIncome(
-                  t.amount + (t.investmentDetails?.tax || 0),
+                  t.amount,
                   t.date,
                   asset.yieldRate!,
                   cdiHistory,
                   monthEndUtc,
-                  ipcaHistory,
                 );
             });
           if (val < 0) val = 0;
@@ -2059,14 +2008,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
             }
           });
 
-          // Final sub-period to end of month.
-          // Usa um piso de R$0,01 em vez de "> 0": depois de uma venda total, currentVal
-          // deveria fechar em exatamente zero, mas o arredondamento de ponto flutuante
-          // (valueBeforeTx - amount) costuma deixar um resíduo minúsculo tipo 1e-9. Quando
-          // esse resíduo sobra positivo, a divisão por um valor quase-zero gera um retorno
-          // de ~-100% e zera o twrFactor inteiro — fazendo posições liquidadas mostrarem
-          // TWR -100% por sorte do arredondamento, mesmo com prejuízo real bem menor.
-          if (currentVal > 0.01) {
+          // Final sub-period to end of month
+          if (currentVal > 0) {
             const finalSubPeriodReturn =
               (assetEndValue + dividends - currentVal) / currentVal;
             twrFactor *= 1 + finalSubPeriodReturn;
@@ -2135,7 +2078,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
           netFlow,
           dividends,
           realized: assetRealized[ticker] || 0,
-          realizedCostBasis: assetCostSold[ticker] || 0,
           twr: assetTwr,
           gain: assetGain,
         });
@@ -2204,35 +2146,29 @@ export const Investments: React.FC<InvestmentsProps> = ({
       let monthXtirAnnual = 0;
       let monthXtirMonthly = 0;
       if (cumulativeCashFlows.length > 0) {
+        // Tenta encontrar a data manual mais recente deste mês para maior precisão no XTIR
         let bestEndDate = isCurrentMonth ? now : monthEnd;
+        let latestManualDateMatch: string | null = null;
 
-        // Para o mês corrente, a data de fechamento tem que ser sempre "agora" — igual ao
-        // XTIR do Dashboard (hooks/usePortfolio.ts) — porque monthMarketValue já reflete
-        // cotação ao vivo de hoje. O XTIR mostra o retorno até hoje, não uma estimativa
-        // projetada até o fim do mês.
-        if (!isCurrentMonth) {
-          let latestManualDateMatch: string | null = null;
-
-          assetPrices.forEach((ap) => {
-            if (ap.manualHistory) {
-              const manualInMonth = ap.manualHistory.find(
-                (h) => h.date.substring(0, 7) === monthKey,
-              );
-              if (
-                manualInMonth &&
-                (!latestManualDateMatch ||
-                  manualInMonth.date > latestManualDateMatch)
-              ) {
-                latestManualDateMatch = manualInMonth.date;
-              }
+        assetPrices.forEach((ap) => {
+          if (ap.manualHistory) {
+            const manualInMonth = ap.manualHistory.find(
+              (h) => h.date.substring(0, 7) === monthKey,
+            );
+            if (
+              manualInMonth &&
+              (!latestManualDateMatch ||
+                manualInMonth.date > latestManualDateMatch)
+            ) {
+              latestManualDateMatch = manualInMonth.date;
             }
-          });
-
-          if (latestManualDateMatch) {
-            bestEndDate = new Date(latestManualDateMatch);
-            // Ajusta para o final do dia para bater com o fechamento
-            bestEndDate.setHours(23, 59, 59, 999);
           }
+        });
+
+        if (latestManualDateMatch) {
+          bestEndDate = new Date(latestManualDateMatch);
+          // Ajusta para o final do dia para bater com o fechamento
+          bestEndDate.setHours(23, 59, 59, 999);
         }
 
         const flows = [
@@ -3753,7 +3689,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
       }
       if (commonProfit > 0) monthlyTax += commonProfit * 0.15;
 
-      // --- 4. Crypto Basket (ganho de capital, tabela progressiva, se vendas > 35k/mês) ---
+      // --- 4. Crypto Basket (15% on gain if sales > 35k/month) ---
       const cryptoItems = r.items.filter((i) => i.type === "CRYPTO");
       r.profitCrypto = cryptoItems.reduce((acc, i) => acc + i.profit, 0);
       r.salesCrypto = cryptoItems.reduce(
@@ -3765,16 +3701,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
       if (r.salesCrypto > 35000) {
         taxableCrypto = r.profitCrypto;
       }
-      // Perdas em cripto SÃO compensáveis com ganhos futuros de mesma natureza (RFB)
-      if (taxableCrypto < 0) {
-        accLossCrypto += taxableCrypto;
-        taxableCrypto = 0;
-      } else if (accLossCrypto < 0) {
-        const offset = Math.min(taxableCrypto, Math.abs(accLossCrypto));
-        taxableCrypto -= offset;
-        accLossCrypto += offset;
-      }
-      if (taxableCrypto > 0) monthlyTax += calculateProgressiveCapitalGainsTax(taxableCrypto);
+      // Crypto losses are NOT compensable in Brazil
+      if (taxableCrypto > 0) monthlyTax += taxableCrypto * 0.15;
 
       // --- 5. Exterior Basket (15% flat, no exemption limit since 2024, paid annually) ---
       const exteriorItems = r.items.filter((i) => i.type === "EXTERIOR");
@@ -3799,7 +3727,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
       r.taxExterior = exteriorTax;
       r.accumulatedLossCommon = accLossCommon;
       r.accumulatedLossFII = accLossFII;
-      r.accumulatedLossCrypto = accLossCrypto;
+      r.accumulatedLossCrypto = 0; // Removed, not compensable
       r.accumulatedLossExterior = accLossExterior;
       r.accumulatedLossDayTrade = accLossDayTrade;
     });
@@ -5592,18 +5520,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                               {item.realized !== 0
                                                 ? formatCurrency(item.realized)
                                                 : "-"}
-                                              {item.realized !== 0 &&
-                                                item.realizedCostBasis > 0 && (
-                                                  <span className="text-[10px] ml-1.5 opacity-70">
-                                                    (
-                                                    {(
-                                                      (item.realized /
-                                                        item.realizedCostBasis) *
-                                                      100
-                                                    ).toFixed(2)}
-                                                    %)
-                                                  </span>
-                                                )}
                                             </td>
                                             <td
                                               className={`py-1 text-right font-bold ${item.gain >= 0 ? "text-emerald-600" : "text-rose-600"}`}
@@ -5611,16 +5527,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                               {formatCurrency(item.gain || 0)}
                                               <span className="text-[10px] ml-1.5 opacity-70">
                                                 (
-                                                {(() => {
-                                                  // Posição zerada no mês (venda total): não sobra custo investido
-                                                  // no fim do mês, então a base do % tem que ser o valor que
-                                                  // existia no início do mês — senão o lucro/prejuízo real da
-                                                  // venda aparece sempre como "0,00%".
-                                                  const base = item.invested > 0 ? item.invested : item.startValue;
-                                                  return base > 0
-                                                    ? ((item.gain / base) * 100).toFixed(2)
-                                                    : "0.00";
-                                                })()}
+                                                {item.invested > 0
+                                                  ? (
+                                                      (item.gain /
+                                                        item.invested) *
+                                                      100
+                                                    ).toFixed(2)
+                                                  : "0.00"}
                                                 %)
                                               </span>
                                             </td>
@@ -5959,9 +5872,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                               {item.yieldRate ? (
                                                 <span className="text-[10px] bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-1.5 rounded font-bold border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-0.5">
                                                   <Calculator size={8} />{" "}
-                                                  {item.isFixedIncome
-                                                    ? "CDI"
-                                                    : "Calc"}
+                                                  {getIndexerBadgeLabel(item)}
                                                 </span>
                                               ) : (
                                                 <button

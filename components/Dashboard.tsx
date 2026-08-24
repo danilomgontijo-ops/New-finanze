@@ -18,7 +18,6 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ComposedChart, Line, Legend
 } from 'recharts';
 import { BankLogo, BrandLogo } from './CreditCardManager';
-import { calculateEffectiveDate } from '../utils/dateUtils';
 
 interface DashboardProps {
   cdiHistory?: { date: string; value: number }[];
@@ -102,6 +101,84 @@ const safeFormatPtBR = (dateVal: any, options?: Intl.DateTimeFormatOptions): str
     // fallback
   }
   return String(dateVal || "");
+};
+
+const calculateRealFixedIncome = (principal: number, startDateStr: string, rateStr: string, cdiData: { date: string, value: number }[]): number => {
+    if (!principal || principal <= 0) return 0;
+    if (!rateStr || typeof rateStr !== 'string') rateStr = '100% CDI';
+
+    const startIso = toIsoDateStr(startDateStr);
+    const endIso = new Date().toISOString().split("T")[0];
+
+    const upperStr = rateStr.toUpperCase().trim();
+    let pctCDI = 0;
+    let isCDI = false;
+    let fixedRate = 0;
+
+    const numbers = upperStr.match(/(\d+(?:[.,]\d+)?)/g);
+
+    const isExplicitCdi =
+        upperStr.includes("CDI") ||
+        upperStr.includes("DO CDI") ||
+        upperStr.includes("SELIC");
+
+    const isPreOrFixed =
+        upperStr.includes("PRÉ") ||
+        upperStr.includes("PRE") ||
+        upperStr.includes("FIXO") ||
+        upperStr.includes("FIXED") ||
+        upperStr.includes("A.A.") ||
+        upperStr.includes("USD") ||
+        upperStr.includes("DÓLAR") ||
+        upperStr.includes("DOLAR");
+
+    const hasCdiExplicit =
+        (isExplicitCdi ||
+            upperStr.includes("CDB") ||
+            upperStr.includes("LCI") ||
+            upperStr.includes("LCA") ||
+            upperStr.includes("CRI") ||
+            upperStr.includes("CRA") ||
+            upperStr.includes("POUPA")) &&
+        !isPreOrFixed;
+
+    if (hasCdiExplicit) {
+        isCDI = true;
+        if (upperStr.includes("POUPA")) {
+            pctCDI = numbers && numbers.length > 0 ? parseFloat(numbers[0].replace(",", ".")) : 70;
+        } else if (numbers && numbers.length > 0) {
+            pctCDI = parseFloat(numbers[0].replace(",", "."));
+        } else {
+            pctCDI = 100;
+        }
+    } else if (numbers && numbers.length > 0) {
+        const val = parseFloat(numbers[0].replace(",", "."));
+        if (val >= 50 && !upperStr.includes("IPCA") && !isPreOrFixed) {
+            isCDI = true;
+            pctCDI = val;
+        } else {
+            fixedRate = val;
+        }
+    } else {
+        isCDI = false;
+    }
+
+    if (isCDI) {
+        if (!cdiData || cdiData.length === 0) return principal;
+        const relevantRates = cdiData.filter(d => d.date >= startIso && d.date <= endIso);
+        let accumulatedFactor = 1;
+        for (const day of relevantRates) {
+            const dailyFactor = 1 + ((day.value / 100) * (pctCDI / 100));
+            accumulatedFactor *= dailyFactor;
+        }
+        return principal * accumulatedFactor;
+    } else {
+        const relevantRates = cdiData ? cdiData.filter((d) => d.date >= startIso && d.date <= endIso) : [];
+        const businessDays = relevantRates.length > 0 ? relevantRates.length : Math.ceil(Math.abs(new Date(endIso).getTime() - new Date(startIso).getTime()) / (1000 * 60 * 60 * 24)) * (252 / 365);
+        const years = businessDays / 252;
+        if (fixedRate > 0) return principal * Math.pow(1 + (fixedRate / 100), years);
+    }
+    return principal;
 };
 
 // Robust XIRR Calculation with fallback
@@ -196,6 +273,37 @@ const calculateXIRR = (values: number[], dates: Date[], guess: number = 0.1): nu
   }
 };
 
+function calculateEffectiveDate(t: Transaction, creditCards: CreditCard[], settings: UserSettings): Date {
+    if (t.manualAccountingDate) return new Date(t.manualAccountingDate);
+    const date = new Date(t.date);
+    const dayOfMonth = t.originalDay || date.getUTCDate();
+    const month = date.getUTCMonth();
+    const year = date.getUTCFullYear();
+    const comparisonDate = new Date(year, month, 1, 12, 0, 0);
+    
+    if (t.type === TransactionType.INVESTMENT) {
+        return comparisonDate;
+    }
+    
+    if (t.type === TransactionType.EXPENSE && t.paymentMethod === PaymentMethod.CREDIT_CARD && t.creditCardId) {
+        const card = creditCards.find(c => c.id === t.creditCardId);
+        if (card && dayOfMonth > card.closingDay) {
+            comparisonDate.setMonth(comparisonDate.getMonth() + 1);
+        }
+    } else {
+        const salaryDay = settings.salaryDay || 1;
+        const shift = settings.salaryShift ?? (salaryDay >= 20 ? 1 : 0);
+        const lastDayOfMonth = new Date(comparisonDate.getFullYear(), comparisonDate.getMonth() + 1, 0).getDate();
+        const effectiveSalaryDay = Math.min(salaryDay, lastDayOfMonth);
+
+        if (dayOfMonth >= effectiveSalaryDay) {
+            comparisonDate.setMonth(comparisonDate.getMonth() + shift);
+        } else {
+            comparisonDate.setMonth(comparisonDate.getMonth() + shift - 1);
+        }
+    }
+    return comparisonDate;
+}
 
 const getYearMonthKey = (date: Date) => {
     const y = date.getFullYear();
@@ -240,7 +348,6 @@ const KPICard = ({ title, value, icon: Icon, color, subtext, onClick }: { title:
 
 export const Dashboard = ({
   cdiHistory = [],
-  ipcaHistory = [],
   transactions,
   categories,
   subCategories,
@@ -530,7 +637,7 @@ export const Dashboard = ({
 
   // Investment stats
       // Monthly Pocket Investment Stats
-  const { summary: portfolioSummary, list: portfolioList } = usePortfolioData(transactions, assetPrices, categories, subCategories, cdiHistory, ipcaHistory);
+  const { summary: portfolioSummary, list: portfolioList } = usePortfolioData(transactions, assetPrices, categories, subCategories, cdiHistory);
 
   const investmentStats = useMemo(() => {
     // Sort by totalReturnPct to show real highlights, including fixed income (filter out zero balance/cost)
@@ -1083,54 +1190,40 @@ export const Dashboard = ({
           </div>
         </div>
 
-        {/* RANKING & POOL */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 bg-zinc-900 dark:bg-zinc-950 p-5 rounded-2xl text-white space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Destaques da Carteira (Maior Rentabilidade)</span>
-              <Sparkles size={16} className="text-amber-400" />
-            </div>
+        {/* RANKING DESTAQUES */}
+        <div className="w-full bg-zinc-900 dark:bg-zinc-950 p-5 rounded-2xl text-white space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Destaques da Carteira (Maior Rentabilidade)</span>
+            <Sparkles size={16} className="text-amber-400" />
+          </div>
 
-            {investmentStats.top3.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {investmentStats.top3.map((asset, i) => (
-                  <div key={i} className="bg-white/5 p-3 rounded-xl border border-white/10 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center p-1 shrink-0">
-                        <img src={getAssetIcon(asset.ticker)} className="w-full h-full object-contain" onError={e => e.currentTarget.style.display='none'} />
-                      </div>
-                      <div className="min-w-0">
-                        <span className="font-bold text-sm truncate block">{asset.ticker}</span>
-                        <span className="text-[9px] text-zinc-400 uppercase">#{i+1} da carteira</span>
-                      </div>
+          {investmentStats.top3.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {investmentStats.top3.map((asset, i) => (
+                <div key={i} className="bg-white/5 p-3 rounded-xl border border-white/10 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center p-1 shrink-0">
+                      <img src={getAssetIcon(asset.ticker)} className="w-full h-full object-contain" onError={e => e.currentTarget.style.display='none'} />
                     </div>
-                    <div className="flex flex-col">
-                      <span className={`text-sm font-bold ${asset.totalReturnPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {asset.totalReturnPct > 0 ? '+' : ''}{asset.totalReturnPct.toFixed(2)}%
-                      </span>
-                      <span className="text-[10px] text-zinc-400 font-medium">
-                        {formatCurrency(asset.totalProfit)}
-                      </span>
+                    <div className="min-w-0">
+                      <span className="font-bold text-sm truncate block">{asset.ticker}</span>
+                      <span className="text-[9px] text-zinc-400 uppercase">#{i+1} da carteira</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-zinc-400 italic">Cadastre ativos de investimentos para visualizar a performance detalhada.</p>
-            )}
-          </div>
-
-          <div className="bg-violet-600 p-5 rounded-2xl text-white flex flex-col justify-between space-y-4">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-violet-200 block mb-1">Pool de Reinvestimento</span>
-              <span className="text-2xl font-bold tracking-tight block">{formatCurrency((pocketInvestmentStats.passivePool || 0))}</span>
-              <p className="text-xs text-violet-100/80 mt-1">Soma de dividendos e resgates disponíveis para novos aportes.</p>
+                  <div className="flex flex-col">
+                    <span className={`text-sm font-bold ${asset.totalReturnPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {asset.totalReturnPct > 0 ? '+' : ''}{asset.totalReturnPct.toFixed(2)}%
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-medium">
+                      {formatCurrency(asset.totalProfit)}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="pt-3 border-t border-white/20 flex justify-between items-center text-xs font-bold">
-              <span>Status do Caixa</span>
-              <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">Pronto</span>
-            </div>
-          </div>
+          ) : (
+            <p className="text-xs text-zinc-400 italic">Cadastre ativos de investimentos para visualizar a performance detalhada.</p>
+          )}
         </div>
       </div>
 
