@@ -2021,7 +2021,15 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
           txsInMonth.forEach((t) => {
             const det = t.investmentDetails!;
-            const amount = getTxAmountBrl(t, portfolioData.usdRate);
+            const rawAmount = getTxAmountBrl(t, portfolioData.usdRate);
+            // `rawAmount` já vem líquido de IRRF para SELL/AMORTIZACAO (igual ao resto
+            // do bloco, ver grossAmount acima); somamos o imposto de volta para obter o
+            // preço/valor de mercado bruto — senão o preço implícito da transação fica
+            // subavaliado e distorce o TWR do ativo quando há retenção na venda.
+            const amount =
+              det.event === "SELL" || det.event === "AMORTIZACAO"
+                ? rawAmount + (det.tax || 0)
+                : rawAmount;
 
             if (det.event === "BUY" || det.event === "SELL") {
               const txPrice = det.quantity > 0 ? amount / det.quantity : 0;
@@ -2276,7 +2284,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
         strategyAllocation,
       };
 
-      console.log("dataPoint", {date: dataPoint.date, ibovAccum: dataPoint.ibovAccum, ipcaAccum: dataPoint.ipcaAccum, ibovMonthly: dataPoint.ibovMonthly}); chartData.push(dataPoint);
+      chartData.push(dataPoint);
       tableData.unshift(dataPoint);
       previousMarketValue = monthMarketValue;
     });
