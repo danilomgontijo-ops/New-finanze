@@ -135,6 +135,20 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
       }
     });
 
+    const isNathyCategory = (catId?: string) => {
+      if (!catId) return false;
+      const cat = categories.find(c => c.id === catId);
+      return cat ? cat.name.toLowerCase().includes('nathy') : false;
+    };
+
+    const pickBestMaster = (rules: RuleItem[]) => {
+      const nonNathyWithCat = rules.find(r => r.categoryId && !isNathyCategory(r.categoryId));
+      if (nonNathyWithCat) return nonNathyWithCat;
+      const withCat = rules.find(r => r.categoryId);
+      if (withCat) return withCat;
+      return rules[0];
+    };
+
     // Process exact normalized target groups
     Object.entries(normTargetMap).forEach(([normTarget, group]) => {
       if (group.length > 1) {
@@ -152,7 +166,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
             reason = "Mesmo destino associado a categorias diferentes";
           }
 
-          const master = group[0];
+          const master = pickBestMaster(group);
 
           foundClusters.push({
             id: `norm_target_${normTarget}`,
@@ -175,7 +189,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
         const unvisitedGroup = group.filter(g => !visited.has(g.key));
         if (unvisitedGroup.length > 1) {
           unvisitedGroup.forEach(g => visited.add(g.key));
-          const master = unvisitedGroup[0];
+          const master = pickBestMaster(unvisitedGroup);
 
           foundClusters.push({
             id: `norm_key_${normKey}`,
@@ -215,7 +229,7 @@ export const DuplicateRulesAnalyzerModal: React.FC<DuplicateRulesAnalyzerModalPr
 
       if (matchedGroup.length > 1) {
         matchedGroup.forEach(g => visited.add(g.key));
-        const master = matchedGroup[0];
+        const master = pickBestMaster(matchedGroup);
 
         foundClusters.push({
           id: `fuzzy_${itemA.key}`,

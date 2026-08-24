@@ -252,31 +252,6 @@ const calculateXIRR = (
   }
 };
 
-// Tabela progressiva de ganho de capital (Lei 13.259/2016), aplicável a ganhos de capital
-// fora da regra de bolsa (ex: criptoativos): 15% / 17,5% / 20% / 22,5% por faixa marginal do ganho.
-const calculateProgressiveCapitalGainsTax = (gain: number): number => {
-  if (gain <= 0) return 0;
-  const brackets = [
-    { limit: 5_000_000, rate: 0.15 },
-    { limit: 10_000_000, rate: 0.175 },
-    { limit: 30_000_000, rate: 0.2 },
-    { limit: Infinity, rate: 0.225 },
-  ];
-  let remaining = gain;
-  let prevLimit = 0;
-  let tax = 0;
-  for (const b of brackets) {
-    const bracketSize = b.limit - prevLimit;
-    const taxableInBracket = Math.min(remaining, bracketSize);
-    if (taxableInBracket <= 0) break;
-    tax += taxableInBracket * b.rate;
-    remaining -= taxableInBracket;
-    prevLimit = b.limit;
-    if (remaining <= 0) break;
-  }
-  return tax;
-};
-
 const getYoCCostBasis = (historicalCost: number, totalCost: number): number => {
   return historicalCost > 0 ? historicalCost : (totalCost > 0 ? totalCost : 0);
 };
@@ -349,6 +324,35 @@ const safeFormatMonthPtBR = (monthStr: string | null | undefined, options?: Intl
     // fallback
   }
   return String(monthStr);
+};
+
+const getIndexerBadgeLabel = (item: any) => {
+  const rateUpper = (item.yieldRate || "").toUpperCase();
+  const tickerUpper = (item.ticker || "").toUpperCase();
+  const catUpper = (item.category || "").toUpperCase();
+  const subCatUpper = (item.subCategory || "").toUpperCase();
+
+  if (rateUpper.includes("PRÉ") || rateUpper.includes("PRE") || rateUpper.includes("FIXO") || tickerUpper.includes("PRÉ") || tickerUpper.includes("PRE")) {
+    return "PRÉ";
+  }
+  if (rateUpper.includes("IPCA") || tickerUpper.includes("IPCA")) {
+    return "IPCA";
+  }
+  if (rateUpper.includes("USD") || rateUpper.includes("DÓLAR") || rateUpper.includes("DOLAR") || item.currency === "USD" || catUpper.includes("EXTERIOR") || subCatUpper.includes("EXTERIOR") || catUpper.includes("INTERNACIONAL")) {
+    if (rateUpper.includes("PRÉ") || rateUpper.includes("PRE")) return "USD PRÉ";
+    return "USD";
+  }
+  if (rateUpper.includes("CDI") || rateUpper.includes("DO CDI") || rateUpper.includes("CDB") || rateUpper.includes("LCI") || rateUpper.includes("LCA")) {
+    return "CDI";
+  }
+  if (rateUpper.includes("SELIC")) {
+    return "SELIC";
+  }
+  if (item.isFixedIncome) {
+    if (rateUpper.includes("POUPA")) return "Poupança";
+    return "PRÉ";
+  }
+  return "Calc";
 };
 
 const MultiSelect = ({ options, selected, onChange, placeholder }: any) => {
@@ -458,7 +462,10 @@ export const Investments: React.FC<InvestmentsProps> = ({
     useState("");
   const overviewSearchTerm = globalSearchTerm;
   const setOverviewSearchTerm = setGlobalSearchTerm;
-  const [overviewFilterDate, setOverviewFilterDate] = useState<string | null>(
+  const [overviewFilterStartDate, setOverviewFilterStartDate] = useState<string | null>(
+    null,
+  );
+  const [overviewFilterEndDate, setOverviewFilterEndDate] = useState<string | null>(
     null,
   );
 
@@ -568,7 +575,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
     categories,
     subCategories,
     cdiHistory,
-    ipcaHistory,
     {
       categoryFilters: portfolioCategoryFilters,
       subCategoryFilters: portfolioSubCategoryFilters,
@@ -1125,20 +1131,14 @@ export const Investments: React.FC<InvestmentsProps> = ({
                   asset.yieldRate!,
                   cdiHistory,
                   monthEndUtc,
-                  ipcaHistory,
                 );
               else if (ev === "SELL" || ev === "AMORTIZACAO")
-                // Soma o imposto de volta: `t.amount` já saiu líquido de IRRF do
-                // formulário, mas o valor acumulado (val) é bruto — sem isso, um
-                // resgate total deixaria um resíduo negativo crescendo a CDI em vez
-                // de zerar a posição.
                 val -= calculateRealFixedIncome(
-                  t.amount + (t.investmentDetails?.tax || 0),
+                  t.amount,
                   t.date,
                   asset.yieldRate!,
                   cdiHistory,
                   monthEndUtc,
-                  ipcaHistory,
                 );
             });
           if (val < 0) val = 0;
@@ -1259,14 +1259,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
             }
           });
 
-          // Final sub-period to end of month.
-          // Usa um piso de R$0,01 em vez de "> 0": depois de uma venda total, currentVal
-          // deveria fechar em exatamente zero, mas o arredondamento de ponto flutuante
-          // (valueBeforeTx - amount) costuma deixar um resíduo minúsculo tipo 1e-9. Quando
-          // esse resíduo sobra positivo, a divisão por um valor quase-zero gera um retorno
-          // de ~-100% e zera o twrFactor inteiro — fazendo posições liquidadas mostrarem
-          // TWR -100% por sorte do arredondamento, mesmo com prejuízo real bem menor.
-          if (currentVal > 0.01) {
+          // Final sub-period to end of month
+          if (currentVal > 0) {
             const finalSubPeriodReturn =
               (assetEndValue + dividends - currentVal) / currentVal;
             twrFactor *= 1 + finalSubPeriodReturn;
@@ -1335,7 +1329,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
           netFlow,
           dividends,
           realized: assetRealized[ticker] || 0,
-          realizedCostBasis: assetCostSold[ticker] || 0,
           twr: assetTwr,
           gain: assetGain,
         });
@@ -1404,35 +1397,29 @@ export const Investments: React.FC<InvestmentsProps> = ({
       let monthXtirAnnual = 0;
       let monthXtirMonthly = 0;
       if (cumulativeCashFlows.length > 0) {
+        // Tenta encontrar a data manual mais recente deste mês para maior precisão no XTIR
         let bestEndDate = isCurrentMonth ? now : monthEnd;
+        let latestManualDateMatch: string | null = null;
 
-        // Para o mês corrente, a data de fechamento tem que ser sempre "agora" — igual ao
-        // XTIR do Dashboard (hooks/usePortfolio.ts) — porque monthMarketValue já reflete
-        // cotação ao vivo de hoje. O XTIR mostra o retorno até hoje, não uma estimativa
-        // projetada até o fim do mês.
-        if (!isCurrentMonth) {
-          let latestManualDateMatch: string | null = null;
-
-          assetPrices.forEach((ap) => {
-            if (ap.manualHistory) {
-              const manualInMonth = ap.manualHistory.find(
-                (h) => h.date.substring(0, 7) === monthKey,
-              );
-              if (
-                manualInMonth &&
-                (!latestManualDateMatch ||
-                  manualInMonth.date > latestManualDateMatch)
-              ) {
-                latestManualDateMatch = manualInMonth.date;
-              }
+        assetPrices.forEach((ap) => {
+          if (ap.manualHistory) {
+            const manualInMonth = ap.manualHistory.find(
+              (h) => h.date.substring(0, 7) === monthKey,
+            );
+            if (
+              manualInMonth &&
+              (!latestManualDateMatch ||
+                manualInMonth.date > latestManualDateMatch)
+            ) {
+              latestManualDateMatch = manualInMonth.date;
             }
-          });
-
-          if (latestManualDateMatch) {
-            bestEndDate = new Date(latestManualDateMatch);
-            // Ajusta para o final do dia para bater com o fechamento
-            bestEndDate.setHours(23, 59, 59, 999);
           }
+        });
+
+        if (latestManualDateMatch) {
+          bestEndDate = new Date(latestManualDateMatch);
+          // Ajusta para o final do dia para bater com o fechamento
+          bestEndDate.setHours(23, 59, 59, 999);
         }
 
         const flows = [
@@ -1482,12 +1469,16 @@ export const Investments: React.FC<InvestmentsProps> = ({
     });
 
     const effectiveStartDateRaw =
-      overviewFilterDate !== null
-        ? overviewFilterDate
+      overviewFilterStartDate !== null
+        ? overviewFilterStartDate
         : settings.historyStartDate;
     const effectiveStartDate = effectiveStartDateRaw
       ? effectiveStartDateRaw.slice(0, 7)
       : undefined;
+    const effectiveEndDate = overviewFilterEndDate
+      ? overviewFilterEndDate.slice(0, 7)
+      : undefined;
+
     if (effectiveStartDate && chartData.length > 0) {
       const startIndex = chartData.findIndex(
         (d) => d.fullDate >= effectiveStartDate,
@@ -1512,22 +1503,32 @@ export const Investments: React.FC<InvestmentsProps> = ({
                 : d.cdiAccum,
           };
         });
-
-        tableData = tableData
-          .filter((d) => d.fullDate >= effectiveStartDate)
-          .map((d) => {
-            const originalD = chartData.find((c) => c.fullDate === d.fullDate);
-            if (!originalD) return d;
-            return {
-              ...d,
-              twrAccum: originalD.twrAccum,
-              cdiAccum: originalD.cdiAccum,
-            };
-          });
       } else if (startIndex === -1) {
         chartData = [];
         tableData = [];
       }
+    }
+
+    if (effectiveEndDate && chartData.length > 0) {
+      chartData = chartData.filter((d) => d.fullDate <= effectiveEndDate);
+    }
+
+    if (chartData.length > 0) {
+      const chartFullDates = new Set(chartData.map((c) => c.fullDate));
+      const chartMap = new Map(chartData.map((c) => [c.fullDate, c]));
+      tableData = tableData
+        .filter((d) => chartFullDates.has(d.fullDate))
+        .map((d) => {
+          const cd = chartMap.get(d.fullDate);
+          if (!cd) return d;
+          return {
+            ...d,
+            twrAccum: cd.twrAccum,
+            cdiAccum: cd.cdiAccum,
+          };
+        });
+    } else {
+      tableData = [];
     }
 
     if (chartData.length === 0)
@@ -1928,7 +1929,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
     categories,
     subCategories,
     settings.historyStartDate,
-    overviewFilterDate,
+    overviewFilterStartDate,
+    overviewFilterEndDate,
   ]);
 
   const handleSyncHistory = async (syncType: "all" | "current_month" = "all") => {
@@ -2955,7 +2957,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
       }
       if (commonProfit > 0) monthlyTax += commonProfit * 0.15;
 
-      // --- 4. Crypto Basket (ganho de capital, tabela progressiva, se vendas > 35k/mês) ---
+      // --- 4. Crypto Basket (15% on gain if sales > 35k/month) ---
       const cryptoItems = r.items.filter((i) => i.type === "CRYPTO");
       r.profitCrypto = cryptoItems.reduce((acc, i) => acc + i.profit, 0);
       r.salesCrypto = cryptoItems.reduce(
@@ -2967,16 +2969,8 @@ export const Investments: React.FC<InvestmentsProps> = ({
       if (r.salesCrypto > 35000) {
         taxableCrypto = r.profitCrypto;
       }
-      // Perdas em cripto SÃO compensáveis com ganhos futuros de mesma natureza (RFB)
-      if (taxableCrypto < 0) {
-        accLossCrypto += taxableCrypto;
-        taxableCrypto = 0;
-      } else if (accLossCrypto < 0) {
-        const offset = Math.min(taxableCrypto, Math.abs(accLossCrypto));
-        taxableCrypto -= offset;
-        accLossCrypto += offset;
-      }
-      if (taxableCrypto > 0) monthlyTax += calculateProgressiveCapitalGainsTax(taxableCrypto);
+      // Crypto losses are NOT compensable in Brazil
+      if (taxableCrypto > 0) monthlyTax += taxableCrypto * 0.15;
 
       // --- 5. Exterior Basket (15% flat, no exemption limit since 2024, paid annually) ---
       const exteriorItems = r.items.filter((i) => i.type === "EXTERIOR");
@@ -3001,7 +2995,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
       r.taxExterior = exteriorTax;
       r.accumulatedLossCommon = accLossCommon;
       r.accumulatedLossFII = accLossFII;
-      r.accumulatedLossCrypto = accLossCrypto;
+      r.accumulatedLossCrypto = 0; // Removed, not compensable
       r.accumulatedLossExterior = accLossExterior;
       r.accumulatedLossDayTrade = accLossDayTrade;
     });
@@ -3603,29 +3597,65 @@ export const Investments: React.FC<InvestmentsProps> = ({
 
       {activeTab === "overview" && (
         <div className="space-y-6 animate-in fade-in">
-          <div className="bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2">
-              <Calendar size={14} className="text-gray-600" />
-              <span className="text-xs font-bold text-slate-600 uppercase">
-                Período:
-              </span>
+          <div className="bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm flex flex-wrap gap-3 items-center justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Calendar size={14} className="text-zinc-500" />
+                <span className="text-xs font-bold text-zinc-600 dark:text-zinc-300 uppercase tracking-wider">
+                  Período:
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-zinc-500 font-semibold">De:</span>
+                <input
+                  type="month"
+                  value={
+                    overviewFilterStartDate !== null
+                      ? overviewFilterStartDate
+                      : settings.historyStartDate
+                        ? settings.historyStartDate.slice(0, 7)
+                        : ""
+                  }
+                  onChange={(e) => setOverviewFilterStartDate(e.target.value || null)}
+                  className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 text-xs font-bold rounded-xl px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-blue-500"
+                  title="Mês Inicial (De)"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-zinc-500 font-semibold">Até:</span>
+                <input
+                  type="month"
+                  value={overviewFilterEndDate || ""}
+                  min={
+                    overviewFilterStartDate !== null
+                      ? overviewFilterStartDate
+                      : settings.historyStartDate
+                        ? settings.historyStartDate.slice(0, 7)
+                        : undefined
+                  }
+                  onChange={(e) => setOverviewFilterEndDate(e.target.value || null)}
+                  className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 text-xs font-bold rounded-xl px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-blue-500"
+                  title="Mês Final (Até)"
+                  placeholder="Mês Final"
+                />
+              </div>
+              {(overviewFilterStartDate !== null || overviewFilterEndDate !== null) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOverviewFilterStartDate(null);
+                    setOverviewFilterEndDate(null);
+                  }}
+                  className="text-[11px] font-bold text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 px-2 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  title="Limpar filtro de período"
+                >
+                  Limpar
+                </button>
+              )}
             </div>
-            <input
-              type="month"
-              value={
-                overviewFilterDate !== null
-                  ? overviewFilterDate
-                  : settings.historyStartDate
-                    ? settings.historyStartDate.slice(0, 7)
-                    : ""
-              }
-              onChange={(e) => setOverviewFilterDate(e.target.value)}
-              className="bg-slate-50 border border-zinc-200/60 dark:border-zinc-800/80 text-slate-600 text-[10px] font-bold rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px]"
-              title="Mês Inicial"
-            />
             <button
               onClick={() => setShowDetailedReport(!showDetailedReport)}
-              className={`ml-auto flex items-center gap-2 px-4 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${showDetailedReport ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-zinc-900 text-blue-600 border-blue-200 hover:bg-blue-50 dark:bg-blue-950/60"}`}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold border transition-all ${showDetailedReport ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-zinc-900 text-blue-600 border-blue-200 hover:bg-blue-50 dark:bg-blue-950/60"}`}
             >
               <FileText size={14} />
               {showDetailedReport
@@ -4794,18 +4824,6 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                               {item.realized !== 0
                                                 ? formatCurrency(item.realized)
                                                 : "-"}
-                                              {item.realized !== 0 &&
-                                                item.realizedCostBasis > 0 && (
-                                                  <span className="text-[10px] ml-1.5 opacity-70">
-                                                    (
-                                                    {(
-                                                      (item.realized /
-                                                        item.realizedCostBasis) *
-                                                      100
-                                                    ).toFixed(2)}
-                                                    %)
-                                                  </span>
-                                                )}
                                             </td>
                                             <td
                                               className={`py-1 text-right font-bold ${item.gain >= 0 ? "text-emerald-600" : "text-rose-600"}`}
@@ -4813,16 +4831,13 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                               {formatCurrency(item.gain || 0)}
                                               <span className="text-[10px] ml-1.5 opacity-70">
                                                 (
-                                                {(() => {
-                                                  // Posição zerada no mês (venda total): não sobra custo investido
-                                                  // no fim do mês, então a base do % tem que ser o valor que
-                                                  // existia no início do mês — senão o lucro/prejuízo real da
-                                                  // venda aparece sempre como "0,00%".
-                                                  const base = item.invested > 0 ? item.invested : item.startValue;
-                                                  return base > 0
-                                                    ? ((item.gain / base) * 100).toFixed(2)
-                                                    : "0.00";
-                                                })()}
+                                                {item.invested > 0
+                                                  ? (
+                                                      (item.gain /
+                                                        item.invested) *
+                                                      100
+                                                    ).toFixed(2)
+                                                  : "0.00"}
                                                 %)
                                               </span>
                                             </td>
@@ -5161,9 +5176,7 @@ export const Investments: React.FC<InvestmentsProps> = ({
                                               {item.yieldRate ? (
                                                 <span className="text-[10px] bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-1.5 rounded font-bold border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-0.5">
                                                   <Calculator size={8} />{" "}
-                                                  {item.isFixedIncome
-                                                    ? "CDI"
-                                                    : "Calc"}
+                                                  {getIndexerBadgeLabel(item)}
                                                 </span>
                                               ) : (
                                                 <button

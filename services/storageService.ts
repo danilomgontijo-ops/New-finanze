@@ -279,6 +279,26 @@ export const StorageService = {
     });
   },
 
+  subscribeToMappings: (callback: (data: DescriptionMap) => void) => {
+    try {
+      const userId = getUserId();
+      const docRef = doc(db, "mappings", userId);
+      return onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          callback(docSnap.data() as DescriptionMap);
+        } else {
+          callback({});
+        }
+      }, (error) => {
+        console.error("Error subscribing to mappings:", error);
+        callback({});
+      });
+    } catch (e) {
+      callback({});
+      return () => {};
+    }
+  },
+
   getMappings: async (): Promise<DescriptionMap> => {
       try {
         const userId = getUserId();
@@ -289,7 +309,37 @@ export const StorageService = {
       } catch (e) { return {}; }
   },
 
-  saveMappings: async (newMappings: DescriptionMap) => {
+  loadMappings: async (): Promise<DescriptionMap> => {
+      return StorageService.getMappings();
+  },
+
+  loadAssetHistory: async (): Promise<Record<string, AssetHistory>> => {
+      try {
+        const userId = getUserId();
+        const q = query(collection(db, "assetHistory"), where("userId", "==", userId));
+        const snap = await getDocs(q);
+        const data: Record<string, AssetHistory> = {};
+        snap.docs.forEach(doc => {
+            const h = doc.data() as AssetHistory;
+            data[h.ticker] = h;
+        });
+        return data;
+      } catch (e) { return {}; }
+  },
+
+  saveMappings: async (newMappings: DescriptionMap, merge = true) => {
+      const userId = getUserId();
+      const docRef = doc(db, "mappings", userId);
+      if (merge) {
+        const current = await StorageService.getMappings();
+        const combined = { ...current, ...newMappings };
+        await setDoc(docRef, cleanData(combined));
+      } else {
+        await setDoc(docRef, cleanData(newMappings));
+      }
+  },
+
+  replaceMappings: async (newMappings: DescriptionMap) => {
       const userId = getUserId();
       const docRef = doc(db, "mappings", userId);
       await setDoc(docRef, cleanData(newMappings));
