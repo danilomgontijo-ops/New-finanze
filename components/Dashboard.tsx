@@ -788,13 +788,7 @@ export const Dashboard = ({
       {/* HEADER & NAVIGATOR */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm">
         <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">Dashboard Financeiro</h1>
-            <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-              {monthlyInvestmentsList.length} Aportes no Mês
-            </span>
-          </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Visão consolidada do fluxo de caixa, orçamento e patrimônio.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight">Dashboard Financeiro</h1>
         </div>
 
         <div className="flex items-center gap-2 self-stretch sm:self-auto justify-between sm:justify-end bg-zinc-50 dark:bg-zinc-950 p-1.5 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60">
@@ -830,15 +824,6 @@ export const Dashboard = ({
           value={stats.myIncome} 
           icon={TrendingUp} 
           color="emerald" 
-          subtext={
-            stats.myIncome !== stats.myIncomeForBudget ? (
-              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                {formatCurrency(stats.myIncomeForBudget)} p/ orçamento
-              </span>
-            ) : (
-              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium">Entradas do mês</span>
-            )
-          }
         />
 
         <KPICard 
@@ -846,15 +831,6 @@ export const Dashboard = ({
           value={stats.myExpense} 
           icon={TrendingDown} 
           color="rose" 
-          subtext={
-            stats.myResgateExpense > 0 ? (
-              <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold">
-                ({formatCurrency(stats.myResgateExpense)} cobertos p/ resgates)
-              </span>
-            ) : (
-              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium">Despesas do mês</span>
-            )
-          }
         />
 
         <KPICard 
@@ -979,7 +955,6 @@ export const Dashboard = ({
         <div className="flex justify-between items-center pb-5 mb-6 border-b border-zinc-100 dark:border-zinc-800">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">Planejamento & Orçamento</h2>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">Controle de limites, poupança acumulada e origem dos investimentos.</p>
           </div>
           <div className="hidden sm:flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800/60 px-3 py-1 rounded-full text-xs font-semibold text-zinc-600 dark:text-zinc-300">
             <Target size={14} className="text-blue-500" />
@@ -1081,14 +1056,19 @@ export const Dashboard = ({
 
           {/* COLUNA 3: COMPOSIÇÃO DO APORTE */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 rounded-xl">
-                <Coins size={18} />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 rounded-xl">
+                  <Coins size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Origem dos Aportes</h3>
+                  <span className="text-[10px] text-zinc-400 font-semibold">Total: {formatCurrency(stats.myInvestment)}</span>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Origem dos Aportes</h3>
-                <span className="text-[10px] text-zinc-400 font-semibold">Total: {formatCurrency(stats.myInvestment)}</span>
-              </div>
+              <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-full">
+                {monthlyInvestmentsList.length} {monthlyInvestmentsList.length === 1 ? 'aporte' : 'aportes'}
+              </span>
             </div>
 
             <div className="space-y-2.5 text-xs">
@@ -1144,11 +1124,7 @@ export const Dashboard = ({
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">Gestão de Patrimônio</h2>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">Posição global dos seus ativos, rentabilidade e capital acumulado.</p>
           </div>
-          <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span> Atualizado
-          </span>
         </div>
 
         {/* 4 CARDS DE METRICAS PRINCIPAIS */}
@@ -1227,10 +1203,12 @@ export const Dashboard = ({
         </div>
       </div>
 
-      {/* SEÇÃO 5: CARTÕES & DÉBITO */}
-      {stats.expense > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl sm:rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-5 sm:p-6 shadow-sm space-y-4">
+      {/* SEÇÃO 5: CARTÕES & DÉBITO + PROJEÇÃO DE PARCELAS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* CARD 1: CARTÕES, DÉBITO E TOTAL DE GASTOS */}
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl sm:rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-4">
+          <div className="space-y-4">
+            {/* CABEÇALHO CARTÕES */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-xl">
@@ -1248,100 +1226,156 @@ export const Dashboard = ({
               </div>
             </div>
 
-            <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 max-h-[180px] overflow-y-auto pr-1">
-              {cardData.groupedCredit.map(card => {
-                if (card.total === 0) return null;
-                return (
-                  <div key={card.id} className="flex justify-between items-center py-2 text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <BankLogo bankId={card.icon || 'generic'} className="w-6 h-6 rounded-md shrink-0" />
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-zinc-800 dark:text-zinc-200 truncate">{card.name}</span>
-                        {card.total !== card.myTotal && (
-                          <span className="text-[9px] text-zinc-500 font-medium truncate">Sua parte: {formatCurrency(card.myTotal || 0)}</span>
-                        )}
+            {/* LISTA DOS CARTÕES (sem scrollbar, tudo visível) */}
+            <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+              {cardData.groupedCredit.filter(c => c.total > 0).length > 0 ? (
+                cardData.groupedCredit.map(card => {
+                  if (card.total === 0) return null;
+                  return (
+                    <div key={card.id} className="flex justify-between items-center py-2 text-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <BankLogo bankId={card.icon || 'generic'} className="w-6 h-6 rounded-md shrink-0" />
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold text-zinc-800 dark:text-zinc-200 truncate">{card.name}</span>
+                          {card.total !== card.myTotal && (
+                            <span className="text-[9px] text-zinc-500 font-medium truncate">Sua parte: {formatCurrency(card.myTotal || 0)}</span>
+                          )}
+                        </div>
                       </div>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100 shrink-0">
+                        {formatCurrency((card.total || 0))}
+                      </span>
                     </div>
-                    <span className="font-bold text-zinc-900 dark:text-zinc-100 shrink-0">
-                      {formatCurrency((card.total || 0))}
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <p className="text-xs text-zinc-400 italic py-2">Nenhum gasto em cartão neste mês.</p>
+              )}
             </div>
-          </div>
 
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl sm:rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-4">
-            <div className="flex justify-between items-center">
+            {/* DÉBITO & DINHEIRO SEPARADO POR LINHA */}
+            <div className="pt-3 border-t border-zinc-200/80 dark:border-zinc-800/80 flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-xl">
-                  <Banknote size={18} />
+                <div className="p-1.5 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                  <Banknote size={16} />
                 </div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">Débito & Dinheiro</h3>
+                <div>
+                  <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 block">Débito & Dinheiro</span>
+                  <span className="text-[10px] text-zinc-400">PIX, TED e pagamentos à vista</span>
+                </div>
               </div>
               <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 {formatCurrency((stats.debitTotal || 0))}
               </span>
             </div>
+          </div>
 
-            <div className="p-3 bg-zinc-50 dark:bg-zinc-950 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 text-xs text-zinc-500">
-              Pagamentos diretos em conta corrente e PIX.
+          {/* SOMA DE TODOS OS GASTOS */}
+          <div className="pt-3 border-t border-zinc-200/80 dark:border-zinc-800/80 flex justify-between items-center bg-zinc-50/80 dark:bg-zinc-950/60 -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 p-4 sm:px-6 rounded-b-2xl sm:rounded-b-3xl">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">Total de Gastos</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 font-semibold">Mês</span>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-base font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+                {formatCurrency((stats.expense || 0))}
+              </span>
+              {stats.myExpense !== (stats.totalCredit + stats.debitTotal) && (
+                <span className="text-[10px] text-zinc-500 font-medium">
+                  Geral: {formatCurrency((stats.totalCredit + stats.debitTotal))}
+                </span>
+              )}
             </div>
           </div>
         </div>
-      )}
 
-      {/* SEÇÃO 6: PARCELAS */}
-      {(installmentStats.userInstallmentTotal > 0 || installmentStats.nathyInstallmentTotal > 0) && (
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl sm:rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-5 sm:p-6 shadow-sm space-y-4">
-          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
-            <Sparkles size={14} className="text-blue-500" /> Projeção de Parcelas
-          </h3>
+        {/* CARD 2: PROJEÇÃO DE PARCELAS */}
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl sm:rounded-3xl border border-zinc-200/80 dark:border-zinc-800/80 p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-4">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                  <Sparkles size={18} />
+                </div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-200">Projeção de Parcelas</h3>
+              </div>
+              {projectionScope && (
+                <button 
+                  onClick={() => setProjectionScope(null)}
+                  className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                >
+                  Ver todos
+                </button>
+              )}
+            </div>
 
-          <div className="flex gap-3">
-            {installmentStats.userInstallmentTotal > 0 && (
-              <button 
-                onClick={() => setProjectionScope(projectionScope === 'user' ? null : 'user')} 
-                className={`flex-1 p-3 rounded-xl border text-left transition-colors ${projectionScope === 'user' ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300' : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800'}`}
-              >
-                <span className="text-[10px] font-bold uppercase text-zinc-400 block">Minhas Parcelas</span>
-                <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(installmentStats.userInstallmentTotal)}</span>
-              </button>
-            )}
+            {(installmentStats.userInstallmentTotal > 0 || installmentStats.nathyInstallmentTotal > 0) ? (
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  {installmentStats.userInstallmentTotal > 0 && (
+                    <button 
+                      onClick={() => setProjectionScope(projectionScope === 'user' ? null : 'user')} 
+                      className={`flex-1 p-3 rounded-xl border text-left transition-all ${
+                        projectionScope === 'user' 
+                          ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-400 dark:border-blue-700 shadow-xs ring-1 ring-blue-400' 
+                          : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900'
+                      }`}
+                    >
+                      <span className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400 block">Minhas Parcelas</span>
+                      <span className="text-base font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(installmentStats.userInstallmentTotal)}</span>
+                    </button>
+                  )}
 
-            {installmentStats.nathyInstallmentTotal > 0 && (
-              <button 
-                onClick={() => setProjectionScope(projectionScope === 'nathy' ? null : 'nathy')} 
-                className={`flex-1 p-3 rounded-xl border text-left transition-colors ${projectionScope === 'nathy' ? 'bg-pink-50 dark:bg-pink-950/50 border-pink-300' : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800'}`}
-              >
-                <span className="text-[10px] font-bold uppercase text-zinc-400 block">Parcelas Nathy</span>
-                <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(installmentStats.nathyInstallmentTotal)}</span>
-              </button>
-            )}
-          </div>
+                  {installmentStats.nathyInstallmentTotal > 0 && (
+                    <button 
+                      onClick={() => setProjectionScope(projectionScope === 'nathy' ? null : 'nathy')} 
+                      className={`flex-1 p-3 rounded-xl border text-left transition-all ${
+                        projectionScope === 'nathy' 
+                          ? 'bg-pink-50 dark:bg-pink-950/50 border-pink-400 dark:border-pink-700 shadow-xs ring-1 ring-pink-400' 
+                          : 'bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900'
+                      }`}
+                    >
+                      <span className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400 block">Parcelas Nathy</span>
+                      <span className="text-base font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(installmentStats.nathyInstallmentTotal)}</span>
+                    </button>
+                  )}
+                </div>
 
-          {projectionScope && projectionData.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {projectionData.map((monthData, idx) => (
-                <div key={idx} className="bg-zinc-50 dark:bg-zinc-950 p-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60">
-                  <div className="flex justify-between items-center mb-2 pb-1 border-b border-zinc-200/60 dark:border-zinc-800/60 text-xs font-bold">
-                    <span className="capitalize">{monthData.date.toLocaleDateString('pt-BR', { month: 'long' })}</span>
-                    <span className="text-blue-600">{formatCurrency(monthData.total)}</span>
-                  </div>
-                  <div className="space-y-1 max-h-[100px] overflow-y-auto text-[11px]">
-                    {monthData.items.map((t, tIdx) => (
-                      <div key={tIdx} className="flex justify-between text-zinc-600 dark:text-zinc-400">
-                        <span className="truncate max-w-[120px]">{t.description.replace(/\s\(\d+\/\d+\)$/, '')}</span>
-                        <span className="font-semibold">{t.installmentIndex}/{t.totalInstallments}</span>
+                {projectionScope && projectionData.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {projectionData.map((monthData, idx) => (
+                      <div key={idx} className="bg-zinc-50 dark:bg-zinc-950 p-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 space-y-1.5">
+                        <div className="flex justify-between items-center pb-1 border-b border-zinc-200/60 dark:border-zinc-800/60 text-xs font-bold">
+                          <span className="capitalize text-zinc-700 dark:text-zinc-300">{monthData.date.toLocaleDateString('pt-BR', { month: 'long', year: '2-digit' })}</span>
+                          <span className="text-indigo-600 dark:text-indigo-400">{formatCurrency(monthData.total)}</span>
+                        </div>
+                        <div className="space-y-1 text-[10px]">
+                          {monthData.items.map((t, tIdx) => (
+                            <div key={tIdx} className="flex justify-between text-zinc-600 dark:text-zinc-400">
+                              <span className="truncate max-w-[110px]">{t.description.replace(/\s\(\d+\/\d+\)$/, '')}</span>
+                              <span className="font-semibold text-zinc-800 dark:text-zinc-200">{t.installmentIndex}/{t.totalInstallments}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ) : (
+                  <div className="p-3.5 bg-zinc-50 dark:bg-zinc-950 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 text-xs text-zinc-500 text-center">
+                    {projectionScope 
+                      ? 'Nenhuma parcela futura registrada para este perfil.' 
+                      : 'Selecione um dos perfis acima para visualizar o cronograma das faturas futuras.'}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-6 bg-zinc-50 dark:bg-zinc-950 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 text-xs text-zinc-400 text-center">
+                Nenhuma compra parcelada registrada no período.
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       {/* SEÇÃO 7: ÚLTIMAS MOVIMENTAÇÕES & PROVENTOS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -1357,6 +1391,7 @@ export const Dashboard = ({
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 max-h-[280px] overflow-y-auto pr-1">
             {recentTransactions.map(t => {
               const cat = categories.find(c => c.id === t.categoryId);
+              const catColor = cat?.color || '#3b82f6';
               return (
                 <div 
                   key={t.id} 
@@ -1364,13 +1399,20 @@ export const Dashboard = ({
                   className="py-2.5 flex justify-between items-center hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-xl px-2 cursor-pointer transition-colors"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                    <div 
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white shadow-xs"
+                      style={{ backgroundColor: catColor }}
+                    >
                       <IconRenderer iconName={cat?.icon || 'circle'} size={15} />
                     </div>
                     <div className="min-w-0">
                       <span className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate block">{t.description}</span>
-                      <span className="text-[10px] text-zinc-400 font-medium">
-                        {safeFormatPtBR(t.date, { day: '2-digit', month: '2-digit' })} • {cat?.name}
+                      <span className="text-[10px] font-medium flex items-center gap-1">
+                        <span className="text-zinc-400">{safeFormatPtBR(t.date, { day: '2-digit', month: '2-digit' })}</span>
+                        <span className="text-zinc-400">•</span>
+                        <span className="font-semibold truncate max-w-[140px]" style={{ color: catColor }}>
+                          {cat?.name || 'Sem categoria'}
+                        </span>
                       </span>
                     </div>
                   </div>
