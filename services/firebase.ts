@@ -1,41 +1,46 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
-import config from '../firebase-applet-config.json';
+
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  setPersistence, 
+  browserLocalPersistence, 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInAnonymously, 
+  signOut as firebaseSignOut,
+  onAuthStateChanged
+} from "firebase/auth";
+import type { User } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: config.apiKey,
-  authDomain: config.authDomain,
-  projectId: config.projectId,
-  storageBucket: config.storageBucket,
-  messagingSenderId: config.messagingSenderId,
-  appId: config.appId,
+  apiKey: "AIzaSyBPLTJ6lKVBCUanWfnVMSHK6uiwmTK3FTU",
+  authDomain: "controleorca-3a6f4.firebaseapp.com",
+  projectId: "controleorca-3a6f4",
+  storageBucket: "controleorca-3a6f4.firebasestorage.app",
+  messagingSenderId: "878865042395",
+  appId: "1:878865042395:web:9d9120600e45b298ab35fe",
+  measurementId: "G-WP7X65FVBP"
 };
 
-// Initialize App
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-
-// Initialize Auth with local persistence
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app);
 export const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence).catch((err) => {
-  console.warn('Failed to set Auth persistence:', err);
+export const googleProvider = new GoogleAuthProvider();
+
+// Configura persistência
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error("Erro na persistência:", error);
 });
 
-// Initialize Firestore
-export const db = config.firestoreDatabaseId && config.firestoreDatabaseId !== "(default)"
-  ? getFirestore(app, config.firestoreDatabaseId)
-  : getFirestore(app);
+// Auth Functions
+export const signInGoogle = () => signInWithPopup(auth, googleProvider);
+export const signInEmail = (email: string, pass: string) => signInWithEmailAndPassword(auth, email, pass);
+export const signUpEmail = (email: string, pass: string) => createUserWithEmailAndPassword(auth, email, pass);
+export const signInAnon = () => signInAnonymously(auth);
+export const signOut = () => firebaseSignOut(auth);
 
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration.");
-    }
-  }
-}
-testConnection();
-
-export default app;
-
+export { onAuthStateChanged };
+export type { User };

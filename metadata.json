@@ -1,6 +1,6 @@
 {
-  "name": "tcontrole v3 ",
-  "description": "A comprehensive web application to manage, track, and analyze fiscal demands using Firebase for data storage and Gemini API for intelligent analysis and summarization.",
+  "name": "finanze v2",
+  "description": "A comprehensive personal finance tracker inspired by Organizze. Features expense/income tracking, credit card management, installment handling, and AI-powered financial insights.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

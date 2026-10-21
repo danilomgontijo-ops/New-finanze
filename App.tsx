@@ -1,973 +1,690 @@
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, getDocs, writeBatch } from 'firebase/firestore';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import DOMPurify from 'dompurify';
-import { Demand, Toast as ToastType, AutocompleteOptions, ActivityLogItem } from './types';
-import { FormIcon, XMarkIcon, TceprLogoIcon } from './components/icons';
-import DemandList from './components/DemandList';
-import AlertsSection from './components/AlertsSection';
-import ActivityHistorySection from './components/ActivityHistorySection';
-import ViewDetailsModal from './components/modals/ViewDetailsModal';
-import DemandFormModal from './components/modals/DemandFormModal';
-import SidebarMenu from './components/SidebarMenu';
-import AuthScreen from './components/AuthScreen';
-import UserDataModal from './components/modals/UserDataModal';
-import { auth, db } from './services/firebase';
+import React, { useState, useEffect } from 'react';
+import { onAuthStateChanged, type User, signOut, auth } from './services/firebase';
+import { StorageService, AssetHistory } from './services/storageService';
+import { Transaction, Category, SubCategory, CreditCard, UserSettings, ImportedTransaction, TransactionType, PaymentMethod, AssetPrice } from './types';
+import { Login } from './components/Login';
+import { Dashboard } from './components/Dashboard';
+import { Settings } from './components/Settings';
+import { TransactionForm } from './components/TransactionForm';
+import { InvoiceImporter } from './components/InvoiceImporter';
+import { Analytics } from './components/Analytics';
+import { ReportGenerator } from './components/ReportGenerator';
+import { TransactionsList } from './components/TransactionsList';
+import { Investments } from './components/Investments';
+import { DividendForm } from './components/DividendForm';
+import { BrapiService } from './services/brapiService';
+import { InvestmentBulkImporter } from './components/InvestmentBulkImporter';
+import { AiFinancialAssistantModal } from './components/AiFinancialAssistantModal';
+import { 
+  LayoutDashboard, 
+  PieChart, 
+  Settings as SettingsIcon, 
+  LogOut, 
+  Plus, 
+  Upload, 
+  FileText,
+  Menu,
+  X,
+  List,
+  TrendingUp,
+  Sun,
+  Moon,
+  Wallet,
+  Sparkles,
+  Bot,
+  HelpCircle
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
-import SummarizeModal from './components/modals/SummarizeModal';
-import ConfirmationModal from './components/modals/ConfirmationModal';
-import AnalysisModal from './components/modals/AnalysisModal';
-import DashboardModal from './components/modals/DashboardModal';
-import SavedFindingsModal from './components/modals/SavedFindingsModal';
-import ReportFindingsModal from './components/modals/ReportFindingsModal';
-import FortnightReportModal from './components/modals/FortnightReportModal';
-import { ConcludeNoteModal } from './components/modals/ConcludeNoteModal';
-import Toast from './components/Toast';
-import { debounce, normalizeYear, normalizeForSearch, getCreatedAtMillis } from './utils/helpers';
-import { concludeObservationNote, findNewlyAddedOrLatestNote, diffObservationNotes, parseObservations, getDemandDeadlineInfo, formatIsoInputDate } from './utils/deadlineUtils';
-import { getDemandChangesSummary } from './utils/logUtils';
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 
 const App: React.FC = () => {
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [authInitializing, setAuthInitializing] = useState<boolean>(true);
-    const [demands, setDemands] = useState<Demand[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string>('');
-    const [toasts, setToasts] = useState<ToastType[]>([]);
-    const [editingDemand, setEditingDemand] = useState<Demand | null>(null);
-    const [viewingDemand, setViewingDemand] = useState<Demand | null>(null);
-    const [summarizeModalDemand, setSummarizeModalDemand] = useState<Demand | null>(null);
-    const [deletingDemandId, setDeletingDemandId] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState<string>('');
-    const [searchInputKey, setSearchInputKey] = useState<number>(0);
-    const [selectedYears, setSelectedYears] = useState<string[]>([]);
-    const [selectedMunicipios, setSelectedMunicipios] = useState<string[]>([]);
-    const [selectedTemas, setSelectedTemas] = useState<string[]>([]);
-    const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-    const [deadlineFilter, setDeadlineFilter] = useState<string>('');
-    const [scrollToSummary, setScrollToSummary] = useState<boolean>(false);
-    const [isFormModalOpen, setIsFormModalOpen] = useState<boolean>(false);
-    const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState<boolean>(false);
-    const [isDashboardOpen, setIsDashboardOpen] = useState<boolean>(false);
-    const [isFortnightReportOpen, setIsFortnightReportOpen] = useState<boolean>(false);
-    const [isSavedFindingsOpen, setIsSavedFindingsOpen] = useState<boolean>(false);
-    const [isReportFindingsOpen, setIsReportFindingsOpen] = useState<boolean>(false);
-    const [isUserDataModalOpen, setIsUserDataModalOpen] = useState<boolean>(false);
-    const [concludingNoteTarget, setConcludingNoteTarget] = useState<{ demand: Demand; noteId: string; noteTitle?: string; initialDetails?: string } | null>(null);
-    const [currentPage, setCurrentPage] = useState<number>(1);
-    const [demandsPerPage, setDemandsPerPage] = useState<number>(25);
+  const [user, setUser] = useState<User | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  
+  // Theme State
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
 
-    const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([]);
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+  
+  // Data State
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
+  const [assetPrices, setAssetPrices] = useState<AssetPrice[]>([]); // New state for prices
+  const [assetHistory, setAssetHistory] = useState<Record<string, AssetHistory>>({}); // New state for asset history
+  const [cdiHistory, setCdiHistory] = useState<{ date: string; value: number }[]>([]);
+  const [ipcaHistory, setIpcaHistory] = useState<{ date: string; value: number }[]>([]);
+  const [ibovHistory, setIbovHistory] = useState<{ date: string; value: number }[]>([]);
+  const [hasFetchedCdi, setHasFetchedCdi] = useState(false);
 
-    // Track Auth state changes
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            setCurrentUser(user);
-            setAuthInitializing(false);
-            if (user && db) {
-                try {
-                    await setDoc(doc(db, 'users', user.uid), {
-                        email: user.email,
-                        displayName: user.displayName || '',
-                        lastLoginAt: new Date().toISOString(),
-                    }, { merge: true });
-                } catch (err) {
-                    console.warn('Failed to sync user document:', err);
-                }
-            } else if (!user) {
-                setDemands([]);
-                setIsLoading(false);
-                setActivityLogs([]);
-            }
-        });
-        return () => unsubscribe();
-    }, []);
+  useEffect(() => {
+    if (!hasFetchedCdi) {
+      Promise.all([
+        BrapiService.fetchCdiHistory(),
+        BrapiService.fetchIpcaHistory(),
+        BrapiService.fetchIbovHistory()
+      ]).then(([cdiData, ipcaData, ibovData]) => {
+        setCdiHistory(cdiData);
+        setIpcaHistory(ipcaData);
+        setIbovHistory(ibovData);
+        setHasFetchedCdi(true);
+      })
+    }
+  }, [hasFetchedCdi]);
+  const [settings, setSettings] = useState<UserSettings>({
+    monthlyBudgetPercentage: 80,
+    salaryDay: 1,
+    salaryShift: 0
+  });
+  
+  // Date State
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-    // Load user activity logs when currentUser changes
-    useEffect(() => {
-        if (!currentUser) return;
-        try {
-            const saved = localStorage.getItem(`activity_history_logs_${currentUser.uid}`);
-            setActivityLogs(saved ? JSON.parse(saved) : []);
-        } catch {
-            setActivityLogs([]);
-        }
-    }, [currentUser]);
+  // UI State
+  const [currentView, setCurrentView] = useState<'dashboard' | 'transactions' | 'analytics' | 'investments' | 'settings'>('dashboard');
+  const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
+  const [isDividendFormOpen, setIsDividendFormOpen] = useState(false);
+  const [editingDividend, setEditingDividend] = useState<Transaction | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
-    const addActivityLog = (logItem: Omit<ActivityLogItem, 'id' | 'timestamp'>) => {
-        if (!currentUser) return;
-        const now = new Date();
-        const newLog: ActivityLogItem = {
-            ...logItem,
-            id: `log_${now.getTime()}_${Math.random().toString(36).substring(2, 6)}`,
-            timestamp: now.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
-            isoDate: now.toISOString(),
-        };
-        setActivityLogs(prev => {
-            const updated = [newLog, ...prev].slice(0, 50);
-            try {
-                localStorage.setItem(`activity_history_logs_${currentUser.uid}`, JSON.stringify(updated));
-            } catch (e) {
-                console.error('Failed to save activity log', e);
-            }
-            return updated;
-        });
+  const handleEditTransaction = (t: Transaction) => {
+    if (t.type === TransactionType.INVESTMENT && t.investmentDetails?.event && ['DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(t.investmentDetails.event)) {
+      setEditingDividend(t);
+      setIsDividendFormOpen(true);
+    } else {
+      setEditingTransaction(t);
+      setIsTransactionFormOpen(true);
+    }
+  };
+  const [isImporterOpen, setIsImporterOpen] = useState(false);
+  const [isBulkInvOpen, setIsBulkInvOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isAiAssistantOpen, setIsAiAssistantOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // Auth Listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoadingAuth(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Data Subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubTrans = StorageService.subscribeToTransactions(setTransactions);
+    const unsubCats = StorageService.subscribeToCategories(setCategories);
+    const unsubSubs = StorageService.subscribeToSubCategories(setSubCategories);
+    const unsubCards = StorageService.subscribeToCreditCards(setCreditCards);
+    const unsubSettings = StorageService.subscribeToSettings(setSettings);
+    const unsubPrices = StorageService.subscribeToAssetPrices(setAssetPrices);
+    const unsubHistory = StorageService.subscribeToAssetHistory(setAssetHistory);
+
+    return () => {
+      unsubTrans();
+      unsubCats();
+      unsubSubs();
+      unsubCards();
+      unsubSettings();
+      unsubPrices();
+      unsubHistory();
     };
+  }, [user]);
 
-    const handleClearActivityLogs = () => {
-        if (!currentUser) return;
-        setActivityLogs([]);
-        try {
-            localStorage.removeItem(`activity_history_logs_${currentUser.uid}`);
-        } catch (e) {
-            console.error('Failed to clear activity logs', e);
-        }
-        addToast('Histórico de registros limpo.', 'info');
-    };
+  const handleSaveTransaction = async (data: any, mode: 'single' | 'future' | 'all' = 'single') => {
+    const totalValue = data.amount; // Valor Total da Compra (cheio)
+    const installments = data.totalInstallments || 1;
+    const isShared = data.isShared;
 
-    const handleDeleteActivityLog = (logId: string) => {
-        if (!currentUser) return;
-        setActivityLogs(prev => {
-            const updated = prev.filter(item => item.id !== logId);
-            try {
-                localStorage.setItem(`activity_history_logs_${currentUser.uid}`, JSON.stringify(updated));
-            } catch (e) {
-                console.error('Failed to update activity log', e);
-            }
-            return updated;
-        });
-        addToast('Registro removido do histórico.', 'info');
-    };
+    // LÓGICA DE EDIÇÃO ROBUSTA
+    if (editingTransaction) {
+        const wasShared = editingTransaction.isShared || false;
+        const wasInstallments = editingTransaction.totalInstallments || 1;
+        const wasPaymentMethod = editingTransaction.paymentMethod;
+        const wasFixed = !!editingTransaction.isFixed;
+        const isFixedNow = !!data.isFixed;
 
-    // Real-time listener for user-isolated demands
-    useEffect(() => {
-        if (!currentUser || !db) return;
-        setIsLoading(true);
-        const demandsCollectionPath = `users/${currentUser.uid}/demands`;
-        // Do NOT use orderBy in Firestore query: Firestore silently drops any document missing that field!
-        const colRef = collection(db, demandsCollectionPath);
-        const unsubscribe = onSnapshot(colRef, (querySnapshot) => {
-            const demandsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Demand));
-            setDemands(demandsData);
-            setIsLoading(false);
-        }, (err: any) => {
-            console.error('Error fetching demands:', err);
-            setError(`Não foi possível carregar o portfólio de fiscalizações: ${err.message}`);
-            setIsLoading(false);
-        });
-        return () => unsubscribe();
-    }, [currentUser, db]);
+        const structuralChange = 
+            wasShared !== isShared || 
+            wasInstallments !== installments || 
+            wasPaymentMethod !== data.paymentMethod ||
+            wasFixed !== isFixedNow;
 
-    // Deduplication key generator.
-    // Only an explicit identifier (Nº Fiscalização or Nº Processo) can mark two records as the same;
-    // records without identifiers are never considered duplicates of each other.
-    const getDemandDedupKey = (d: Partial<Demand>): string => {
-        const normMun = (d.municipio || '').trim().toLowerCase();
-        // keep "/" and "-" so that e.g. 184/26 and 1842/6 stay distinct; drop spaces, dots and leading zeros
-        const cleanNFisc = (d.nFiscalizacao || '').trim().toLowerCase().replace(/[\s.]/g, '').replace(/^0+/, '');
-        const normAno = normalizeYear(d.ano);
-        if (cleanNFisc && cleanNFisc !== '-' && cleanNFisc !== 'sn' && cleanNFisc !== 'nao') {
-            return `nf_${cleanNFisc}_${normMun || 'unknown'}_${normAno}`;
-        }
-        const cleanProc = (d.numeroProcesso || '').trim().toLowerCase().replace(/[\s.]/g, '');
-        if (cleanProc) {
-            return `proc_${cleanProc}_${normMun || 'unknown'}`;
-        }
-        return `uniq_${d.id || `${Date.now()}_${Math.random()}`}`;
-    };
-
-    // Calculate score for picking the most complete demand among duplicates
-    const getDemandScore = (d: Demand): number => {
-        let score = 0;
-        if (d.resumoRelatorio?.trim()) score += 1000 + d.resumoRelatorio.length;
-        if (d.observacoes?.trim()) score += 500 + d.observacoes.length;
-        if (d.relatorioTextoCompleto?.trim()) score += 200;
-        if (d.relatorioArquivos && d.relatorioArquivos.length > 0) score += 300;
-        if (d.representacaoExterna && (Array.isArray(d.representacaoExterna) ? d.representacaoExterna.length > 0 : !!d.representacaoExterna)) score += 50;
-        if (d.valor) score += 50;
-        if (d.numeroProcesso?.trim()) score += 50;
-        score += Math.min(getCreatedAtMillis(d.createdAt) / 1000000000, 100);
-        return score;
-    };
-
-    // Deduplicated demands in-memory
-    const deduplicatedDemands = useMemo<Demand[]>(() => {
-        const groups = new Map<string, Demand[]>();
-        demands.forEach(d => {
-            const key = getDemandDedupKey(d);
-            if (!groups.has(key)) groups.set(key, []);
-            groups.get(key)!.push(d);
-        });
-
-        const result: Demand[] = [];
-        groups.forEach(groupDemands => {
-            if (groupDemands.length === 1) {
-                result.push(groupDemands[0]);
-            } else {
-                const sorted = [...groupDemands].sort((a, b) => getDemandScore(b) - getDemandScore(a));
-                result.push(sorted[0]);
-            }
-        });
-        return result;
-    }, [demands]);
-
-    const duplicateDocsCount = Math.max(0, demands.length - deduplicatedDemands.length);
-    const isCleaningDuplicatesRef = useRef<boolean>(false);
-
-    // Database deduplication cleanup handler with batch operations
-    const handleRemoveDuplicates = async (silent: boolean = false) => {
-        if (!currentUser || !db || isCleaningDuplicatesRef.current) return;
-        isCleaningDuplicatesRef.current = true;
-        try {
-            const groups = new Map<string, Demand[]>();
-            demands.forEach(d => {
-                const key = getDemandDedupKey(d);
-                if (!groups.has(key)) groups.set(key, []);
-                groups.get(key)!.push(d);
-            });
-
-            const idsToDelete: string[] = [];
-            groups.forEach(groupDemands => {
-                if (groupDemands.length > 1) {
-                    const sorted = [...groupDemands].sort((a, b) => getDemandScore(b) - getDemandScore(a));
-                    sorted.slice(1).forEach(dup => {
-                        if (dup.id) idsToDelete.push(dup.id);
-                    });
-                }
-            });
-
-            if (idsToDelete.length === 0) {
-                if (!silent) addToast('Nenhuma fiscalização duplicada encontrada no banco.', 'info');
-                return;
-            }
-
-            // Delete in Firestore batches (max 400 operations per batch)
-            const BATCH_SIZE = 400;
-            for (let i = 0; i < idsToDelete.length; i += BATCH_SIZE) {
-                const chunk = idsToDelete.slice(i, i + BATCH_SIZE);
-                const batch = writeBatch(db);
-                chunk.forEach(id => {
-                    batch.delete(doc(db, `users/${currentUser.uid}/demands/${id}`));
-                });
-                await batch.commit();
-            }
-
-            addActivityLog({
-                demandId: 'dedup',
-                municipio: 'Geral',
-                actionType: 'exclusao_fiscalizacao',
-                title: `Remoção de ${idsToDelete.length} Duplicidades`,
-                details: `Foram removidas ${idsToDelete.length} fiscalizações duplicadas do banco de dados para garantir a integridade dos dados.`,
-            });
-            if (!silent) {
-                addToast(`${idsToDelete.length} fiscalizações duplicadas foram removidas com sucesso!`, 'success');
-            }
-        } catch (e: any) {
-            console.error('Error removing duplicates:', e);
-            if (!silent) addToast(`Erro ao remover duplicidades: ${e.message}`, 'error');
-        } finally {
-            isCleaningDuplicatesRef.current = false;
-        }
-    };
-
-    const toastIdRef = useRef<number>(0);
-    const addToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-        // Sequential id: Date.now() collides when two toasts are created in the same millisecond
-        const id = ++toastIdRef.current;
-        setToasts((prev) => [...prev, { id, message, type }]);
-    };
-
-    const removeToast = (id: number) => {
-        setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    };
-
-    const handleSignOut = async () => {
-        try {
-            await signOut(auth);
-            addToast('Sessão encerrada com sucesso.', 'info');
-        } catch (e: any) {
-            addToast(`Erro ao encerrar sessão: ${e.message}`, 'error');
-        }
-    };
-
-    const handleAddDemand = async (demandData: Omit<Demand, 'id' | 'createdAt'>) => {
-        if (!db || !currentUser) return;
-        try {
-            const sanitizedObservacoes = DOMPurify.sanitize(demandData.observacoes || '');
-            const newKey = getDemandDedupKey(demandData);
-
-            // Prevent duplicate creation without overwriting the existing record: keep the form open
-            const existingDemand = demands.find(d => getDemandDedupKey(d) === newKey);
-            if (existingDemand) {
-                addToast(`Já existe uma fiscalização com este número em ${existingDemand.municipio} (${existingDemand.ano}). Edite o registro existente.`, 'error');
-                return;
-            }
-
-            const docRef = await addDoc(collection(db, `users/${currentUser.uid}/demands`), {
-                ...demandData,
-                observacoes: sanitizedObservacoes,
-                createdAt: new Date(),
-            });
-            setIsFormModalOpen(false);
-
-            addActivityLog({
-                demandId: docRef.id,
-                municipio: demandData.municipio,
-                nFiscalizacao: demandData.nFiscalizacao,
-                ano: demandData.ano,
-                status: demandData.status,
-                actionType: 'cadastrada',
-                title: 'Nova Fiscalização Cadastrada',
-                details: sanitizedObservacoes ? findNewlyAddedOrLatestNote(sanitizedObservacoes) : undefined
-            });
-
-            addToast('Fiscalização cadastrada com sucesso!');
-        } catch (e: any) {
-            setError(`Erro ao cadastrar fiscalização: ${e.message}`);
-            addToast('Falha ao adicionar fiscalização.', 'error');
-        }
-    };
-
-    const handleUpdateDemand = async (demandData: Demand) => {
-        if (!db || !editingDemand || !currentUser) return;
-        try {
-            const { id, ...dataToUpdate } = demandData;
-            dataToUpdate.observacoes = DOMPurify.sanitize(dataToUpdate.observacoes || '');
-            await updateDoc(doc(db, `users/${currentUser.uid}/demands/${editingDemand.id}`), dataToUpdate);
-
-            const diff = diffObservationNotes(editingDemand.observacoes, dataToUpdate.observacoes);
-
-            if (diff.addedNotes.length > 0) {
-                diff.addedNotes.forEach(note => {
-                    addActivityLog({
-                        demandId: editingDemand.id,
-                        municipio: dataToUpdate.municipio || editingDemand.municipio,
-                        nFiscalizacao: dataToUpdate.nFiscalizacao || editingDemand.nFiscalizacao,
-                        ano: dataToUpdate.ano || editingDemand.ano,
-                        status: dataToUpdate.status || editingDemand.status,
-                        actionType: 'inclusao_nota',
-                        title: `Inclusão de Nota: "${note.title}" (${note.dateStr})`,
-                        details: note.rawBlockHtml
-                    });
-                });
-            }
-
-            if (diff.removedNotes.length > 0) {
-                diff.removedNotes.forEach(note => {
-                    addActivityLog({
-                        demandId: editingDemand.id,
-                        municipio: dataToUpdate.municipio || editingDemand.municipio,
-                        nFiscalizacao: dataToUpdate.nFiscalizacao || editingDemand.nFiscalizacao,
-                        ano: dataToUpdate.ano || editingDemand.ano,
-                        status: dataToUpdate.status || editingDemand.status,
-                        actionType: 'exclusao_nota',
-                        title: `Exclusão de Nota: "${note.title}" (${note.dateStr})`,
-                        details: `<p class="text-rose-300">Nota excluída/removida: <strong>${note.title}</strong> (${note.dateStr})</p>`
-                    });
-                });
-            }
-
-            const fieldSummary = getDemandChangesSummary(editingDemand, { id: editingDemand.id, ...dataToUpdate } as Demand);
-
-            if (fieldSummary.hasChanges) {
-                addActivityLog({
-                    demandId: editingDemand.id,
-                    municipio: dataToUpdate.municipio || editingDemand.municipio,
-                    nFiscalizacao: dataToUpdate.nFiscalizacao || editingDemand.nFiscalizacao,
-                    ano: dataToUpdate.ano || editingDemand.ano,
-                    status: dataToUpdate.status || editingDemand.status,
-                    actionType: 'atualizada',
-                    title: fieldSummary.title,
-                    details: fieldSummary.details,
-                });
-            } else if (diff.addedNotes.length === 0 && diff.removedNotes.length === 0) {
-                addActivityLog({
-                    demandId: editingDemand.id,
-                    municipio: dataToUpdate.municipio || editingDemand.municipio,
-                    nFiscalizacao: dataToUpdate.nFiscalizacao || editingDemand.nFiscalizacao,
-                    ano: dataToUpdate.ano || editingDemand.ano,
-                    status: dataToUpdate.status || editingDemand.status,
-                    actionType: 'atualizada',
-                    title: 'Dados da Fiscalização Atualizados',
-                });
-            }
-
-            setEditingDemand(null);
-            setIsFormModalOpen(false);
-            addToast('Fiscalização atualizada com sucesso!');
-        } catch (e: any) {
-            setError(`Erro ao atualizar fiscalização: ${e.message}`);
-            addToast('Falha ao atualizar fiscalização.', 'error');
-        }
-    };
-
-    const handleConcludeNote = (demand: Demand, noteId: string, noteTitle?: string) => {
-        const notes = parseObservations(demand.observacoes);
-        const targetNote = notes.find((n) => n.id === noteId);
-        const initialDetails = targetNote?.bodyHtml || '';
-        setConcludingNoteTarget({
-            demand,
-            noteId,
-            noteTitle: noteTitle || targetNote?.title || '',
-            initialDetails
-        });
-    };
-
-    const handleConfirmConcludeNote = async (concludedDateStr: string, detailsHtml?: string) => {
-        if (!concludingNoteTarget || !db || !currentUser) return;
-        const { demand, noteId, noteTitle } = concludingNoteTarget;
-        try {
-            const updatedHtml = concludeObservationNote(demand.observacoes || '', noteId, concludedDateStr, detailsHtml);
-            setDemands((prevDemands) =>
-                prevDemands.map((d) => (d.id === demand.id ? { ...d, observacoes: updatedHtml } : d))
-            );
-            await updateDoc(doc(db, `users/${currentUser.uid}/demands/${demand.id}`), { observacoes: updatedHtml });
+        if (structuralChange) {
+            console.log("Structural change detected, recreating transaction series");
+            // Se mudou a estrutura (ex: era parcelado e virou à vista), apaga tudo antigo e recria
+            await StorageService.deleteTransaction(editingTransaction.id, 'all');
+            data.id = undefined; 
+        } 
+        else {
+            console.log("Simple edit detected, updating with mode:", mode);
             
-            if (viewingDemand && viewingDemand.id === demand.id) {
-                setViewingDemand(prev => prev ? { ...prev, observacoes: updatedHtml } : null);
-            }
-
-            const plainDetails = detailsHtml ? detailsHtml.replace(/<[^>]*>/g, '').trim() : '';
-            addActivityLog({
-                demandId: demand.id,
-                municipio: demand.municipio,
-                nFiscalizacao: demand.nFiscalizacao,
-                ano: demand.ano,
-                status: demand.status,
-                actionType: 'conclusao_nota',
-                title: `Nota Concluída (${concludedDateStr})`,
-                details: plainDetails
-                    ? `Nota "${noteTitle || 'Observação'}" concluída em ${concludedDateStr}. Detalhes: ${plainDetails.slice(0, 120)}${plainDetails.length > 120 ? '...' : ''}`
-                    : `Nota "${noteTitle || 'Observação'}" da fiscalização do município de ${demand.municipio} (${demand.ano}) marcada como concluída em ${concludedDateStr}.`
-            });
-
-            addToast(`Nota concluída com data de ${concludedDateStr}!`);
-        } catch (e: any) {
-            addToast(`Erro ao concluir nota: ${e.message}`, 'error');
-        } finally {
-            setConcludingNoteTarget(null);
-        }
-    };
-
-    const handleDeleteDemand = async (demandId: string) => {
-        if (!db || !demandId || !currentUser) return;
-        try {
-            const target = demands.find(d => d.id === demandId);
-            await deleteDoc(doc(db, `users/${currentUser.uid}/demands/${demandId}`));
-
-            if (target) {
-                addActivityLog({
-                    demandId: demandId,
-                    municipio: target.municipio,
-                    nFiscalizacao: target.nFiscalizacao,
-                    ano: target.ano,
-                    status: target.status,
-                    actionType: 'exclusao_fiscalizacao',
-                    title: `Fiscalização Excluída (${target.municipio})`,
-                    details: `<p class="text-rose-300">Ação fiscalizatória do município de <strong>${target.municipio} (${target.ano})</strong> foi removida do sistema.</p>`
-                });
-            }
-
-            setDeletingDemandId(null);
-            addToast('Fiscalização removida com sucesso!');
-        } catch (e: any) {
-            setError(`Erro ao remover fiscalização: ${e.message}`);
-            addToast('Falha ao excluir fiscalização.', 'error');
-        }
-    };
-
-    const handleExportDemands = async () => {
-        try {
-            let savedFindings: any[] = [];
-            let savedConsultations: any[] = [];
+            // O valor que vem do form (data.amount) é o TOTAL da compra.
+            // Precisamos calcular o valor da parcela individual para salvar no banco.
+            let baseTotal = isShared ? totalValue / 2 : totalValue;
+            let finalInstallmentValue = baseTotal;
             
-            if (db && currentUser) {
-                try {
-                    const findingsSnap = await getDocs(collection(db, `users/${currentUser.uid}/saved_findings`));
-                    savedFindings = findingsSnap.docs.map(d => d.data());
-                    
-                    const consultationsSnap = await getDocs(collection(db, `users/${currentUser.uid}/saved_consultations`));
-                    savedConsultations = consultationsSnap.docs.map(d => d.data());
-                } catch (e) {
-                    console.warn("Could not fetch additional data for export", e);
+            if (installments > 1) {
+                finalInstallmentValue = baseTotal / installments;
+            }
+
+            await StorageService.updateTransaction({ 
+                ...editingTransaction, 
+                ...data, 
+                amount: finalInstallmentValue, 
+                id: editingTransaction.id 
+            }, mode);
+
+            // Sincroniza a categoria/subcategoria em todos os lançamentos do mesmo ticker caso o usuário tenha alterado
+            const isInv = (data.type === TransactionType.INVESTMENT) || (editingTransaction.type === TransactionType.INVESTMENT);
+            const ticker = (data.investmentDetails?.ticker || editingTransaction.investmentDetails?.ticker)?.trim().toUpperCase();
+            const categoryChanged = data.categoryId && (data.categoryId !== editingTransaction.categoryId || data.subCategoryId !== editingTransaction.subCategoryId);
+            
+            if (isInv && ticker && categoryChanged) {
+                const sameTickerTxs = transactions.filter(
+                    tx => tx.id !== editingTransaction.id &&
+                          tx.type === TransactionType.INVESTMENT &&
+                          tx.investmentDetails?.ticker?.trim().toUpperCase() === ticker
+                );
+                if (sameTickerTxs.length > 0) {
+                    await Promise.all(
+                        sameTickerTxs.map(tx => StorageService.updateTransaction({
+                            ...tx,
+                            categoryId: data.categoryId,
+                            subCategoryId: data.subCategoryId || null
+                        }, 'single'))
+                    );
                 }
             }
-
-            const exportData = {
-                exportDate: new Date().toISOString(),
-                userEmail: currentUser?.email,
-                totalDemands: demands.length,
-                totalSavedFindings: savedFindings.length,
-                totalSavedConsultations: savedConsultations.length,
-                demands: demands.map(({ id, ...rest }) => rest),
-                saved_findings: savedFindings,
-                saved_consultations: savedConsultations
-            };
-            const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(exportData, null, 2))}`;
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute('href', jsonString);
-            const dateStr = formatIsoInputDate();
-            downloadAnchor.setAttribute('download', `fiscalizacoes_tce_${dateStr}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-            addToast('Backup exportado com sucesso!', 'success');
-        } catch (err: any) {
-            addToast(`Erro ao exportar dados: ${err.message}`, 'error');
+            return;
         }
-    };
-
-    const handleImportDemands = async (importData: { demands: Partial<Demand>[]; savedFindings?: any[]; savedConsultations?: any[] }, replaceExisting: boolean) => {
-        if (!db || !currentUser) return;
-
-        const importedCount = importData.demands.length;
-
-        if (replaceExisting) {
-            const existingSnap = await getDocs(collection(db, `users/${currentUser.uid}/demands`));
-            const deletePromises = existingSnap.docs.map((d) => deleteDoc(d.ref));
-            await Promise.all(deletePromises);
-            
-            // Delete existing findings and consultations as well
-            const existingFindingsSnap = await getDocs(collection(db, `users/${currentUser.uid}/saved_findings`));
-            await Promise.all(existingFindingsSnap.docs.map((d) => deleteDoc(d.ref)));
-            
-            const existingConsultationsSnap = await getDocs(collection(db, `users/${currentUser.uid}/saved_consultations`));
-            await Promise.all(existingConsultationsSnap.docs.map((d) => deleteDoc(d.ref)));
-        }
-
-        // Deduplicate the imported items among themselves first
-        const uniqueImportMap = new Map<string, Partial<Demand>>();
-        for (const item of importData.demands) {
-            const key = getDemandDedupKey(item);
-            if (!uniqueImportMap.has(key)) {
-                uniqueImportMap.set(key, item);
-            }
-        }
-
-        const demandsRef = collection(db, `users/${currentUser.uid}/demands`);
-        const existingMap = new Map<string, Demand>();
-        if (!replaceExisting) {
-            demands.forEach(d => {
-                existingMap.set(getDemandDedupKey(d), d);
-            });
-        }
-
-        for (const [key, item] of uniqueImportMap.entries()) {
-            if (!replaceExisting && existingMap.has(key)) {
-                // If already exists, update rather than duplicating
-                const existing = existingMap.get(key)!;
-                if (existing.id) {
-                    await updateDoc(doc(db, `users/${currentUser.uid}/demands/${existing.id}`), {
-                        ...item,
-                        updatedAt: new Date(),
-                    });
-                }
-            } else {
-                await addDoc(demandsRef, {
-                    ...item,
-                    createdAt: new Date(),
-                });
-            }
-        }
-        
-        if (importData.savedFindings?.length) {
-             const findingsRef = collection(db, `users/${currentUser.uid}/saved_findings`);
-             for (const item of importData.savedFindings) {
-                 await addDoc(findingsRef, {
-                     ...item,
-                     createdAtDoc: new Date(),
-                 });
-             }
-        }
-        
-        if (importData.savedConsultations?.length) {
-             const consultationsRef = collection(db, `users/${currentUser.uid}/saved_consultations`);
-             for (const item of importData.savedConsultations) {
-                 await addDoc(consultationsRef, {
-                     ...item,
-                     createdAtDoc: new Date(),
-                 });
-             }
-        }
-
-        addActivityLog({
-            demandId: 'import',
-            municipio: 'Diversos',
-            actionType: 'edicao_fiscalizacao',
-            title: `Importação JSON (${importedCount} registros)`,
-            details: `Foram importadas ${importedCount} fiscalizações via arquivo JSON (${replaceExisting ? 'substituindo dados anteriores' : 'adicionadas com deduplicação aos dados existentes'}).`,
-        });
-    };
-
-    const handleClearAllDemands = async () => {
-        if (!db || !currentUser) return;
-
-        const existingSnap = await getDocs(collection(db, `users/${currentUser.uid}/demands`));
-        const deletePromises = existingSnap.docs.map((d) => deleteDoc(d.ref));
-        await Promise.all(deletePromises);
-
-        addActivityLog({
-            demandId: 'clear_all',
-            municipio: 'Geral',
-            actionType: 'exclusao_fiscalizacao',
-            title: 'Exclusão Total de Fiscalizações',
-            details: 'Todas as fiscalizações cadastradas para este usuário foram excluídas.',
-        });
-    };
-
-    const handleEditClick = (demand: Demand) => {
-        setEditingDemand(demand);
-        setIsFormModalOpen(true);
-    };
-
-    const handleViewClick = (demand: Demand, options: { scrollToSummary?: boolean } = {}) => {
-        setViewingDemand(demand);
-        setScrollToSummary(!!options.scrollToSummary);
-    };
-    
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const debouncedSetSearchTerm = useCallback(
-        debounce((value: string) => {
-            setSearchTerm(value);
-            setCurrentPage(1);
-        }, 300),
-        []
-    );
-
-    const sortedAndFilteredDemands = useMemo(() => {
-        const statusOrder = ['Fiscalização em Curso', 'Aguardando Manifestação', 'Pendente', 'Concluído', 'Revogado', 'Suspenso', 'Sem Fiscalização'];
-        let filtered = deduplicatedDemands;
-
-        // Apply textual search safely across relevant fields with accent & format flexibility
-        if (searchTerm.trim()) {
-            const rawTerm = searchTerm.trim();
-            const normTerm = normalizeForSearch(rawTerm);
-            const termWords = normTerm.split(/\s+/).filter(Boolean);
-
-            filtered = filtered.filter(demand => {
-                const rawObs = (demand.observacoes || '').replace(/<[^>]*>/g, ' ');
-                const rawResumo = (demand.resumoRelatorio || '').replace(/<[^>]*>/g, ' ');
-                const normAno = normalizeYear(demand.ano);
-                
-                const searchableText = normalizeForSearch([
-                    demand.nFiscalizacao,
-                    demand.nFiscalizacao ? demand.nFiscalizacao.replace(/\//g, ' ') : '',
-                    demand.municipio,
-                    demand.tema,
-                    demand.status,
-                    demand.ano,
-                    normAno,
-                    normAno === '2026' ? '026 26' : '',
-                    demand.modalidade,
-                    demand.observacoes,
-                    rawObs,
-                    rawResumo,
-                    demand.relatorioNomeArquivo,
-                    demand.numeroProcesso,
-                    Array.isArray(demand.representacaoExterna) ? demand.representacaoExterna.join(' ') : demand.representacaoExterna
-                ].filter(Boolean).join(' '));
-
-                return termWords.every(word => {
-                    if (searchableText.includes(word)) return true;
-                    // Special case for year abbreviations
-                    if (word === '026' && (searchableText.includes('2026') || normAno === '2026')) return true;
-                    if (word === '2026' && (searchableText.includes('026') || normAno === '2026')) return true;
-                    const noSlashWord = word.replace(/\//g, '');
-                    if (noSlashWord && searchableText.replace(/\//g, '').includes(noSlashWord)) return true;
-                    return false;
-                });
-            });
-        }
-
-        // Apply dropdown multi-select filters with normalized comparisons
-        if (selectedYears.length > 0) {
-            filtered = filtered.filter(demand => {
-                const normY = normalizeYear(demand.ano);
-                return selectedYears.some(sy => normalizeYear(sy) === normY);
-            });
-        }
-        if (selectedMunicipios.length > 0) {
-            filtered = filtered.filter(demand => {
-                const normM = (demand.municipio || '').trim().toLowerCase();
-                return selectedMunicipios.some(sm => sm.trim().toLowerCase() === normM);
-            });
-        }
-        if (selectedTemas.length > 0) {
-            filtered = filtered.filter(demand => {
-                const normT = (demand.tema || 'Não Classificado').trim().toLowerCase();
-                return selectedTemas.some(st => st.trim().toLowerCase() === normT);
-            });
-        }
-        if (selectedStatuses.length > 0) {
-            filtered = filtered.filter(demand => {
-                const normS = (demand.status || '').trim().toLowerCase();
-                return selectedStatuses.some(ss => ss.trim().toLowerCase() === normS);
-            });
-        }
-
-        // Apply deadline alert filter before pagination so all matching records are found
-        if (deadlineFilter) {
-            filtered = filtered.filter(d => {
-                const info = getDemandDeadlineInfo(d);
-                return info.status === deadlineFilter;
-            });
-        }
-
-        // Copy before sorting: when no filter is active, "filtered" is the memoized deduplicatedDemands array
-        return [...filtered].sort((a, b) => {
-            const yearA = Number(normalizeYear(a.ano)) || 0;
-            const yearB = Number(normalizeYear(b.ano)) || 0;
-            if (yearA !== yearB) return yearB - yearA;
-            
-            const indexA = statusOrder.indexOf(a.status);
-            const indexB = statusOrder.indexOf(b.status);
-            if (indexA !== indexB) return indexA - indexB;
-            
-            return getCreatedAtMillis(b.createdAt) - getCreatedAtMillis(a.createdAt);
-        });
-    }, [deduplicatedDemands, searchTerm, selectedYears, selectedMunicipios, selectedTemas, selectedStatuses, deadlineFilter]);
-
-    const deadlineCounts = useMemo(() => {
-        let critical = 0;
-        let warning = 0;
-        let normal = 0;
-        deduplicatedDemands.forEach(d => {
-            const info = getDemandDeadlineInfo(d);
-            if (info.status === 'critical') critical++;
-            else if (info.status === 'warning') warning++;
-            else if (info.status === 'normal') normal++;
-        });
-        return { critical, warning, normal };
-    }, [deduplicatedDemands]);
-
-    const filterOptions = useMemo(() => {
-        const years = [...new Set(deduplicatedDemands?.map(d => normalizeYear(d.ano)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
-        const municipios = [...new Set(deduplicatedDemands?.map(d => d.municipio?.trim()).filter(Boolean))].sort((a, b) => (a || '').localeCompare(b || ''));
-        const temas = [...new Set(deduplicatedDemands?.map(d => d.tema?.trim()).filter(Boolean))].sort((a, b) => (a || '').localeCompare(b || ''));
-        const statuses = ['Pendente', 'Fiscalização em Curso', 'Aguardando Manifestação', 'Sem Fiscalização', 'Concluído', 'Suspenso', 'Revogado'];
-        return { years, municipios, temas, statuses };
-    }, [deduplicatedDemands]);
-
-    const handleClearFilters = useCallback(() => {
-        setSelectedYears([]);
-        setSelectedMunicipios([]);
-        setSelectedTemas([]);
-        setSelectedStatuses([]);
-        setDeadlineFilter('');
-        setSearchTerm('');
-        setSearchInputKey(k => k + 1);
-        setCurrentPage(1);
-    }, []);
-
-    const paginatedDemands = useMemo(() => {
-        if (demandsPerPage === -1) return sortedAndFilteredDemands;
-        const startIndex = (currentPage - 1) * demandsPerPage;
-        return sortedAndFilteredDemands.slice(startIndex, startIndex + demandsPerPage);
-    }, [sortedAndFilteredDemands, currentPage, demandsPerPage]);
-
-    const totalPages = demandsPerPage === -1 
-        ? 1 
-        : Math.max(1, Math.ceil(sortedAndFilteredDemands.length / demandsPerPage));
-
-    const autocompleteOptions = useMemo<AutocompleteOptions>(() => {
-        const uniqueValues = (key: keyof Demand) => [...new Set(deduplicatedDemands?.map(d => d[key]).filter(Boolean))].sort() as string[];
-        return {
-            modalidade: uniqueValues('modalidade'),
-            tema: uniqueValues('tema'),
-            municipio: uniqueValues('municipio')
-        };
-    }, [deduplicatedDemands]);
-
-    if (authInitializing) {
-        return (
-            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 text-slate-800">
-                <div className="p-4 bg-white border border-slate-200 text-tcepr-600 rounded-2xl mb-4 animate-pulse shadow-md">
-                    <FormIcon className="h-10 w-10 text-tcepr-600" />
-                </div>
-                <div className="w-6 h-6 border-2 border-tcepr-600 border-t-transparent rounded-full animate-spin mb-3" />
-                <p className="text-slate-600 text-sm font-bold tracking-wide">Carregando Sessão do Usuário...</p>
-            </div>
-        );
     }
 
-    if (!currentUser) {
-        return <AuthScreen />;
+    // --- LÓGICA DE CRIAÇÃO (OU RECRIACAO) ---
+    if (isShared && data.type === TransactionType.EXPENSE) {
+        const halfTotal = totalValue / 2;
+        const nathyCategoryId = categories.find(c => c.name.toLowerCase() === 'nathy')?.id || data.categoryId;
+        const sharedId = generateId();
+
+        const userPart = { 
+            ...data, 
+            amount: halfTotal, 
+            description: `${data.description} (Minha Parte)`,
+            cardOrigin: data.cardOrigin || 'TITULAR',
+            sharedId 
+        };
+
+        const nathyPart = { 
+            ...data, 
+            amount: halfTotal, 
+            categoryId: nathyCategoryId,
+            description: `${data.description} (Parte Nathy)`,
+            cardOrigin: data.cardOrigin || 'TITULAR',
+            sharedId 
+        };
+
+        if (installments > 1) {
+            await StorageService.addInstallmentTransaction(userPart, installments);
+            await StorageService.addInstallmentTransaction(nathyPart, installments);
+        } else {
+            await StorageService.addTransaction(userPart);
+            await StorageService.addTransaction(nathyPart);
+        }
+    } 
+    else {
+        if (installments > 1) {
+            await StorageService.addInstallmentTransaction({ ...data, amount: totalValue }, installments);
+        } else {
+            await StorageService.addTransaction({ ...data, amount: totalValue });
+        }
     }
+  };
 
-    return (
-        <div className="bg-slate-50 min-h-screen font-sans text-slate-800 antialiased selection:bg-tcepr-100 selection:text-tcepr-900 flex flex-col lg:flex-row relative overflow-x-hidden">
-            {/* Background Decorative Gradients matching TCEPR logo tones */}
-            <div className="fixed top-1/4 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-tcepr-100/45 rounded-full blur-3xl pointer-events-none z-0" />
-            <div className="fixed bottom-10 right-10 w-[500px] h-[500px] bg-sky-100/35 rounded-full blur-3xl pointer-events-none z-0" />
+  const handleBulkInvestmentImport = async (bulkTransactions: any[]) => {
+      for (const t of bulkTransactions) {
+          await StorageService.addTransaction(t);
+      }
+  };
 
-            {/* Fixed Lateral Sidebar Menu */}
-            <SidebarMenu
-                onOpenCreateModal={() => {
-                    setEditingDemand(null);
-                    setIsFormModalOpen(true);
-                }}
-                onOpenDashboardModal={() => setIsDashboardOpen(true)}
-                onOpenAnalysisModal={() => setIsAnalysisModalOpen(true)}
-                onOpenFortnightReportModal={() => setIsFortnightReportOpen(true)}
-                onOpenSavedFindingsModal={() => setIsSavedFindingsOpen(true)}
-                onOpenReportFindingsModal={() => setIsReportFindingsOpen(true)}
-                onOpenUserDataModal={() => setIsUserDataModalOpen(true)}
-                onSelectDemand={handleViewClick}
-                onConcludeNoteFromDemand={(demand, noteId) => handleConcludeNote(demand, noteId)}
-                demands={deduplicatedDemands}
-                activityLogs={activityLogs}
-                currentUser={currentUser}
-                onSignOut={handleSignOut}
-            />
+  const handleImportTransactions = async (imported: ImportedTransaction[], cardId?: string, paymentMethod?: PaymentMethod) => {
+    for (const t of imported) {
+        if (!t.selected) continue;
+        
+        const baseData: any = {
+            description: t.description,
+            originalDescription: t.originalDescription,
+            amount: t.amount,
+            date: t.date, 
+            originalDay: parseInt(t.date.split('-')[2], 10),
+            type: TransactionType.EXPENSE, 
+            categoryId: t.categoryId,
+            subCategoryId: t.subCategoryId || undefined,
+            paymentMethod: paymentMethod,
+            creditCardId: cardId,
+            isPaid: paymentMethod !== PaymentMethod.CREDIT_CARD,
+            isFixed: false,
+            isShared: false, 
+            tags: t.tags || []
+        };
 
-            {/* Main Content Area */}
-            <div className="flex-1 lg:pl-64 xl:pl-72 flex flex-col min-w-0 z-10">
-                <header className="bg-white/90 border-b border-slate-200 py-4 sm:py-5 px-4 sm:px-6 lg:px-8 sticky top-0 z-[30] backdrop-blur-md shadow-sm">
-                    <div className="max-w-7xl mx-auto flex items-center justify-between">
-                        <div className="flex items-center space-x-3.5">
-                            <div className="p-2 bg-tcepr-50 border border-tcepr-100 rounded-2xl shadow-sm">
-                                <TceprLogoIcon className="h-7 w-7 text-tcepr-600" />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-black text-tcepr-800 tracking-tight leading-none sm:text-2xl">
-                                    TCEPR <span className="text-tcepr-600">Fiscalização</span>
-                                </h1>
-                                <p className="text-xs text-slate-500 font-semibold mt-1 uppercase tracking-wider">Tribunal de Contas do Estado do Paraná • Acompanhamento de Ações</p>
-                            </div>
-                        </div>
-                    </div>
-                </header>
+        if (t.installments > 1 && cardId) {
+             const groupKey = `${t.originalDescription}-${t.amount * t.installments}-${t.installments}`;
+             baseData.installmentIndex = t.installmentIndex || 1; 
+             baseData.totalInstallments = t.installments;
+             
+             // Check if this installment group already exists in the database
+             const existing = transactions.find(tx => 
+                 tx.installmentId && 
+                 tx.totalInstallments === t.installments &&
+                 Math.abs(tx.amount - t.amount) < 0.05 &&
+                 (tx.description.includes(t.originalDescription) || t.originalDescription.includes(tx.description.replace(/\s\(\d+\/\d+\)$/, '')))
+             );
 
-                <main className="max-w-7xl w-full mx-auto py-8 px-4 sm:px-6 lg:px-8 flex-1">
-                    {error && (
-                        <div className="bg-rose-50 border border-rose-200 text-rose-800 px-5 py-4 rounded-xl mb-6 flex items-center justify-between shadow-sm">
-                            <span className="text-sm font-medium">{error}</span>
-                            <button onClick={() => setError('')} className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-100 rounded-lg transition-colors" aria-label="Fechar mensagem de erro">
-                                <XMarkIcon className="h-5 w-5" />
-                            </button>
-                        </div>
-                    )}
+             if (existing && existing.installmentId) {
+                 // If it exists, we just add this single one (though it should have been caught as duplicate)
+                 // Or we can just skip it, but let's add it with the same ID just in case
+                 baseData.installmentId = existing.installmentId;
+                 await StorageService.addTransaction({
+                     ...baseData,
+                     description: `${t.description.replace(/\s\(\d+\/\d+\)$/, '')} (${t.installmentIndex}/${t.installments})`
+                 });
+             } else {
+                 // If it's a new installment purchase, generate ALL installments!
+                 // We need to pass the TOTAL amount to addInstallmentTransaction
+                 const totalAmount = t.amount * t.installments;
+                 await StorageService.addInstallmentTransaction({ ...baseData, amount: totalAmount }, t.installments);
+             }
+        } else {
+             await StorageService.addTransaction(baseData);
+        }
+    }
+  };
 
-                    <ActivityHistorySection
-                        logs={activityLogs}
-                        onClearHistory={handleClearActivityLogs}
-                        onDeleteLogItem={handleDeleteActivityLog}
-                        onViewDemand={(demandId) => {
-                            const found = deduplicatedDemands.find(d => d.id === demandId);
-                            if (found) setViewingDemand(found);
-                        }}
-                    />
+  const handleLogout = () => {
+      signOut();
+  };
 
-                    <AlertsSection 
-                        demands={deduplicatedDemands} 
-                        onViewDemand={handleViewClick} 
-                        onConcludeNote={handleConcludeNote}
-                    />
+  if (loadingAuth) {
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900"></div></div>;
+  }
 
-                    <DemandList
-                        demands={paginatedDemands}
-                        totalDemandsCount={deduplicatedDemands.length}
-                        filteredCount={sortedAndFilteredDemands.length}
-                        itemsPerPage={demandsPerPage}
-                        setItemsPerPage={setDemandsPerPage}
-                        deadlineFilter={deadlineFilter}
-                        setDeadlineFilter={setDeadlineFilter}
-                        deadlineCounts={deadlineCounts}
-                        isLoading={isLoading}
-                        onDeleteRequest={setDeletingDemandId}
-                        onEdit={handleEditClick}
-                        onView={handleViewClick}
-                        onSearchChange={debouncedSetSearchTerm}
-                        onAnalysisClick={() => setIsAnalysisModalOpen(true)}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                        filterOptions={filterOptions}
-                        selectedYears={selectedYears}
-                        setSelectedYears={setSelectedYears}
-                        selectedMunicipios={selectedMunicipios}
-                        setSelectedMunicipios={setSelectedMunicipios}
-                        selectedTemas={selectedTemas}
-                        setSelectedTemas={setSelectedTemas}
-                        selectedStatuses={selectedStatuses}
-                        setSelectedStatuses={setSelectedStatuses}
-                        onClearFilters={handleClearFilters}
-                        searchInputKey={searchInputKey}
-                    />
-                </main>
-            </div>
+  if (!user) {
+    return <Login />;
+  }
 
-            {/* Modals & Pop-ups */}
-            <DemandFormModal
-                isOpen={isFormModalOpen}
-                onClose={() => {
-                    setIsFormModalOpen(false);
-                    setEditingDemand(null);
-                }}
-                onSubmit={handleAddDemand}
-                onUpdate={handleUpdateDemand}
-                editingDemand={editingDemand}
-                autocompleteOptions={autocompleteOptions}
-                onOpenSummarizeModal={setSummarizeModalDemand}
-            />
+  return (
+    <div className={`min-h-screen ${isDarkMode ? 'dark bg-zinc-950 text-zinc-100' : 'bg-zinc-50 text-zinc-900'} font-sans flex flex-col md:flex-row selection:bg-blue-100 selection:text-blue-900 transition-all duration-300 relative overflow-hidden`}>
+       {/* Ambient glow mesh overlay for elite fintech aesthetics */}
+       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
+           <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-blue-200/20 dark:bg-blue-500/4 blur-[120px] transition-all duration-700" />
+           <div className="absolute top-[30%] -left-40 w-[500px] h-[500px] rounded-full bg-emerald-200/10 dark:bg-emerald-500/3 blur-[120px] transition-all duration-700" />
+           <div className="absolute -bottom-40 right-20 w-[400px] h-[400px] rounded-full bg-teal-200/10 dark:bg-blue-500/2 blur-[100px] transition-all duration-700" />
+       </div>
 
-            {isAnalysisModalOpen && <AnalysisModal demands={deduplicatedDemands} db={db} currentUser={currentUser} onClose={() => setIsAnalysisModalOpen(false)} addToast={addToast} />}
-            {isDashboardOpen && <DashboardModal demands={deduplicatedDemands} onClose={() => setIsDashboardOpen(false)} onViewDemand={handleViewClick} />}
-            {isFortnightReportOpen && <FortnightReportModal demands={deduplicatedDemands} db={db} currentUser={currentUser} addToast={addToast} onClose={() => setIsFortnightReportOpen(false)} onViewDemand={handleViewClick} />}
-            {isReportFindingsOpen && <ReportFindingsModal demands={deduplicatedDemands} onClose={() => setIsReportFindingsOpen(false)} onViewDemand={handleViewClick} />}
-            {isSavedFindingsOpen && <SavedFindingsModal db={db} currentUser={currentUser} onClose={() => setIsSavedFindingsOpen(false)} addToast={addToast} />}
-            {summarizeModalDemand && <SummarizeModal db={db} demand={summarizeModalDemand} onClose={() => setSummarizeModalDemand(null)} onSaveSummary={(summary) => {
-                const updatedDemand = { ...summarizeModalDemand, resumoRelatorio: summary };
-                setEditingDemand(updatedDemand);
-            }} />}
-            {deletingDemandId && <ConfirmationModal isOpen={!!deletingDemandId} onClose={() => setDeletingDemandId(null)} onConfirm={() => handleDeleteDemand(deletingDemandId)} title="Confirmar Exclusão" message="Tem certeza absoluta de que deseja remover esta ação fiscalizatória do sistema? Esta operação é irreversível e excluirá definitivamente todos os dados relacionados." />}
-            {viewingDemand && (
-                <ViewDetailsModal 
-                    demand={viewingDemand} 
-                    onClose={() => setViewingDemand(null)} 
-                    scrollToSummary={scrollToSummary} 
-                    onEdit={(demandToEdit) => {
-                        setEditingDemand(demandToEdit);
-                        setIsFormModalOpen(true);
-                    }}
-                    onDemandUpdated={(updatedDemand) => {
-                        setViewingDemand(updatedDemand);
-                    }}
-                />
-            )}
-            {concludingNoteTarget && (
-                <ConcludeNoteModal
-                    isOpen={!!concludingNoteTarget}
-                    onClose={() => setConcludingNoteTarget(null)}
-                    onConfirm={handleConfirmConcludeNote}
-                    noteTitle={concludingNoteTarget.noteTitle}
-                    initialDetails={concludingNoteTarget.initialDetails}
-                />
-            )}
+       {/* Mobile Header */}
+       <div className="md:hidden bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md p-4 border-b border-zinc-200/50 dark:border-zinc-800/60 flex justify-between items-center sticky top-0 z-20">
+           <div className="flex items-center gap-3">
+               <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 text-white rounded-lg flex items-center justify-center shadow-sm">
+                   <Wallet size={16} strokeWidth={2.5} />
+               </div>
+               <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">FinanZe</h1>
+           </div>
+           <div className="flex items-center gap-1.5">
+               <button 
+                onClick={() => setIsAiAssistantOpen(true)}
+                className="p-2 text-amber-500 hover:text-amber-600 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 rounded-lg transition-colors relative flex items-center justify-center"
+                title="Perguntar à IA (FinanZe AI Advisor)"
+               >
+                   <Sparkles size={19} className="animate-pulse text-amber-500" />
+               </button>
+               <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors" title="Alternar Tema">
+                   {isDarkMode ? <Sun size={20} className="text-amber-500" /> : <Moon size={20} />}
+               </button>
+               <button onClick={() => { setIsReportOpen(true); }} className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                   <FileText size={20} />
+               </button>
+               <button onClick={() => { setIsImporterOpen(true); }} className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                   <Upload size={20} />
+               </button>
+           </div>
+       </div>
 
-            <UserDataModal
-                isOpen={isUserDataModalOpen}
-                onClose={() => setIsUserDataModalOpen(false)}
-                currentUser={currentUser}
-                demands={deduplicatedDemands}
-                duplicateDocsCount={duplicateDocsCount}
-                onRemoveDuplicates={handleRemoveDuplicates}
-                onImportDemands={handleImportDemands}
-                onExportDemands={handleExportDemands}
-                onClearAllDemands={handleClearAllDemands}
-                onSignOut={handleSignOut}
-                addToast={addToast}
-            />
-            
-            <div className="fixed bottom-4 right-4 z-[100] space-y-2">
-                {toasts.map((toast) => (
-                    <Toast key={toast.id} message={toast.message} type={toast.type} onClose={() => removeToast(toast.id)} />
-                ))}
-            </div>
-        </div>
-    );
+       {/* Pill Sidebar Navigation */}
+       <aside className="hidden md:flex md:m-4 md:mr-0 w-20 rounded-[2.5rem] z-30 bg-gradient-to-b from-blue-600 to-blue-700 flex-col items-center py-5 gap-4 shadow-xl shadow-blue-200/60 dark:shadow-none">
+           <div className="w-11 h-11 rounded-full bg-white text-blue-600 flex items-center justify-center shrink-0 shadow-sm">
+               <Wallet size={20} strokeWidth={2.25} />
+           </div>
 
+           {/* AI Assistant Dedicated Pill Action */}
+           <button
+             onClick={() => setIsAiAssistantOpen(true)}
+             className="group relative w-11 h-11 rounded-2xl flex items-center justify-center bg-amber-400 text-zinc-950 shadow-lg shadow-amber-400/25 hover:scale-105 hover:bg-amber-300 transition-all"
+             title="Perguntar à IA (FinanZe AI Advisor)"
+           >
+               <Sparkles size={18} className="animate-pulse" />
+               <span className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-xl bg-zinc-900 dark:bg-zinc-100 px-3 py-1.5 text-xs font-bold text-white dark:text-zinc-900 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0 z-30 shadow-xl border border-zinc-800 dark:border-zinc-200">
+                   Perguntar à IA (Advisor)
+               </span>
+           </button>
+
+           <div className="w-6 h-px bg-white/20" />
+
+           <nav className="flex-1 flex flex-col gap-1.5">
+               {([
+                   { view: 'dashboard' as const, icon: LayoutDashboard, label: 'Dashboard' },
+                   { view: 'transactions' as const, icon: List, label: 'Lançamentos' },
+                   { view: 'analytics' as const, icon: PieChart, label: 'Análises' },
+                   { view: 'investments' as const, icon: TrendingUp, label: 'Investimentos' },
+                   { view: 'settings' as const, icon: SettingsIcon, label: 'Configurações' },
+               ]).map(({ view, icon: Icon, label }) => (
+                   <button
+                       key={view}
+                       onClick={() => { setCurrentView(view); setIsSidebarOpen(false); }}
+                       className="group relative w-11 h-11 rounded-2xl flex items-center justify-center"
+                       title={label}
+                   >
+                       {currentView === view && (
+                           <motion.div layoutId="sidebarActivePill" className="absolute inset-0 bg-white rounded-2xl shadow-sm" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                       )}
+                       <Icon size={18} className={`relative z-10 transition-colors ${currentView === view ? 'text-blue-600' : 'text-white/60 group-hover:text-white'}`} />
+                       <span className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-zinc-900 dark:bg-zinc-100 px-2.5 py-1.5 text-xs font-semibold text-white dark:text-zinc-900 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0 z-20">
+                           {label}
+                       </span>
+                   </button>
+               ))}
+           </nav>
+
+           <div className="flex flex-col items-center gap-1.5">
+               <div className="w-6 h-px bg-white/20 my-1" />
+               <button onClick={() => setIsDarkMode(!isDarkMode)} className="group relative w-11 h-11 rounded-2xl flex items-center justify-center text-white/60 hover:bg-white/15 hover:text-white transition-colors" title="Alternar Tema">
+                   {isDarkMode ? <Sun size={17} /> : <Moon size={17} />}
+                   <span className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-zinc-900 dark:bg-zinc-100 px-2.5 py-1.5 text-xs font-semibold text-white dark:text-zinc-900 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0 z-20">Tema</span>
+               </button>
+               <button onClick={() => { setIsReportOpen(true); setIsSidebarOpen(false); }} className="group relative w-11 h-11 rounded-2xl flex items-center justify-center text-white/60 hover:bg-white/15 hover:text-white transition-colors" title="Relatórios">
+                   <FileText size={17} />
+                   <span className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-zinc-900 dark:bg-zinc-100 px-2.5 py-1.5 text-xs font-semibold text-white dark:text-zinc-900 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0 z-20">Relatórios</span>
+               </button>
+               <button onClick={() => { setIsImporterOpen(true); setIsSidebarOpen(false); }} className="group relative w-11 h-11 rounded-2xl flex items-center justify-center text-white/60 hover:bg-white/15 hover:text-white transition-colors" title="Importar Extrato">
+                   <Upload size={17} />
+                   <span className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-zinc-900 dark:bg-zinc-100 px-2.5 py-1.5 text-xs font-semibold text-white dark:text-zinc-900 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0 z-20">Importar</span>
+               </button>
+               <button onClick={handleLogout} className="group relative w-11 h-11 rounded-2xl flex items-center justify-center text-white/60 hover:bg-white/15 hover:text-white transition-colors" title="Sair">
+                   <LogOut size={17} />
+                   <span className="pointer-events-none absolute left-14 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-zinc-900 dark:bg-zinc-100 px-2.5 py-1.5 text-xs font-semibold text-white dark:text-zinc-900 opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0 z-20">Sair</span>
+               </button>
+           </div>
+       </aside>
+       
+       {/* Main Content Pane - Framed to support floating island sidebar perfectly */}
+       <main className="flex-1 p-3 sm:p-5 md:p-8 pb-28 md:pb-8 overflow-y-auto min-h-screen md:h-screen w-full min-w-0 bg-transparent custom-scrollbar relative z-10">
+           <div className="w-full max-w-[1600px] mx-auto min-w-0">
+               
+               {/* Floating Action Buttons */}
+               <div className="fixed bottom-24 md:bottom-6 right-6 flex flex-col gap-3 items-center z-40">
+                 {/* Floating New Transaction Button */}
+                 <button 
+                   onClick={() => { setEditingTransaction(null); setIsTransactionFormOpen(true); }}
+                   className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-xl shadow-blue-500/25 flex items-center justify-center hover:scale-105 transition-all ring-4 ring-white dark:ring-zinc-900 group"
+                   title="Novo Lançamento"
+                 >
+                     <Plus size={28} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform duration-300" />
+                 </button>
+               </div>
+
+               {/* Header Actions (Desktop) */}
+               <div className="hidden md:flex justify-end items-center mb-8">
+                   <div className="flex items-center gap-3">
+                     <button 
+                       onClick={() => { setEditingTransaction(null); setIsTransactionFormOpen(true); }}
+                       className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-md shadow-blue-200 dark:shadow-none transition-all flex items-center gap-2"
+                     >
+                         <Plus size={18} /> Nova Transação
+                     </button>
+                   </div>
+               </div>
+
+               <AnimatePresence mode="wait">
+                   <motion.div
+                     key={currentView}
+                     initial={{ opacity: 0, y: 12 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     exit={{ opacity: 0, y: -12 }}
+                     transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                   >
+                       {currentView === 'dashboard' && (
+                   <Dashboard
+                     cdiHistory={cdiHistory}
+                     ipcaHistory={ipcaHistory}
+                     transactions={transactions}
+                     categories={categories}
+                     subCategories={subCategories}
+                     creditCards={creditCards}
+                     assetPrices={assetPrices}
+                     settings={settings}
+                     currentDate={currentDate}
+                     onDateChange={setCurrentDate}
+                     onEditTransaction={handleEditTransaction}
+                     onDeleteTransaction={(id, mode) => StorageService.deleteTransaction(id, mode)}
+                   />
+               )}
+
+               {currentView === 'transactions' && (
+                   <TransactionsList 
+                     transactions={transactions}
+                     categories={categories}
+                     subCategories={subCategories}
+                     creditCards={creditCards}
+                     settings={settings}
+                     currentDate={currentDate}
+                     onDateChange={setCurrentDate}
+                     onEditTransaction={handleEditTransaction}
+                     onDeleteTransaction={(id, mode) => StorageService.deleteTransaction(id, mode)}
+                   />
+               )}
+
+               {currentView === 'analytics' && (
+                   <Analytics 
+                     transactions={transactions}
+                     categories={categories}
+                     subCategories={subCategories}
+                     creditCards={creditCards}
+                     settings={settings}
+                     currentDate={currentDate}
+                     onDateChange={setCurrentDate}
+                   />
+               )}
+
+               {currentView === 'investments' && (
+                   <Investments
+                     cdiHistory={cdiHistory}
+                     ipcaHistory={ipcaHistory}
+                     ibovHistory={ibovHistory}
+                     transactions={transactions}
+                     categories={categories}
+                     subCategories={subCategories}
+                     creditCards={creditCards}
+                     settings={settings}
+                     currentDate={currentDate}
+                     assetPrices={assetPrices}
+                     onDateChange={setCurrentDate}
+                     onEditTransaction={handleEditTransaction}
+                     onDeleteTransaction={(id, mode) => StorageService.deleteTransaction(id, mode)}
+                     onOpenBulkImport={() => setIsBulkInvOpen(true)}
+                     onOpenDividendForm={() => { setEditingDividend(null); setIsDividendFormOpen(true); }}
+                   />
+               )}
+
+               {currentView === 'settings' && (
+                   <Settings 
+                     categories={categories}
+                     setCategories={setCategories}
+                     subCategories={subCategories}
+                     setSubCategories={setSubCategories}
+                     creditCards={creditCards}
+                     setCreditCards={setCreditCards}
+                     settings={settings}
+                     setSettings={setSettings}
+                     transactions={transactions}
+                     onSaveCategories={StorageService.saveCategories}
+                     onSaveSubCategories={StorageService.saveSubCategories}
+                     onSaveCards={StorageService.saveCreditCards}
+                     onSaveSettings={StorageService.saveSettings}
+                     onDeleteCategory={StorageService.deleteCategory}
+                     onDeleteSubCategory={StorageService.deleteSubCategory}
+                     onDeleteCard={StorageService.deleteCreditCard}
+                     onUpdateCategory={StorageService.updateCategory}
+                     onUpdateSubCategory={StorageService.updateSubCategory}
+                   />
+               )}
+                   </motion.div>
+               </AnimatePresence>
+           </div>
+       </main>
+
+       {/* Mobile Bottom Navigation */}
+       <nav className="md:hidden fixed bottom-5 left-4 right-4 mx-auto max-w-[480px] rounded-[1.75rem] border border-zinc-200/50 dark:border-zinc-800/60 backdrop-blur-lg bg-white/75 dark:bg-zinc-950/70 z-30 flex justify-around p-1.5 shadow-[0_10px_30px_rgba(24,24,27,0.08)] dark:shadow-none">
+           <button 
+               onClick={() => setCurrentView('dashboard')}
+               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'dashboard' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+           >
+               {currentView === 'dashboard' && (
+                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-blue-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+               )}
+               <LayoutDashboard size={20} className={`relative z-10 ${currentView === 'dashboard' ? 'svg-solid text-blue-600' : 'text-zinc-400'}`} />
+               <span className="text-[9px] uppercase tracking-wide relative z-10">Início</span>
+           </button>
+           <button 
+               onClick={() => setCurrentView('transactions')}
+               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'transactions' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+           >
+               {currentView === 'transactions' && (
+                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-blue-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+               )}
+               <List size={20} className={`relative z-10 ${currentView === 'transactions' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+               <span className="text-[9px] uppercase tracking-wide relative z-10">Lanç.<span className="hidden sm:inline">amentos</span></span>
+           </button>
+           <button 
+               onClick={() => setCurrentView('analytics')}
+               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'analytics' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+           >
+               {currentView === 'analytics' && (
+                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-blue-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+               )}
+               <PieChart size={20} className={`relative z-10 ${currentView === 'analytics' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+               <span className="text-[9px] uppercase tracking-wide relative z-10">Análises</span>
+           </button>
+           <button 
+               onClick={() => setCurrentView('investments')}
+               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'investments' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+           >
+               {currentView === 'investments' && (
+                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-blue-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+               )}
+               <TrendingUp size={20} className={`relative z-10 ${currentView === 'investments' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+               <span className="text-[9px] uppercase tracking-wide relative z-10">Invest.<span className="hidden sm:inline">imentos</span></span>
+           </button>
+           <button 
+               onClick={() => setCurrentView('settings')}
+               className={`relative flex flex-col items-center justify-center w-14 space-y-0.5 p-2 rounded-[1.25rem] transition-all ${currentView === 'settings' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+           >
+               {currentView === 'settings' && (
+                   <motion.div layoutId="mobileNavPill" className="absolute inset-1 bg-blue-50/70 rounded-xl z-0" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+               )}
+               <SettingsIcon size={20} className={`relative z-10 ${currentView === 'settings' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}`} />
+               <span className="text-[9px] uppercase tracking-wide relative z-10">Ajustes</span>
+           </button>
+       </nav>
+
+       {/* Modals */}
+       {isDividendFormOpen && (
+          <DividendForm
+            transactionToEdit={editingDividend}
+            categories={categories}
+            subCategories={subCategories}
+            transactions={transactions}
+            onSave={handleSaveTransaction}
+            onClose={() => { setIsDividendFormOpen(false); setEditingDividend(null); }}
+          />
+       )}
+       {isTransactionFormOpen && (
+           <TransactionForm 
+             onClose={() => { setIsTransactionFormOpen(false); setEditingTransaction(null); }}
+             onSave={handleSaveTransaction}
+             initialData={editingTransaction}
+             categories={categories}
+             subCategories={subCategories}
+             creditCards={creditCards}
+             transactions={transactions}
+           />
+       )}
+
+       {isImporterOpen && (
+           <InvoiceImporter 
+             isOpen={isImporterOpen}
+             onClose={() => setIsImporterOpen(false)}
+             categories={categories}
+             subCategories={subCategories}
+             creditCards={creditCards}
+             transactions={transactions}
+             onImport={handleImportTransactions}
+           />
+       )}
+
+       {isBulkInvOpen && (
+         <InvestmentBulkImporter 
+            isOpen={isBulkInvOpen}
+            onClose={() => setIsBulkInvOpen(false)}
+            categories={categories}
+            subCategories={subCategories}
+            transactions={transactions}
+            onImport={handleBulkInvestmentImport}
+         />
+       )}
+
+       {isReportOpen && (
+           <ReportGenerator 
+            isOpen={isReportOpen}
+            onClose={() => setIsReportOpen(false)}
+            transactions={transactions}
+            categories={categories}
+            subCategories={subCategories}
+            creditCards={creditCards}
+            settings={settings}
+           />
+       )}
+
+       <AiFinancialAssistantModal
+         isOpen={isAiAssistantOpen}
+         onClose={() => setIsAiAssistantOpen(false)}
+         transactions={transactions}
+         categories={categories}
+         subCategories={subCategories}
+         creditCards={creditCards}
+         assetPrices={assetPrices}
+         settings={settings}
+         currentDate={currentDate}
+       />
+
+    </div>
+  );
 };
 
 export default App;

@@ -1,0 +1,1917 @@
+
+import React, { useMemo, useState } from 'react';
+import { Transaction, TransactionType, Category, SubCategory, UserSettings, PaymentMethod, CreditCard } from '../types';
+import { 
+  ArrowUpCircle, ArrowDownCircle, Wallet, Pencil, Trash2, CreditCard as CardIcon, Repeat, Users,
+  ChevronDown, ChevronRight, Calendar, Filter, X, Check, Search, ChevronUp, AlertTriangle, AlertCircle, Target, 
+  ArrowUp, ArrowDown, ChevronLeft, Sparkles, Banknote, List, CheckCircle2, Layers, HelpCircle, Info,
+  Utensils, Car, Home, Gamepad, Activity, User, Dog, TrendingUp, Circle, ShoppingBag, Coffee, Smartphone, Hammer, Plane, Music, Gift, Wifi, Zap, Book, Briefcase, Shirt,
+  Landmark, DollarSign, Euro, Bitcoin, Gem, Rocket, Star, Heart, Shield, Lock, Key, Globe, Map as MapIcon, Navigation, Flag, Crown, Trophy, Award, ShoppingCart, Truck, Package, Ghost, Smile, ThumbsUp, Tag, Hash, CheckSquare, Square, Save, Loader2, Table, Eye, EyeOff
+} from 'lucide-react';
+import { StorageService } from '../services/storageService';
+import { calculateEffectiveDate } from '../utils/dateUtils';
+
+// Full Icon Mapping for Transactions List
+const IconRenderer = ({ iconName, className }: { iconName: string; className?: string }) => {
+  const icons: any = {
+    utensils: Utensils, car: Car, home: Home, gamepad: Gamepad, activity: Activity, user: User, dog: Dog, banknote: Banknote,
+    'trending-up': TrendingUp, circle: Circle, 'shopping-bag': ShoppingBag, coffee: Coffee, smartphone: Smartphone, hammer: Hammer,
+    plane: Plane, music: Music, gift: Gift, wifi: Wifi, zap: Zap, book: Book, briefcase: Briefcase, shirt: Shirt, landmark: Landmark,
+    'credit-card': CardIcon, wallet: Wallet, 'dollar-sign': DollarSign, euro: Euro, bitcoin: Bitcoin, gem: Gem, rocket: Rocket,
+    star: Star, heart: Heart, shield: Shield, lock: Lock, key: Key, globe: Globe, map: MapIcon, navigation: Navigation, flag: Flag,
+    crown: Crown, trophy: Trophy, award: Award, 'shopping-cart': ShoppingCart, truck: Truck, package: Package, ghost: Ghost,
+    smile: Smile, 'thumbs-up': ThumbsUp
+  };
+
+  const IconComponent = icons[iconName] || Circle;
+  return <IconComponent className={className} />;
+};
+
+const formatCurrency = (val: number) => 
+  (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+const PaymentConfirmationModal = ({ isOpen, onClose, transaction, onConfirm }: { isOpen: boolean, onClose: () => void, transaction: Transaction | null, onConfirm: (t: Transaction) => void }) => {
+    if (!isOpen || !transaction) return null;
+    return (
+        <div className="fixed inset-0 bg-white dark:bg-zinc-900/80 dark:bg-zinc-900/80 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 border border-zinc-200 dark:border-zinc-800">
+                <div className="p-6 text-center">
+                    <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100">
+                        <CheckCircle2 size={32} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Confirmar Pagamento?</h3>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 mt-2 mb-1 px-4">
+                        Deseja marcar <strong>"{transaction.description}"</strong> como pago neste mês?
+                    </p>
+                    <p className="text-lg font-semibold text-emerald-600 mt-2">R$ {(transaction.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                </div>
+                <div className="flex border-t border-zinc-200 dark:border-zinc-800">
+                    <button onClick={onClose} className="flex-1 py-4 text-sm font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950 transition-colors">Cancelar</button>
+                    <div className="w-px bg-zinc-100 dark:bg-zinc-800"></div>
+                    <button onClick={() => onConfirm(transaction)} className="flex-1 py-4 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const DuplicateResolverModal = ({ isOpen, onClose, duplicateGroups, onDelete }: { isOpen: boolean, onClose: () => void, duplicateGroups: Transaction[][], onDelete: (id: string) => void }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 bg-white dark:bg-zinc-900/80 dark:bg-zinc-900/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 border border-zinc-200 dark:border-zinc-800">
+                <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-amber-50/50">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-amber-100 text-amber-600 rounded-lg"><AlertTriangle size={24} /></div>
+                        <div>
+                            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Resolver Duplicatas</h2>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">Encontramos transações idênticas neste mês.</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:bg-amber-100 rounded-full transition-colors"><X size={20} /></button>
+                </div>
+                <div className="p-6 overflow-y-auto custom-scrollbar space-y-6 flex-1">
+                    {duplicateGroups.length === 0 ? (
+                        <div className="text-center py-10 text-zinc-500 dark:text-zinc-400 dark:text-zinc-500"><Check size={48} className="mx-auto mb-4 text-emerald-500" /><p>Tudo limpo! Nenhuma duplicata restante.</p></div>
+                    ) : (
+                        duplicateGroups.map((group, idx) => (
+                            <div key={idx} className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm shadow-zinc-200/5">
+                                <div className="bg-zinc-50 dark:bg-zinc-950 px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+                                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Grupo {idx + 1}</span>
+                                    <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">{group[0].date.split('T')[0]}</span>
+                                </div>
+                                <div className="divide-y divide-gray-100">
+                                    {group.map((t, tIdx) => (
+                                        <div key={t.id} className="p-4 flex justify-between items-center hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950 transition-colors">
+                                            <div><p className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">{t.description}</p><p className="text-xs text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 mt-0.5">R$ {t.amount.toFixed(2)} • {t.paymentMethod === PaymentMethod.CREDIT_CARD ? 'Crédito' : 'Débito'}</p></div>
+                                            <div className="flex items-center gap-3">{tIdx === 0 ? (<span className="text-[10px] font-medium bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full border border-emerald-200">Manter</span>) : (<button onClick={() => onDelete(t.id)} className="flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors border border-red-100"><Trash2 size={14} /> Apagar</button>)}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+                <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-right"><button onClick={onClose} className="px-6 py-2 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 font-medium rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:bg-zinc-800 transition-colors shadow-sm shadow-zinc-200/5">Concluído</button></div>
+            </div>
+        </div>
+    );
+};
+
+interface TransactionGroupProps {
+    title: string | React.ReactNode;
+    items: Transaction[];
+    icon?: React.ReactNode;
+    colorClass?: string;
+    accentColor?: string; // cor (hex) da forma de pagamento/grupo, usada como fundo discreto do cabeçalho
+    total: number;
+    secondaryTotal?: number;
+    renderRow: (t: Transaction) => React.ReactNode;
+    selectedIds: string[];
+    onToggleSelectAll: (items: Transaction[]) => void;
+}
+
+const TransactionGroup: React.FC<TransactionGroupProps> = ({
+    title, items, icon, colorClass, accentColor, total, secondaryTotal, renderRow, selectedIds, onToggleSelectAll
+}) => {
+    const [isOpen, setIsOpen] = useState(true);
+    if (items.length === 0) return null;
+
+    const allSelected = items.length > 0 && items.every(i => selectedIds.includes(i.id));
+
+    return (
+        <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm shadow-zinc-200/5 border border-zinc-200/70 dark:border-zinc-800/80 overflow-hidden mb-4">
+            <div
+                className={`w-full px-4 py-3.5 flex justify-between items-center cursor-pointer transition-colors border-b border-zinc-100 dark:border-zinc-800/80 ${!accentColor ? 'hover:bg-zinc-50/70 dark:hover:bg-zinc-800/30' : ''}`}
+                style={{ backgroundColor: accentColor ? `${accentColor}14` : undefined }}
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onToggleSelectAll(items); }}
+                        className={`p-1 rounded-md transition-all ${allSelected ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'}`}
+                        title={allSelected ? "Desmarcar Todos" : "Marcar Todos do Grupo"}
+                    >
+                        {allSelected ? <CheckSquare size={18} /> : <Square size={18} />}
+                    </button>
+                    <div className={`flex items-center gap-2 ${colorClass}`}>
+                        {icon}
+                        <span className="font-semibold text-sm text-zinc-800 dark:text-zinc-200">{title}</span>
+                    </div>
+                    {isOpen ? <ChevronUp size={14} className="text-zinc-400 dark:text-zinc-500" /> : <ChevronDown size={14} className="text-zinc-400 dark:text-zinc-500" />}
+                </div>
+                <div className="text-right">
+                    <span className={`font-bold text-sm tabular-nums ${colorClass}`}>R$ {(total || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                    {secondaryTotal !== undefined && Math.abs(secondaryTotal - total) > 0.01 && (
+                        <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium block tabular-nums">Minha parte: R$ {(secondaryTotal || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                    )}
+                </div>
+            </div>
+
+            {isOpen && (
+                <div className="divide-y divide-zinc-100 dark:divide-zinc-800/70 animate-in slide-in-from-top-1">
+                    {items.map(t => renderRow(t))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+interface InvestmentOriginModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    type: 'provento' | 'resgate' | 'active';
+    year: number;
+    totalIncome: number;
+    totalPocketInvested: number;
+    totalProventoInvested: number;
+    totalBaseProvento: number;
+    totalResgateInvested: number;
+    totalBaseResgate: number;
+    initialProventosPool: number;
+    finalProventosPool: number;
+    initialResgatesPool: number;
+    finalResgatesPool: number;
+}
+
+const InvestmentOriginModal = ({
+    isOpen,
+    onClose,
+    type,
+    year,
+    totalIncome,
+    totalPocketInvested,
+    totalProventoInvested,
+    totalBaseProvento,
+    totalResgateInvested,
+    totalBaseResgate,
+    initialProventosPool,
+    finalProventosPool,
+    initialResgatesPool,
+    finalResgatesPool
+}: InvestmentOriginModalProps) => {
+    if (!isOpen) return null;
+
+    const isProvento = type === 'provento';
+    const isResgate = type === 'resgate';
+    const isActive = type === 'active';
+
+    const previousYear = year - 1;
+    const balancePreviousYear = isProvento ? initialProventosPool : (isResgate ? initialResgatesPool : 0);
+    const currentYearBase = isProvento ? totalBaseProvento : (isResgate ? totalBaseResgate : totalIncome);
+    const currentYearInvested = isProvento ? totalProventoInvested : (isResgate ? totalResgateInvested : totalPocketInvested);
+    const balanceCurrentYearEnd = isProvento ? finalProventosPool : (isResgate ? finalResgatesPool : 0);
+
+    // % dos proventos/resgates recebidos no ano corrente que foram investidos (teto de 100%)
+    const pctYearInvested = currentYearBase > 0 
+        ? Math.min(100, (currentYearInvested / currentYearBase) * 100) 
+        : 0;
+
+    const extraFromPrevious = Math.max(0, currentYearInvested - currentYearBase);
+
+    const title = isProvento 
+        ? 'Detalhamento de Proventos' 
+        : isResgate 
+            ? 'Detalhamento de Reinvestimentos' 
+            : 'Detalhamento da Renda Ativa';
+
+    const baseLabel = isProvento 
+        ? `Proventos recebidos em ${year}` 
+        : isResgate 
+            ? `Resgates/Vendas em ${year}` 
+            : `Renda ativa total em ${year}`;
+
+    const investedLabel = isProvento 
+        ? `Investido em ${year}` 
+        : isResgate 
+            ? `Reinvestido em ${year}` 
+            : `Investido do bolso em ${year}`;
+
+    const getExplanation = () => {
+        if (currentYearBase === 0) {
+            return `Nenhum valor foi recebido em ${year}. O montante investido (${formatCurrency(currentYearInvested)}) foi originado do saldo de anos anteriores.`;
+        }
+        if (isProvento) {
+            if (currentYearInvested >= currentYearBase) {
+                return extraFromPrevious > 0
+                    ? `100% dos proventos recebidos em ${year} foram investidos (+ ${formatCurrency(extraFromPrevious)} utilizados do saldo anterior).`
+                    : `100% dos proventos recebidos em ${year} foram investidos.`;
+            }
+            return `${pctYearInvested.toFixed(1)}% dos proventos recebidos em ${year} foram investidos (${formatCurrency(currentYearInvested)} de ${formatCurrency(currentYearBase)}).`;
+        }
+        if (isResgate) {
+            if (currentYearInvested >= currentYearBase) {
+                return extraFromPrevious > 0
+                    ? `100% dos resgates realizados em ${year} foram reinvestidos (+ ${formatCurrency(extraFromPrevious)} utilizados do saldo anterior).`
+                    : `100% dos resgates realizados em ${year} foram reinvestidos.`;
+            }
+            return `${pctYearInvested.toFixed(1)}% dos resgates realizados em ${year} foram reinvestidos (${formatCurrency(currentYearInvested)} de ${formatCurrency(currentYearBase)}).`;
+        }
+        return `${pctYearInvested.toFixed(1)}% da renda ativa de ${year} foi poupada e investida (${formatCurrency(currentYearInvested)} de ${formatCurrency(currentYearBase)}).`;
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-[80] flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden animate-in zoom-in-95 my-auto">
+                {/* Header */}
+                <div className="p-4 sm:p-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/70 dark:bg-zinc-950/40">
+                    <div>
+                        <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                            {title}
+                        </h3>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            Ano {year}
+                        </p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                        title="Fechar"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                {/* Conteúdo Direto e Objetivo */}
+                <div className="p-5 space-y-4 text-sm">
+                    {/* Linhas de Valores */}
+                    <div className="space-y-3 bg-zinc-50 dark:bg-zinc-950/50 p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80">
+                        {(isProvento || isResgate) && (
+                            <div className="flex justify-between items-center text-zinc-600 dark:text-zinc-400">
+                                <span>Saldo de {previousYear}:</span>
+                                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                    {formatCurrency(balancePreviousYear)}
+                                </span>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between items-center text-zinc-600 dark:text-zinc-400">
+                            <span>{baseLabel}:</span>
+                            <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                {formatCurrency(currentYearBase)}
+                            </span>
+                        </div>
+
+                        <div className="flex justify-between items-center text-zinc-600 dark:text-zinc-400">
+                            <span>{investedLabel}:</span>
+                            <span className="font-bold text-blue-600 dark:text-blue-400">
+                                {formatCurrency(currentYearInvested)}
+                            </span>
+                        </div>
+
+                        {(isProvento || isResgate) && (
+                            <div className="flex justify-between items-center text-zinc-500 dark:text-zinc-400 pt-2 border-t border-zinc-200/60 dark:border-zinc-800">
+                                <span>Saldo ao final de {year}:</span>
+                                <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                                    {formatCurrency(balanceCurrentYearEnd)}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Destaque do Percentual */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 text-center">
+                        <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                            {pctYearInvested.toFixed(1)}%
+                        </div>
+                        <div className="text-xs text-blue-800/80 dark:text-blue-300/80 mt-1 font-medium">
+                            {getExplanation()}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="p-3.5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/30 flex justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+                    >
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+const isNathyOrAdditionalTx = (t: Transaction, categories: Category[]) => {
+    if (!t) return false;
+    const descLower = (t.description || '').toLowerCase();
+    // Se é a "Minha Parte" de um lançamento dividido, SEMPRE pertence aos meus lançamentos (mesmo feito no cartão adicional)
+    if (descLower.includes('(minha parte)') || descLower.includes('minha parte')) {
+        return false;
+    }
+    // Se é a "Parte Nathy", SEMPRE pertence à Nathy (mesmo feito no cartão titular)
+    if (descLower.includes('(parte nathy)') || descLower.includes('parte nathy')) {
+        return true;
+    }
+
+    const cat = categories.find(c => c.id === t.categoryId);
+    const catNameLower = (cat?.name || '').toLowerCase();
+    const isNathyCat = catNameLower === 'nathy' || catNameLower.includes('nathy');
+    const isAdditional = cat?.isAdditionalCard || false;
+    const isCardOriginAdd = (t.cardOrigin || '').toUpperCase() === 'ADDITIONAL' || (t.cardOrigin || '').toUpperCase() === 'ADICIONAL';
+    return !!(isAdditional || isNathyCat || isCardOriginAdd);
+};
+
+const YearlyView = ({ transactions, allTransactions, categories, subCategories, creditCards, settings, year }: { transactions: Transaction[], allTransactions: Transaction[], categories: Category[], subCategories: SubCategory[], creditCards: CreditCard[], settings: UserSettings, year: number }) => {
+    const [viewType, setViewType] = useState<TransactionType>(TransactionType.EXPENSE);
+    const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+    const [originModalTab, setOriginModalTab] = useState<'provento' | 'resgate' | 'active' | null>(null);
+    
+    const toggleCat = (id: string) => { 
+        if (viewType === TransactionType.INCOME || viewType === TransactionType.INVESTMENT) return; 
+        const next = new Set(expandedCats); 
+        if (next.has(id)) next.delete(id); else next.add(id); 
+        setExpandedCats(next); 
+    };
+
+    const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+    const isNathyTransactionLocal = (t: Transaction) => isNathyOrAdditionalTx(t, categories);
+
+    // 1. Calculate Aggregated Yearly Summary (Income, Expense, Investment, Balance)
+    const { yearlySummary, poolOrigin } = useMemo(() => {
+        const summary = Array(12).fill(null).map(() => ({ 
+            income: 0, 
+            expense: 0, 
+            investment: 0, 
+            balance: 0,
+            pocket: 0,
+            provento: 0,
+            resgate: 0,
+            baseActiveIncome: 0,
+            baseProvento: 0,
+            baseResgate: 0
+        }));
+
+        const filteredTxIds = new Set(transactions.map(t => t.id));
+
+        // Group all transactions by year-month across all time
+        const txByMonth = new Map<string, Transaction[]>();
+        const sortedTxs = [...allTransactions]
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        sortedTxs.forEach(t => {
+            const ym = t.date.slice(0, 7);
+            if (!txByMonth.has(ym)) {
+                txByMonth.set(ym, []);
+            }
+            txByMonth.get(ym)!.push(t);
+        });
+
+        const sortedMonths = Array.from(txByMonth.keys()).sort();
+
+        let currentProventosPool = 0;
+        let currentResgatesPool = 0;
+
+        let initialProventosPool = 0;
+        let initialResgatesPool = 0;
+        let finalProventosPool = 0;
+        let finalResgatesPool = 0;
+        let hasCapturedInitial = false;
+
+        sortedMonths.forEach(ym => {
+            const ymYear = parseInt(ym.slice(0, 4));
+            const ymMth = parseInt(ym.slice(5, 7)) - 1; // 0-indexed
+
+            // Ao atingir o primeiro mês do ano selecionado (ou posterior), captura o saldo inicial herdado
+            if (ymYear >= year && !hasCapturedInitial) {
+                initialProventosPool = currentProventosPool;
+                initialResgatesPool = currentResgatesPool;
+                hasCapturedInitial = true;
+            }
+
+            // `ym` já vem no formato YYYY-MM (1-12) direto do ISO de t.date, igual ao
+            // valor salvo por <input type="month"> em resgatesResetMonth — compara direto.
+            if (settings.resgatesResetMonth && ym === settings.resgatesResetMonth) {
+                currentResgatesPool = 0;
+            }
+
+            const monthTxs = txByMonth.get(ym)!;
+
+            // 1. Accumulate all monthly proventos and resgates received BEFORE processing investments
+            let monthProventos = 0;
+            let monthResgates = 0;
+            let monthProventosFiltered = 0;
+            let monthResgatesFiltered = 0;
+
+            monthTxs.forEach(t => {
+                if (t.type === TransactionType.INVESTMENT) {
+                    const isNathy = isNathyTransactionLocal(t);
+                    if (isNathy) return;
+
+                    const ev = t.investmentDetails?.event || 'BUY';
+                    if (['DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(ev)) {
+                        monthProventos += t.amount;
+                        if (ymYear === year && filteredTxIds.has(t.id)) monthProventosFiltered += t.amount;
+                    } else if (ev === 'SELL' || ev === 'AMORTIZACAO') {
+                        monthResgates += t.amount;
+                        if (ymYear === year && filteredTxIds.has(t.id)) monthResgatesFiltered += t.amount;
+                    }
+                }
+            });
+
+            if (ymYear === year) {
+                summary[ymMth].baseProvento += monthProventosFiltered;
+                summary[ymMth].baseResgate += monthResgatesFiltered;
+            }
+
+            currentProventosPool += monthProventos;
+            currentResgatesPool += monthResgates;
+
+            // 2. Calculate total monthly investment (BUY/BONUS)
+            let monthInvested = 0;
+            const monthBuys: Transaction[] = [];
+
+            monthTxs.forEach(t => {
+                if (t.type === TransactionType.INVESTMENT) {
+                    const isNathy = isNathyTransactionLocal(t);
+                    if (isNathy) return;
+
+                    const ev = t.investmentDetails?.event || 'BUY';
+                    if (['BUY', 'BONUS'].includes(ev)) {
+                        monthInvested += t.amount;
+                        monthBuys.push(t);
+                    }
+                }
+            });
+
+            // 3. Subtract proventos and resgates pool from total monthly invested amount
+            let monthResgateUsed = 0;
+            let monthProventoUsed = 0;
+            let monthPocket = 0;
+
+            if (monthInvested > 0) {
+                // First try to use Resgates Pool
+                monthResgateUsed = Math.min(monthInvested, currentResgatesPool);
+                currentResgatesPool -= monthResgateUsed;
+                const remaining = monthInvested - monthResgateUsed;
+
+                // Next try to use Proventos Pool
+                monthProventoUsed = Math.min(remaining, currentProventosPool);
+                currentProventosPool -= monthProventoUsed;
+
+                // The rest is pocket money
+                monthPocket = remaining - monthProventoUsed;
+
+                // If the year matches the selected year, save the filtered values to summary
+                if (ymYear === year) {
+                    monthBuys.forEach(t => {
+                        if (filteredTxIds.has(t.id)) {
+                            const ratio = t.amount / monthInvested;
+                            summary[ymMth].investment += t.amount;
+                            summary[ymMth].pocket += monthPocket * ratio;
+                            summary[ymMth].provento += monthProventoUsed * ratio;
+                            summary[ymMth].resgate += monthResgateUsed * ratio;
+                        }
+                    });
+                }
+            }
+
+            // Atualiza saldo final do pool ao final de cada mês pertencente ao ano
+            if (ymYear <= year) {
+                finalProventosPool = currentProventosPool;
+                finalResgatesPool = currentResgatesPool;
+            }
+        });
+
+        if (!hasCapturedInitial) {
+            initialProventosPool = currentProventosPool;
+            initialResgatesPool = currentResgatesPool;
+            finalProventosPool = currentProventosPool;
+            finalResgatesPool = currentResgatesPool;
+        }
+
+        // Now calculate Income and Expense for the selected year using the filtered transactions (transactions)
+        transactions.forEach(t => {
+            const isNathy = isNathyTransactionLocal(t);
+            if (isNathy) return;
+
+            const effDate = calculateEffectiveDate(t, creditCards, settings);
+            if (effDate.getFullYear() !== year) return;
+            const m = effDate.getMonth();
+
+            const descLower = (t.description || '').toLowerCase();
+            const isExplicitUserPart = descLower.includes('(minha parte)') || descLower.includes('minha parte');
+            const amountToUse = (t.isShared && !isExplicitUserPart) ? (t.amount / 2) : t.amount;
+
+            if (t.type === TransactionType.INCOME) {
+                summary[m].income += amountToUse;
+                summary[m].baseActiveIncome += amountToUse;
+            } else if (t.type === TransactionType.EXPENSE && !t.fundedByResgate) {
+                summary[m].expense += amountToUse;
+            }
+        });
+
+        // Calculate Balance
+        summary.forEach(month => {
+            month.balance = month.income - month.expense; 
+        });
+
+        return {
+            yearlySummary: summary,
+            poolOrigin: {
+                initialProventosPool,
+                finalProventosPool,
+                initialResgatesPool,
+                finalResgatesPool
+            }
+        };
+    }, [transactions, allTransactions, creditCards, settings, year, categories]);
+
+    // 2. Existing Category Logic
+    const monthlyLookup = useMemo(() => {
+        const map = new Map<string, number>();
+        transactions.forEach(t => {
+            const isNathy = isNathyTransactionLocal(t);
+            if (isNathy) return;
+
+            if (t.type !== viewType) return;
+            const effDate = calculateEffectiveDate(t, creditCards, settings);
+            const y = effDate.getFullYear(); const m = effDate.getMonth();
+            const catKey = `${y}-${m}-${t.categoryId}-all`;
+            const subKey = (viewType === TransactionType.EXPENSE && t.subCategoryId) ? `${y}-${m}-${t.categoryId}-${t.subCategoryId}` : null;
+            
+            const descLower = (t.description || '').toLowerCase();
+            const isExplicitUserPart = descLower.includes('(minha parte)') || descLower.includes('minha parte');
+            let amountToAdd = t.amount;
+            if (viewType === TransactionType.EXPENSE) {
+                amountToAdd = (t.isShared && !isExplicitUserPart) ? (t.amount / 2) : t.amount;
+            } else if (viewType === TransactionType.INVESTMENT) {
+                const ev = t.investmentDetails?.event;
+                if (['SELL', 'AMORTIZACAO', 'DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(ev || '')) {
+                    amountToAdd = -t.amount;
+                } else if (!['BUY', 'BONUS'].includes(ev || '')) {
+                    amountToAdd = 0;
+                }
+            }
+
+            map.set(catKey, (map.get(catKey) || 0) + amountToAdd);
+            if (subKey) map.set(subKey, (map.get(subKey) || 0) + amountToAdd);
+        });
+        return map;
+    }, [transactions, creditCards, settings, viewType, year, categories]);
+
+    const getPriorAverage = (targetYear: number, targetMonthIndex: number, catId: string, subId: string = 'all') => {
+        let sum = 0; let count = 0;
+        for (let i = 1; i <= 6; i++) {
+            const d = new Date(targetYear, targetMonthIndex - i, 1);
+            const key = `${d.getFullYear()}-${d.getMonth()}-${catId}-${subId}`;
+            const val = monthlyLookup.get(key);
+            if (val !== undefined) { sum += val; count++; } else { count++; }
+        }
+        return count > 0 ? sum / count : 0;
+    };
+    
+    const matrix = useMemo(() => {
+        const data: any = {}; const monthlyTotals = new Array(12).fill(0);
+        categories.filter(c => c.type === viewType).forEach(c => {
+            data[c.id] = { id: c.id, name: c.name, icon: c.icon, color: c.color, total: 0, months: new Array(12).fill(null).map(() => ({ val: 0, avg: 0 })), subcats: {} };
+        });
+        transactions.forEach(t => {
+            const isNathy = isNathyTransactionLocal(t);
+            if (isNathy) return;
+
+            const effectiveDate = calculateEffectiveDate(t, creditCards, settings);
+            if (effectiveDate.getFullYear() !== year || t.type !== viewType) return;
+            const month = effectiveDate.getMonth(); const catId = t.categoryId;
+            if (data[catId]) {
+                const descLower = (t.description || '').toLowerCase();
+                const isExplicitUserPart = descLower.includes('(minha parte)') || descLower.includes('minha parte');
+                let amountToAdd = t.amount;
+                if (viewType === TransactionType.EXPENSE) {
+                    amountToAdd = (t.isShared && !isExplicitUserPart) ? (t.amount / 2) : t.amount;
+                } else if (viewType === TransactionType.INVESTMENT) {
+                    const ev = t.investmentDetails?.event;
+                    if (['SELL', 'AMORTIZACAO', 'DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(ev || '')) {
+                        amountToAdd = -t.amount;
+                    } else if (!['BUY', 'BONUS'].includes(ev || '')) {
+                        amountToAdd = 0; // Ignore SPLIT, MERGE, etc. for totals
+                    }
+                }
+
+                data[catId].months[month].val += amountToAdd; data[catId].total += amountToAdd; monthlyTotals[month] += amountToAdd;
+                
+                if (viewType === TransactionType.EXPENSE) {
+                    let subId = 'uncategorized'; 
+                    if (t.subCategoryId) { 
+                        const sub = subCategories.find(s => s.id === t.subCategoryId); 
+                        if (sub && sub.categoryId === catId) subId = t.subCategoryId; 
+                    }
+                    if (!data[catId].subcats[subId]) { 
+                        const subName = subCategories.find(s => s.id === subId)?.name || '...'; 
+                        data[catId].subcats[subId] = { name: subId === 'uncategorized' ? 'Sem Subcategoria' : subName, total: 0, months: new Array(12).fill(null).map(() => ({ val: 0, avg: 0 })) }; 
+                    }
+                    data[catId].subcats[subId].total += amountToAdd; 
+                    data[catId].subcats[subId].months[month].val += amountToAdd;
+                }
+            }
+        });
+        Object.values(data).forEach((cat: any) => { 
+            for (let m = 0; m < 12; m++) { 
+                cat.months[m].avg = getPriorAverage(year, m, cat.id, 'all'); 
+                Object.keys(cat.subcats).forEach(subId => { 
+                    const realSubId = subId === 'uncategorized' ? null : subId; 
+                    if (realSubId) cat.subcats[subId].months[m].avg = getPriorAverage(year, m, cat.id, realSubId); 
+                }); 
+            } 
+        });
+        return { items: Object.values(data).sort((a: any, b: any) => b.total - a.total), monthlyTotals };
+    }, [transactions, categories, subCategories, creditCards, settings, year, monthlyLookup, viewType]);
+
+    const totalPocketInvested = yearlySummary.reduce((acc, m) => acc + m.pocket, 0);
+    const totalIncome = yearlySummary.reduce((acc, m) => acc + m.income, 0);
+    const totalProventoInvested = yearlySummary.reduce((acc, m) => acc + m.provento, 0);
+    const totalBaseProvento = yearlySummary.reduce((acc, m) => acc + m.baseProvento, 0);
+    const totalResgateInvested = yearlySummary.reduce((acc, m) => acc + m.resgate, 0);
+    const totalBaseResgate = yearlySummary.reduce((acc, m) => acc + m.baseResgate, 0);
+
+    const pctActive = totalIncome > 0 ? Math.min(100, (totalPocketInvested / totalIncome) * 100) : 0;
+    const pctProvento = totalBaseProvento > 0 ? Math.min(100, (totalProventoInvested / totalBaseProvento) * 100) : 0;
+    const pctResgate = totalBaseResgate > 0 ? Math.min(100, (totalResgateInvested / totalBaseResgate) * 100) : 0;
+
+    const renderCell = (val: number, avg: number, isSub = false) => {
+        if (val === 0) return <span className="text-zinc-800 dark:text-zinc-200">-</span>;
+        let icon = null; 
+        if (avg > 0) { 
+            if (val > avg * 1.05) icon = <ArrowUp size={isSub ? 8 : 10} className={viewType === TransactionType.INCOME ? "text-emerald-500 shrink-0" : "text-red-500 shrink-0"} strokeWidth={3} />; 
+            else if (val < avg * 0.95) icon = <ArrowDown size={isSub ? 8 : 10} className={viewType === TransactionType.INCOME ? "text-red-500 shrink-0" : "text-emerald-500 shrink-0"} strokeWidth={3} />; 
+        }
+        return (<div className="flex items-center justify-end gap-1 w-full">{icon}<span className={isSub ? "" : "font-medium"}>{(Number(val) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>);
+    };
+
+    return (
+        <div className="space-y-6">
+            {/* Yearly Financial Summary Table */}
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border border-zinc-200 dark:border-zinc-800/60 dark:border-zinc-800/80 overflow-hidden animate-in fade-in">
+                <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <Table size={16} className="text-zinc-900 dark:text-zinc-100" />
+                        <h3 className="text-xs font-medium text-zinc-800 dark:text-zinc-200 uppercase tracking-wide">Resumo Financeiro Anual (Atualizado)</h3>
+                    </div>
+                </div>
+                <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-xs">
+                        <thead>
+                            <tr className="bg-zinc-50 dark:bg-zinc-950/50 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-medium">
+                                <th className="px-3 py-2 text-left w-32 sticky left-0 bg-zinc-50 dark:bg-zinc-950 shadow-[1px_0_2px_rgba(0,0,0,0.05)]">Tipo</th>
+                                <th className="px-2 py-2 text-right font-medium bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 min-w-[80px]">Total</th>
+                                {MONTHS.map(m => <th key={m} className="px-1 py-2 text-center min-w-[70px]">{m}</th>)}
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {/* Receitas */}
+                            <tr className="hover:bg-emerald-50/30 transition-colors">
+                                <td className="px-3 py-2.5 font-semibold text-emerald-600 sticky left-0 bg-white dark:bg-zinc-900 shadow-[1px_0_2px_rgba(0,0,0,0.05)] flex items-center gap-2">
+                                    <ArrowUpCircle size={14} /> Receitas
+                                </td>
+                                <td className="px-2 py-2.5 text-right font-medium text-emerald-700 bg-zinc-50 dark:bg-zinc-950/30">
+                                    {(yearlySummary.reduce((acc, m) => acc + m.income, 0) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' })}
+                                </td>
+                                {yearlySummary.map((m, i) => (
+                                    <td key={i} className="px-1 py-2.5 text-center text-emerald-600 font-medium">
+                                        {m.income > 0 ? (m.income || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                                    </td>
+                                ))}
+                            </tr>
+                            
+                            {/* Despesas */}
+                            <tr className="hover:bg-red-50/30 transition-colors">
+                                <td className="px-3 py-2.5 font-medium text-red-600 sticky left-0 bg-white dark:bg-zinc-900 shadow-[1px_0_2px_rgba(0,0,0,0.05)] flex items-center gap-2">
+                                    <ArrowDownCircle size={14} /> Despesas
+                                </td>
+                                <td className="px-2 py-2.5 text-right font-medium text-red-700 bg-zinc-50 dark:bg-zinc-950/30">
+                                    {(yearlySummary.reduce((acc, m) => acc + m.expense, 0) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' })}
+                                </td>
+                                {yearlySummary.map((m, i) => (
+                                    <td key={i} className="px-1 py-2.5 text-center text-red-600 font-medium">
+                                        {m.expense > 0 ? (m.expense || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                                    </td>
+                                ))}
+                            </tr>
+
+                            {/* Investimentos */}
+                            <tr className="hover:bg-blue-50/30 transition-colors">
+                                <td className="px-3 py-2.5 font-medium text-blue-600 sticky left-0 bg-white dark:bg-zinc-900 shadow-[1px_0_2px_rgba(0,0,0,0.05)] flex items-center gap-2">
+                                    <TrendingUp size={14} /> Investido
+                                </td>
+                                <td className="px-2 py-2.5 text-right font-medium text-blue-700 bg-zinc-50 dark:bg-zinc-950/30">
+                                    {(yearlySummary.reduce((acc, m) => acc + m.investment, 0) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' })}
+                                </td>
+                                {yearlySummary.map((m, i) => (
+                                    <td key={i} className="px-1 py-2.5 text-center text-blue-600 font-medium">
+                                        {m.investment !== 0 ? (m.investment || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                                    </td>
+                                ))}
+                            </tr>
+
+                            {/* Investimentos Subdivisions */}
+                            <tr className="text-[10px] text-zinc-500 hover:bg-blue-50/10 transition-colors">
+                                <td className="px-3 py-1.5 pl-6 sticky left-0 bg-white dark:bg-zinc-900 shadow-[1px_0_2px_rgba(0,0,0,0.05)] flex items-center gap-1.5 italic">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                    <span>Renda Ativa (Investimentos)</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setOriginModalTab('active')}
+                                        title={`Renda Ativa (${year}):\n• Investido do bolso: ${formatCurrency(totalPocketInvested)}\n• Receitas totais: ${formatCurrency(totalIncome)}\n• ${pctActive.toFixed(1)}% das receitas de ${year} investidas.\nClique para ver o resumo.`}
+                                        className="ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/80 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer group not-italic"
+                                    >
+                                        <span>{pctActive.toFixed(1)}%</span>
+                                        <Info size={10} className="text-blue-500/70 group-hover:text-blue-600" />
+                                    </button>
+                                </td>
+                                <td className="px-2 py-1.5 text-right font-medium text-zinc-600 bg-zinc-50 dark:bg-zinc-950/30">
+                                    {(yearlySummary.reduce((acc, m) => acc + m.pocket, 0) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' })}
+                                </td>
+                                {yearlySummary.map((m, i) => (
+                                    <td key={i} className="px-1 py-1.5 text-center text-zinc-600">
+                                        {m.pocket > 0 ? (m.pocket || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                                    </td>
+                                ))}
+                            </tr>
+                            <tr className="text-[10px] text-zinc-500 hover:bg-blue-50/10 transition-colors">
+                                <td className="px-3 py-1.5 pl-6 sticky left-0 bg-white dark:bg-zinc-900 shadow-[1px_0_2px_rgba(0,0,0,0.05)] flex items-center gap-1.5 italic">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    <span>Proventos (Recebidos)</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setOriginModalTab('provento')}
+                                        title={`Proventos (${year}):\n• Saldo do ano anterior: ${formatCurrency(poolOrigin.initialProventosPool)}\n• Recebidos em ${year}: ${formatCurrency(totalBaseProvento)}\n• Investido em ${year}: ${formatCurrency(totalProventoInvested)}\n• ${pctProvento.toFixed(1)}% dos proventos recebidos em ${year} foram investidos${totalProventoInvested > totalBaseProvento ? ` (+ ${formatCurrency(totalProventoInvested - totalBaseProvento)} do saldo anterior)` : ''}.\nClique para ver o resumo.`}
+                                        className="ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer group not-italic bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80 hover:bg-emerald-100 dark:hover:bg-emerald-900/60"
+                                    >
+                                        <span>{pctProvento.toFixed(1)}%</span>
+                                        <Info size={10} className="text-emerald-500/70 group-hover:text-emerald-600" />
+                                    </button>
+                                </td>
+                                <td className="px-2 py-1.5 text-right font-medium text-zinc-600 bg-zinc-50 dark:bg-zinc-950/30">
+                                    {(yearlySummary.reduce((acc, m) => acc + m.provento, 0) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' })}
+                                </td>
+                                {yearlySummary.map((m, i) => (
+                                    <td key={i} className="px-1 py-1.5 text-center text-zinc-600">
+                                        {m.provento > 0 ? (m.provento || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                                    </td>
+                                ))}
+                            </tr>
+                            <tr className="text-[10px] text-zinc-500 hover:bg-blue-50/10 transition-colors">
+                                <td className="px-3 py-1.5 pl-6 sticky left-0 bg-white dark:bg-zinc-900 shadow-[1px_0_2px_rgba(0,0,0,0.05)] flex items-center gap-1.5 italic">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                                    <span>Reinvestimentos (Resgatados)</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setOriginModalTab('resgate')}
+                                        title={`Reinvestimentos (${year}):\n• Saldo do ano anterior: ${formatCurrency(poolOrigin.initialResgatesPool)}\n• Resgates em ${year}: ${formatCurrency(totalBaseResgate)}\n• Reinvestido em ${year}: ${formatCurrency(totalResgateInvested)}\n• ${pctResgate.toFixed(1)}% dos resgates realizados em ${year} foram reinvestidos${totalResgateInvested > totalBaseResgate ? ` (+ ${formatCurrency(totalResgateInvested - totalBaseResgate)} do saldo anterior)` : ''}.\nClique para ver o resumo.`}
+                                        className="ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer group not-italic bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800/80 hover:bg-purple-100 dark:hover:bg-purple-900/60"
+                                    >
+                                        <span>{pctResgate.toFixed(1)}%</span>
+                                        <Info size={10} className="text-purple-500/70 group-hover:text-purple-600" />
+                                    </button>
+                                </td>
+                                <td className="px-2 py-1.5 text-right font-medium text-zinc-600 bg-zinc-50 dark:bg-zinc-950/30">
+                                    {(yearlySummary.reduce((acc, m) => acc + m.resgate, 0) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' })}
+                                </td>
+                                {yearlySummary.map((m, i) => (
+                                    <td key={i} className="px-1 py-1.5 text-center text-zinc-600">
+                                        {m.resgate > 0 ? (m.resgate || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                                    </td>
+                                ))}
+                            </tr>
+
+                            {/* Saldo */}
+                            <tr className="bg-zinc-50 dark:bg-zinc-950 font-medium border-t border-zinc-200 dark:border-zinc-800">
+                                <td className="px-3 py-2.5 text-zinc-800 dark:text-zinc-200 sticky left-0 bg-zinc-50 dark:bg-zinc-950 shadow-[1px_0_2px_rgba(0,0,0,0.05)] flex items-center gap-2">
+                                    <Wallet size={14} /> Saldo
+                                </td>
+                                <td className="px-2 py-2.5 text-right text-zinc-900 dark:text-zinc-100 bg-zinc-50 dark:bg-zinc-950">
+                                    {(yearlySummary.reduce((acc, m) => acc + m.balance, 0) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' })}
+                                </td>
+                                {yearlySummary.map((m, i) => (
+                                    <td key={i} className={`px-1 py-2.5 text-center ${m.balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                        {m.balance !== 0 ? (m.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                                    </td>
+                                ))}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Existing Category Detailed View */}
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border border-zinc-200 dark:border-zinc-800/60 dark:border-zinc-800/80 overflow-hidden animate-in fade-in">
+                <div className="flex flex-col sm:flex-row justify-between items-center border-b border-zinc-200 dark:border-zinc-800 p-3 bg-zinc-50 dark:bg-zinc-950/50 dark:bg-zinc-950/50 gap-3">
+                    <div className="flex items-center gap-2">
+                        <List size={16} className="text-zinc-900 dark:text-zinc-100" />
+                        <h3 className="text-xs font-medium text-zinc-800 dark:text-zinc-200 uppercase tracking-wide">Detalhamento por Categoria</h3>
+                    </div>
+                    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-full">
+                        <button onClick={() => setViewType(TransactionType.EXPENSE)} className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all ${viewType === TransactionType.EXPENSE ? 'bg-white dark:bg-zinc-900 shadow text-red-600' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Despesas</button>
+                        <button onClick={() => setViewType(TransactionType.INCOME)} className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all ${viewType === TransactionType.INCOME ? 'bg-white dark:bg-zinc-900 shadow text-emerald-600' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Receitas</button>
+                        <button onClick={() => setViewType(TransactionType.INVESTMENT)} className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all ${viewType === TransactionType.INVESTMENT ? 'bg-white dark:bg-zinc-900 shadow text-blue-600' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Investimentos</button>
+                    </div>
+                </div>
+                <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-xs">
+                        <thead><tr className="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 font-medium"><th className="px-2 py-2 text-left w-40 sticky left-0 bg-zinc-50 dark:bg-zinc-950 z-10 shadow-[1px_0_2px_rgba(0,0,0,0.05)]">Categoria</th><th className="px-2 py-2 text-right bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-medium min-w-[70px]">Total</th>{MONTHS.map(m => (<th key={m} className="px-1 py-2 text-center min-w-[60px]">{m}</th>))}</tr></thead>
+                        <tbody>
+                            <tr className="bg-zinc-50 dark:bg-zinc-950 font-semibold text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-800"><td className="px-2 py-2 sticky left-0 bg-zinc-50 dark:bg-zinc-950 z-10 shadow-[1px_0_2px_rgba(0,0,0,0.05)]">TOTAL</td><td className="px-2 py-2 text-right text-zinc-900 dark:text-zinc-100 truncate">{(Number(matrix.items.reduce((acc: number, item: any) => acc + item.total, 0)) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>{matrix.monthlyTotals.map((val: number, i: number) => (<td key={i} className="px-1 py-2 text-center text-[10px]">{val > 0 ? (Number(val) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>))}</tr>
+                            {(matrix.items as any[]).map(cat => (
+                                <React.Fragment key={cat.id}>
+                                    <tr className="border-b border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950 cursor-pointer transition-colors group" onClick={() => toggleCat(cat.id)}>
+                                        <td className="px-2 py-2 sticky left-0 bg-white dark:bg-zinc-900 group-hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950 z-10 shadow-[1px_0_2px_rgba(0,0,0,0.05)] flex items-center gap-1.5 h-full">
+                                            <div className="w-4 h-4 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800"><span className="text-[8px]" style={{color: cat.color}}>●</span></div>
+                                            <span className="font-semibold text-zinc-800 dark:text-zinc-200 truncate">{cat.name}</span>
+                                            {viewType === TransactionType.EXPENSE && (expandedCats.has(cat.id) ? <ChevronDown size={12} className="ml-auto text-zinc-500 dark:text-zinc-400 dark:text-zinc-500"/> : <ChevronRight size={12} className="ml-auto text-zinc-500 dark:text-zinc-400 dark:text-zinc-500"/>)}
+                                        </td>
+                                        <td className="px-2 py-2 text-right font-medium text-zinc-800 dark:text-zinc-200 bg-zinc-50 dark:bg-zinc-950/30 truncate">{(Number(cat.total) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                        {cat.months.map((m: any, i: number) => (<td key={i} className={`px-1 py-2 text-center text-[10px] ${m.val === 0 ? 'text-zinc-800 dark:text-zinc-200' : 'text-zinc-700 dark:text-zinc-300'}`}>{renderCell(m.val, m.avg)}</td>))}
+                                    </tr>
+                                    {expandedCats.has(cat.id) && Object.entries(cat.subcats).map(([subId, sub]: [string, any]) => (<tr key={subId} className="bg-zinc-50 dark:bg-zinc-950/30 text-[10px] border-b border-zinc-200 dark:border-zinc-800"><td className="px-2 py-1 pl-8 sticky left-0 bg-zinc-50 dark:bg-zinc-950 z-10 shadow-[1px_0_2px_rgba(0,0,0,0.05)] text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 italic truncate">{sub.name}</td><td className="px-2 py-1 text-right text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 font-medium truncate">{(Number(sub.total) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>{sub.months.map((m: any, i: number) => (<td key={i} className="px-1 py-1 text-center text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">{renderCell(m.val, m.avg, true)}</td>))}</tr>))}
+                                </React.Fragment>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {originModalTab && (
+                <InvestmentOriginModal
+                    isOpen={true}
+                    onClose={() => setOriginModalTab(null)}
+                    type={originModalTab}
+                    year={year}
+                    totalIncome={totalIncome}
+                    totalPocketInvested={totalPocketInvested}
+                    totalProventoInvested={totalProventoInvested}
+                    totalBaseProvento={totalBaseProvento}
+                    totalResgateInvested={totalResgateInvested}
+                    totalBaseResgate={totalBaseResgate}
+                    initialProventosPool={poolOrigin.initialProventosPool}
+                    finalProventosPool={poolOrigin.finalProventosPool}
+                    initialResgatesPool={poolOrigin.initialResgatesPool}
+                    finalResgatesPool={poolOrigin.finalResgatesPool}
+                />
+            )}
+        </div>
+    );
+};
+
+interface TransactionsListProps {
+  transactions: Transaction[];
+  categories: Category[];
+  subCategories: SubCategory[];
+  creditCards: CreditCard[];
+  currentDate: Date;
+  settings: UserSettings;
+  onEditTransaction: (t: Transaction) => void;
+  onDeleteTransaction: (id: string, mode?: 'single' | 'future' | 'all') => void;
+  onDateChange: (date: Date) => void;
+}
+
+export const TransactionsList: React.FC<TransactionsListProps> = ({ 
+    transactions, categories, subCategories, creditCards, currentDate, settings, 
+    onEditTransaction, onDeleteTransaction, onDateChange
+}) => {
+  const [viewMode, setViewMode] = useState<'monthly' | 'yearly'>('monthly');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  // Substitui o antigo seletor "Cartões": clicar num card do resumo por forma de
+  // pagamento filtra a lista por aquela forma/cartão específico (id do cartão,
+  // ou PaymentMethod.DEBIT_CASH/CREDIT_CARD para os agregados).
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [catSearchTerm, setCatSearchTerm] = useState('');
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+  const [filterOnlyInstallments, setFilterOnlyInstallments] = useState(false);
+  const [filterOnlyShared, setFilterOnlyShared] = useState(false);
+  const [filterTag, setFilterTag] = useState('');
+  const [isNathyExpanded, setIsNathyExpanded] = useState(true);
+  const [expandedAdditionalCards, setExpandedAdditionalCards] = useState<Record<string, boolean>>({});
+  const [showDuplicateResolver, setShowDuplicateResolver] = useState(false);
+  const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null);
+  
+  const [dismissedDuplicates, setDismissedDuplicates] = useState(false); // Estado para controlar se o alerta foi ignorado
+
+  const isNathyTransactionLocal = (t: Transaction) => isNathyOrAdditionalTx(t, categories);
+
+  // Payment Confirmation State
+  const [paymentConfirmationTx, setPaymentConfirmationTx] = useState<Transaction | null>(null);
+
+  // Batch Selection state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [batchEditDescription, setBatchEditDescription] = useState('');
+  const [batchEditCategoryId, setBatchEditCategoryId] = useState('');
+  const [batchEditSubCategoryId, setBatchEditSubCategoryId] = useState('');
+  const [isBatchUpdating, setIsBatchUpdating] = useState(false);
+
+  // Investment Details Toggle
+  const [showMonthInvestments, setShowMonthInvestments] = useState(false);
+
+  const toggleCategoryFilter = (catId: string) => { setCategoryFilter(prev => prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]); };
+  const togglePaymentMethodFilter = (key: string) => { setPaymentMethodFilter(prev => prev === key ? null : key); };
+  const matchesPaymentMethodFilter = (t: Transaction) => {
+      if (!paymentMethodFilter) return true;
+      if (paymentMethodFilter === PaymentMethod.DEBIT_CASH) return !t.paymentMethod || t.paymentMethod === PaymentMethod.DEBIT_CASH;
+      if (paymentMethodFilter === PaymentMethod.CREDIT_CARD) return t.paymentMethod === PaymentMethod.CREDIT_CARD;
+      return t.creditCardId === paymentMethodFilter;
+  };
+  const clearFilter = () => { setCategoryFilter([]); setPaymentMethodFilter(null); setFilterStartDate(''); setFilterEndDate(''); setFilterOnlyInstallments(false); setFilterOnlyShared(false); setFilterTag(''); setCatSearchTerm(''); setSelectedIds([]); };
+
+  const handleToggleSelection = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleToggleSelectAllGroup = (items: Transaction[]) => {
+    const itemIds = items.map(i => i.id);
+    const allInSelected = itemIds.every(id => selectedIds.includes(id));
+    if (allInSelected) {
+        setSelectedIds(prev => prev.filter(id => !itemIds.includes(id)));
+    } else {
+        setSelectedIds(prev => [...new Set([...prev, ...itemIds])]);
+    }
+  };
+
+  const handleConfirmPayment = async (t: Transaction) => {
+      await StorageService.updateTransaction({ ...t, isPaid: true }, 'single');
+      setPaymentConfirmationTx(null);
+  };
+
+  const handleBatchUpdate = async () => {
+    if (selectedIds.length === 0) return;
+    if (!batchEditDescription && !batchEditCategoryId && !batchEditSubCategoryId) {
+        alert("Preencha ao menos um campo para atualizar.");
+        return;
+    }
+
+    setIsBatchUpdating(true);
+    try {
+        const promises = selectedIds.map(id => {
+            const t = transactions.find(tx => tx.id === id);
+            if (!t) return Promise.resolve();
+            const updates: Partial<Transaction> = {};
+            if (batchEditDescription) updates.description = batchEditDescription;
+            if (batchEditCategoryId) updates.categoryId = batchEditCategoryId;
+            if (batchEditSubCategoryId) updates.subCategoryId = batchEditSubCategoryId;
+            return StorageService.updateTransaction({ ...t, ...updates });
+        });
+        await Promise.all(promises);
+        setSelectedIds([]);
+        setBatchEditDescription('');
+        setBatchEditCategoryId('');
+        setBatchEditSubCategoryId('');
+        alert(`${selectedIds.length} lançamentos atualizados.`);
+    } catch (e) {
+        console.error(e);
+        alert("Erro ao atualizar lançamentos.");
+    } finally {
+        setIsBatchUpdating(false);
+    }
+  };
+
+  // Date Navigation Handlers
+  const handlePrevMonth = () => {
+      const newDate = new Date(currentDate);
+      newDate.setMonth(newDate.getMonth() - 1);
+      onDateChange(newDate);
+  };
+
+  const handleNextMonth = () => {
+      const newDate = new Date(currentDate);
+      newDate.setMonth(newDate.getMonth() + 1);
+      onDateChange(newDate);
+  };
+
+  // Tudo que vai para a lista/resumo do mês, exceto o filtro por forma de pagamento —
+  // o resumo por forma de pagamento precisa ver todos os métodos (não só o
+  // selecionado) para continuar clicável e permitir trocar/limpar a seleção.
+  const baseMonthTransactions = useMemo(() => {
+      const isCustomRangeActive = filterStartDate || filterEndDate;
+
+      return transactions.filter(t => {
+          // A) Restrição Temporal
+          if (isCustomRangeActive) {
+              const tDateStr = t.date.split('T')[0];
+              if (filterStartDate && tDateStr < filterStartDate) return false;
+              if (filterEndDate && tDateStr > filterEndDate) return false;
+          } else {
+              const effectiveDate = calculateEffectiveDate(t, creditCards, settings);
+              if (effectiveDate.getMonth() !== currentDate.getMonth() ||
+                  effectiveDate.getFullYear() !== currentDate.getFullYear()) {
+                  return false;
+              }
+          }
+
+          // B) Busca por Tag ou Descrição
+          if (filterTag) {
+              const term = filterTag.toLowerCase();
+              if (term.startsWith('#')) {
+                  const tagOnly = term.slice(1).trim();
+                  const hasTag = t.tags?.some(tag => tag.toLowerCase().includes(tagOnly));
+                  if (!hasTag) return false;
+              } else {
+                  const hasTag = t.tags?.some(tag => tag.toLowerCase().includes(term));
+                  const hasDesc = t.description.toLowerCase().includes(term);
+                  if (!hasTag && !hasDesc) return false;
+              }
+          }
+
+          // C) Outros filtros
+          if (categoryFilter.length > 0 && !categoryFilter.includes(t.categoryId)) return false;
+          if (filterOnlyInstallments && (!t.totalInstallments || t.totalInstallments <= 1)) return false;
+          if (filterOnlyShared && !t.isShared) return false;
+
+          // We now exclude investments from the main list to avoid duplication
+          if (t.type === TransactionType.INVESTMENT) return false;
+
+          return true;
+      });
+  }, [transactions, currentDate, creditCards, settings, categoryFilter, filterStartDate, filterEndDate, filterOnlyInstallments, filterOnlyShared, filterTag]);
+
+  const currentMonthTransactions = useMemo(
+      () => baseMonthTransactions.filter(matchesPaymentMethodFilter),
+      [baseMonthTransactions, paymentMethodFilter]
+  );
+
+  // Investment Summary Calculation (For Widget)
+  const investmentSummary = useMemo(() => {
+      let invested = 0;
+      let dividends = 0;
+      let redeemed = 0;
+      let income = 0;
+
+      transactions.forEach(t => {
+          const effectiveDate = calculateEffectiveDate(t, creditCards, settings);
+          const isMatch = viewMode === 'monthly' 
+              ? (effectiveDate.getMonth() === currentDate.getMonth() && effectiveDate.getFullYear() === currentDate.getFullYear())
+              : (effectiveDate.getFullYear() === selectedYear);
+
+          if (isMatch) {
+              if (t.type === TransactionType.INVESTMENT) {
+                  const ev = t.investmentDetails?.event;
+                  if (ev === 'BUY' || ev === 'BONUS') {
+                      invested += t.amount;
+                  } else if (['DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(ev || '')) {
+                      dividends += t.amount;
+                  } else if (['SELL', 'AMORTIZACAO'].includes(ev || '')) {
+                      redeemed += t.amount;
+                  }
+              }
+              if (t.type === TransactionType.INCOME) income += t.amount;
+          }
+      });
+      const targetPct = Math.max(0, 100 - settings.monthlyBudgetPercentage);
+      const targetAmount = income * (targetPct / 100);
+      
+      return { invested: invested - redeemed - dividends, dividends, redeemed, targetAmount, targetPct };
+  }, [transactions, currentDate, selectedYear, viewMode, creditCards, settings]);
+
+  const monthlyInvestments = useMemo(() => {
+      const buys: Transaction[] = [];
+      const divs: Transaction[] = [];
+      const sells: Transaction[] = [];
+      const corporate: Transaction[] = [];
+
+      transactions.forEach(t => {
+          if (t.type !== TransactionType.INVESTMENT) return;
+          const effectiveDate = calculateEffectiveDate(t, creditCards, settings);
+          const isMatch = viewMode === 'monthly' 
+              ? (effectiveDate.getMonth() === currentDate.getMonth() && effectiveDate.getFullYear() === currentDate.getFullYear())
+              : (effectiveDate.getFullYear() === selectedYear);
+
+          if (isMatch) {
+              const ev = t.investmentDetails?.event;
+              if (ev === 'BUY' || ev === 'BONUS') buys.push(t);
+              else if (['DIVIDEND', 'JCP', 'RENDIMENTO', 'REEMBOLSO'].includes(ev || '')) divs.push(t);
+              else if (['SELL', 'AMORTIZACAO'].includes(ev || '')) sells.push(t);
+              else if (['SPLIT', 'MERGE', 'TICKER_UPDATE'].includes(ev || '')) corporate.push(t);
+          }
+      });
+
+      const sortFn = (a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime();
+      return {
+          buys: buys.sort(sortFn),
+          divs: divs.sort(sortFn),
+          sells: sells.sort(sortFn),
+          corporate: corporate.sort(sortFn)
+      };
+  }, [transactions, currentDate, selectedYear, viewMode, creditCards, settings]);
+
+  const yearlyFilteredTransactions = useMemo(() => {
+      return transactions.filter(t => {
+          if (categoryFilter.length > 0 && !categoryFilter.includes(t.categoryId)) return false;
+          if (!matchesPaymentMethodFilter(t)) return false;
+          if (filterOnlyInstallments && (!t.totalInstallments || t.totalInstallments <= 1)) return false;
+          if (filterOnlyShared && !t.isShared) return false;
+          if (filterTag) {
+              const tagLower = filterTag.toLowerCase();
+              const hasTag = t.tags?.some(tag => tag.toLowerCase().includes(tagLower));
+              const hasDesc = t.description.toLowerCase().includes(tagLower);
+              if (!hasTag && !hasDesc) return false;
+          }
+          return true;
+      });
+  }, [transactions, categoryFilter, paymentMethodFilter, filterOnlyInstallments, filterOnlyShared, filterTag]);
+
+  const potentialDuplicateGroups = useMemo(() => {
+      const groups: Record<string, Transaction[]> = {};
+      currentMonthTransactions.forEach(t => {
+          const cleanDesc = t.description.trim().toLowerCase();
+          const dateKey = t.date.split('T')[0];
+          const key = `${dateKey}|${t.amount}|${cleanDesc}|${t.categoryId}|${t.type}`;
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(t);
+      });
+      return Object.values(groups).filter(g => g.length > 1);
+  }, [currentMonthTransactions]);
+
+  const { mainTransactions, nathyTransactions } = useMemo(() => {
+      const main: Transaction[] = [];
+      const nathy: Transaction[] = [];
+
+      currentMonthTransactions.forEach(t => {
+          if (isNathyTransactionLocal(t)) {
+              nathy.push(t);
+          } else {
+              main.push(t);
+          }
+      });
+      return { mainTransactions: main, nathyTransactions: nathy };
+  }, [currentMonthTransactions, categories]);
+
+  const groupTransactionsByCard = (txs: Transaction[], allTxs: Transaction[]) => {
+      const nathyCategoryId = categories.find(c => c.name.toLowerCase() === 'nathy')?.id;
+      const sortTransactions = (a: Transaction, b: Transaction) => {
+          const aIsI = (a.totalInstallments || 1) > 1; const bIsI = (b.totalInstallments || 1) > 1;
+          if (aIsI && !bIsI) return -1; if (!aIsI && bIsI) return 1;
+          if (a.isFixed && !b.isFixed) return -1; if (!a.isFixed && b.isFixed) return 1;
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+      };
+      const credits = txs.filter(t => t.type === TransactionType.EXPENSE && t.paymentMethod === PaymentMethod.CREDIT_CARD);
+      const debits = txs.filter(t => t.type === TransactionType.EXPENSE && t.paymentMethod === PaymentMethod.DEBIT_CASH);
+      const incomes = txs.filter(t => t.type === TransactionType.INCOME);
+      const investments = txs.filter(t => t.type === TransactionType.INVESTMENT);
+      const allCredits = allTxs.filter(t => t.type === TransactionType.EXPENSE && t.paymentMethod === PaymentMethod.CREDIT_CARD);
+      const groupedCredit = creditCards.map(card => {
+          const items = credits.filter(t => t.creditCardId === card.id);
+          const totalItems = allCredits.filter(t => t.creditCardId === card.id);
+          if (items.length === 0 && totalItems.length === 0) return null;
+          const totalInvoice = totalItems.reduce((sum, t) => sum + t.amount, 0);
+          const myPart = totalItems.reduce((sum, t) => { 
+              if (isNathyOrAdditionalTx(t, categories)) {
+                  return sum;
+              }
+              const descLower = (t.description || '').toLowerCase();
+              const isExplicitUserPart = descLower.includes('(minha parte)') || descLower.includes('minha parte');
+              if (t.isShared && !isExplicitUserPart) {
+                  return sum + (t.amount / 2);
+              }
+              return sum + t.amount;
+          }, 0);
+          return { id: card.id, name: card.name, color: card.color, total: totalInvoice, myTotal: myPart, items: items.sort(sortTransactions) };
+      }).filter(Boolean) as { id: string, name: string, color: string, total: number, myTotal: number, items: Transaction[] }[];
+      
+      return { 
+          groupedCredit, 
+          debits: debits.sort(sortTransactions), 
+          incomes: incomes.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+          investments: investments.sort(sortTransactions)
+      };
+  };
+
+  const myGrouped = groupTransactionsByCard(mainTransactions, currentMonthTransactions);
+  const nathyGrouped = groupTransactionsByCard(nathyTransactions, currentMonthTransactions);
+
+  const handleDeleteRequest = (t: Transaction) => {
+      setDeletingTransaction(t);
+  };
+
+  const renderTransactionRow = (t: Transaction) => {
+    const isI = (t.totalInstallments || 1) > 1;
+    const category = categories.find(c => c.id === t.categoryId);
+    const sub = subCategories.find(s => s.id === t.subCategoryId);
+    const catColor = category?.color || '#cbd5e1';
+    const amountToD = t.amount;
+    const isSelected = selectedIds.includes(t.id);
+
+    // Barra de destaque à esquerda no lugar de fundo/borda coloridos por linha —
+    // evita "caixa dentro de caixa" quando várias linhas fixas/parceladas se
+    // acumulam e ficam todas com fundo pastel ao mesmo tempo.
+    let accentColor: string | null = null;
+    if (isSelected) accentColor = '#3b82f6';
+    else if (t.isFixed) accentColor = '#f59e0b';
+    else if (isI) accentColor = '#a855f7';
+
+    let d = new Date(t.date);
+    if (isNaN(d.getTime())) d = new Date();
+
+    return (
+        <div
+            key={t.id}
+            className={`relative flex items-center justify-between gap-3 pl-5 pr-4 py-3 transition-colors group cursor-pointer ${isSelected ? 'bg-blue-50/60 dark:bg-blue-950/20' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/30'}`}
+            onClick={() => onEditTransaction(t)}
+        >
+            {accentColor && (
+                <span className="absolute left-1.5 top-2 bottom-2 w-[3px] rounded-full" style={{ backgroundColor: accentColor }} />
+            )}
+
+            <div className="flex items-center gap-3 overflow-hidden min-w-0">
+                {/* Selection */}
+                <button
+                    onClick={(e) => { e.stopPropagation(); handleToggleSelection(t.id); }}
+                    className={`p-1 -ml-1 rounded-full transition-all ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 hover:bg-zinc-100 dark:hover:bg-zinc-700'}`}
+                >
+                    {isSelected ? <CheckSquare size={18} /> : <Square size={18} />}
+                </button>
+
+                {/* Date chip */}
+                <div className="flex flex-col items-center justify-center min-w-[36px] py-1 rounded-lg bg-zinc-100/80 dark:bg-zinc-800/60 shrink-0">
+                    <span className="text-sm font-bold text-zinc-700 dark:text-zinc-200 leading-none">
+                        {d.getUTCDate().toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase leading-none mt-0.5">
+                        {d.toLocaleDateString('pt-BR', {month: 'short'}).replace('.','')}
+                    </span>
+                </div>
+
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white ring-2 ring-white dark:ring-zinc-900 shadow-sm shadow-zinc-200/10" style={{ backgroundColor: catColor }}>
+                    <IconRenderer iconName={category?.icon || 'circle'} className="w-5 h-5" />
+                </div>
+
+                {/* Content */}
+                <div className="flex flex-col min-w-0 pr-2">
+                    <p className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                        {t.type === TransactionType.INVESTMENT && t.investmentDetails?.ticker
+                            ? <><span className="font-bold">{t.investmentDetails.ticker}</span> - {t.description.replace(t.investmentDetails.ticker, '').replace(/^-/, '').trim()}</>
+                            : t.description.replace(/\s\(\d+\/\d+\)$/, '')
+                        }
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <span className="text-[10px] font-semibold truncate max-w-[120px]" style={{ color: catColor }}>
+                            {category?.name || 'Sem categoria'}
+                        </span>
+                        {sub && <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium truncate">› {sub.name}</span>}
+                        {isI && <span className="text-[9px] font-semibold bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 px-1.5 rounded flex items-center gap-0.5 h-4"><Repeat size={8}/> {t.installmentIndex}/{t.totalInstallments}</span>}
+                        {t.isFixed && <span className="text-[9px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 rounded flex items-center gap-0.5 h-4">FIXO</span>}
+                        {t.isShared && (
+                            <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 px-1.5 rounded flex items-center gap-0.5 h-4">
+                                <Users size={8}/> DIVIDIDO
+                            </span>
+                        )}
+                        {(t.cardOrigin || '').toUpperCase() === 'ADDITIONAL' && (
+                            <span className="text-[9px] font-semibold bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 px-1.5 rounded flex items-center gap-0.5 h-4">
+                                <Users size={8}/> {t.isShared ? 'ORIGEM: ADICIONAL' : 'ADICIONAL'}
+                            </span>
+                        )}
+                        {t.isShared && (t.cardOrigin || '').toUpperCase() === 'TITULAR' && (
+                            <span className="text-[9px] font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 rounded flex items-center gap-0.5 h-4">
+                                <CardIcon size={8}/> ORIGEM: TITULAR
+                            </span>
+                        )}
+                        {t.fundedByResgate && <span className="text-[9px] font-semibold bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 px-1.5 rounded flex items-center gap-0.5 h-4">RESGATE</span>}
+                        {t.excludeFromBudget && <span className="text-[9px] font-semibold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 px-1.5 rounded flex items-center gap-0.5 h-4"><Target size={8} /> FORA DA META</span>}
+                        {t.fullySpendableIncome && <span className="text-[9px] font-semibold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-1.5 rounded flex items-center gap-0.5 h-4"><Zap size={8} /> 100% GASTÁVEL</span>}
+                        {!t.isPaid && t.type === TransactionType.EXPENSE && t.paymentMethod !== PaymentMethod.CREDIT_CARD && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setPaymentConfirmationTx(t); }}
+                                className="text-[9px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-1.5 rounded border border-amber-200 dark:border-amber-900/50 uppercase flex items-center gap-1 hover:bg-amber-200 dark:hover:bg-amber-900/40 transition-colors h-4"
+                            >
+                                <AlertCircle size={8} /> Pendente
+                            </button>
+                        )}
+                        {t.isPaid && t.type === TransactionType.EXPENSE && t.paymentMethod !== PaymentMethod.CREDIT_CARD && (
+                            <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/40 px-1.5 rounded h-4 flex items-center">Pago</span>
+                        )}
+                        {t.tags?.map((tag, i) => <span key={i} className="text-[9px] text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1 rounded h-4 flex items-center">#{tag}</span>)}
+                    </div>
+                </div>
+            </div>
+
+            {/* Amount & Actions */}
+            <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className={`font-bold text-sm tabular-nums ${t.type === TransactionType.INCOME ? 'text-emerald-600' : (t.amount < 0 ? 'text-emerald-600' : 'text-zinc-900 dark:text-zinc-100')}`}>
+                    {t.type === TransactionType.INCOME ? '+' : (t.type === TransactionType.EXPENSE ? '-' : '')} R$ {(amountToD || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={(e) => { e.stopPropagation(); onEditTransaction(t); }} className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 p-1 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-md transition-colors"><Pencil size={14} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDeleteRequest(t); }} className="text-zinc-400 dark:text-zinc-500 hover:text-red-600 p-1 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-md transition-colors"><Trash2 size={14} /></button>
+                </div>
+            </div>
+        </div>
+    );
+  };
+
+  const filteredCategories = categories.filter(c => 
+      c.name.toLowerCase().includes(catSearchTerm.toLowerCase())
+  );
+
+  const activeFilterCount = (categoryFilter.length > 0 ? 1 : 0) + (paymentMethodFilter ? 1 : 0) + (filterStartDate ? 1 : 0) + (filterEndDate ? 1 : 0) + (filterOnlyInstallments ? 1 : 0) + (filterOnlyShared ? 1 : 0) + (filterTag ? 1 : 0);
+
+  // Quick Summary Stats for current Filter
+  const quickStats = useMemo(() => {
+      let inc = 0, exp = 0;
+      mainTransactions.forEach(t => {
+          if (t.type === TransactionType.INCOME) inc += t.amount;
+          else if (t.type === TransactionType.EXPENSE && !t.fundedByResgate) exp += t.amount;
+      });
+      return { inc, exp, bal: inc - exp };
+  }, [mainTransactions]);
+
+  const paymentMethodSummary = useMemo(() => {
+      const summary: Record<string, { total: number; color?: string; isCard?: boolean; cardName: string; filterKey: string }> = {};
+      baseMonthTransactions.forEach(t => {
+          if (t.type !== TransactionType.EXPENSE) return;
+          const key = t.paymentMethod || PaymentMethod.DEBIT_CASH;
+          let name = 'Outros';
+          let cardColor: string | undefined;
+          let isCard = false;
+          let filterKey: string = key;
+          if (key === PaymentMethod.CREDIT_CARD) {
+              const card = t.creditCardId ? creditCards.find(c => c.id === t.creditCardId) : null;
+              name = card ? `Cartão ${card.name}` : 'Cartão de Crédito';
+              cardColor = card?.color;
+              isCard = true;
+              // Agrupa (e filtra) por cartão específico quando conhecido; cai no
+              // agregado genérico "Cartão de Crédito" só quando não há cartão vinculado.
+              filterKey = card ? card.id : PaymentMethod.CREDIT_CARD;
+          } else if (key === PaymentMethod.DEBIT_CASH) {
+              name = 'Débito / Dinheiro';
+          }
+
+          if (!summary[name]) {
+              summary[name] = { total: 0, color: cardColor, isCard, cardName: name, filterKey };
+          }
+          summary[name].total += t.amount;
+      });
+      return Object.values(summary).sort((a, b) => b.total - a.total);
+  }, [baseMonthTransactions, creditCards]);
+
+    return (
+    <div className="space-y-6 animate-in fade-in pb-24">
+        {/* TOP CONTROL DECK */}
+        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm shadow-zinc-200/5 p-4 space-y-4">
+            {/* Row 1: Summary & Main Controls */}
+            <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
+                {/* View Switcher & Date */}
+                <div className="flex items-center gap-3 w-full lg:w-auto">
+                    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-full shrink-0">
+                        <button onClick={() => setViewMode('monthly')} className={`px-4 py-2 text-xs font-semibold rounded-full transition-all ${viewMode === 'monthly' ? 'bg-blue-600 text-white shadow' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Mês</button>
+                        <button onClick={() => setViewMode('yearly')} className={`px-4 py-2 text-xs font-semibold rounded-full transition-all ${viewMode === 'yearly' ? 'bg-blue-600 text-white shadow' : 'text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200'}`}>Ano</button>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 px-2 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 shadow-sm flex-1 lg:flex-none justify-center">
+                        {viewMode === 'monthly' ? (
+                            <>
+                                <button onClick={handlePrevMonth} className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 flex items-center justify-center text-zinc-500 dark:text-zinc-400 transition-colors"><ChevronLeft size={16}/></button>
+                                <span className="font-semibold text-zinc-900 dark:text-zinc-100 uppercase text-xs tracking-wide min-w-[100px] text-center">{currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</span>
+                                <button onClick={handleNextMonth} className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 flex items-center justify-center text-zinc-500 dark:text-zinc-400 transition-colors"><ChevronRight size={16}/></button>
+                            </>
+                        ) : (
+                            <>
+                                <button onClick={() => setSelectedYear(y => y - 1)} className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 flex items-center justify-center text-zinc-500 dark:text-zinc-400"><ChevronLeft size={16}/></button>
+                                <span className="font-semibold text-zinc-900 dark:text-zinc-100 min-w-[60px] text-center">{selectedYear}</span>
+                                <button onClick={() => setSelectedYear(y => y + 1)} className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 flex items-center justify-center text-zinc-500 dark:text-zinc-400"><ChevronRight size={16}/></button>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Quick Stats Strip */}
+                {viewMode === 'monthly' && (
+                    <div className="flex items-center gap-6 text-sm flex-1 justify-center lg:justify-end border-t lg:border-t-0 border-zinc-200 dark:border-zinc-800 pt-3 lg:pt-0 w-full lg:w-auto">
+                        <div className="flex flex-col items-end">
+                            <span className="text-[9px] font-medium text-emerald-500 uppercase tracking-wider">Receitas</span>
+                            <span className="font-medium text-zinc-800 dark:text-zinc-200">{formatCurrency(quickStats.inc)}</span>
+                        </div>
+                        <div className="w-px h-8 bg-zinc-100 dark:bg-zinc-800"></div>
+                        <div className="flex flex-col items-end">
+                            <span className="text-[9px] font-medium text-red-500 uppercase tracking-wider">Despesas</span>
+                            <span className="font-medium text-zinc-800 dark:text-zinc-200">{formatCurrency(quickStats.exp)}</span>
+                        </div>
+                        <div className="w-px h-8 bg-zinc-100 dark:bg-zinc-800"></div>
+                        <div className="flex flex-col items-end">
+                            <span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Saldo</span>
+                            <span className={`font-medium ${quickStats.bal >= 0 ? 'text-zinc-900 dark:text-zinc-100' : 'text-red-600'}`}>{formatCurrency(quickStats.bal)}</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Row 2: Filters */}
+            <div className="flex flex-col md:flex-row gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                <div className="relative flex-1">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 dark:text-zinc-500" />
+                    <input 
+                        type="text" 
+                        value={filterTag} 
+                        onChange={(e) => setFilterTag(e.target.value)} 
+                        placeholder="Buscar..."
+                        className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-full text-xs font-semibold focus:ring-2 focus:ring-blue-600/30 outline-none"
+                    />
+                </div>
+                
+                <div className="flex flex-wrap gap-2 pb-1 md:pb-0">
+                    <div className="relative">
+                        <button 
+                            onClick={() => setIsFilterOpen(!isFilterOpen)} 
+                            className={`flex items-center gap-2 px-3.5 py-2 border rounded-full text-xs font-semibold whitespace-nowrap transition-all ${categoryFilter.length > 0 ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}
+                        >
+                            <Filter size={14} /> {categoryFilter.length > 0 ? `${categoryFilter.length} Categorias` : 'Categorias'}
+                        </button>
+                        {isFilterOpen && (
+                            <>
+                                <div className="fixed inset-0 z-20" onClick={() => setIsFilterOpen(false)}></div>
+                                <div className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-30 overflow-hidden animate-in fade-in slide-in-from-top-2 p-2">
+                                    <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-1">
+                                        <button onClick={() => setCategoryFilter([])} className="w-full text-left px-3 py-2 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg">Limpar Seleção</button>
+                                        {categories.map(cat => (
+                                            <button key={cat.id} onClick={() => toggleCategoryFilter(cat.id)} className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg ${categoryFilter.includes(cat.id) ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full" style={{backgroundColor: cat.color}}></div>
+                                                    <span className="truncate max-w-[150px]">{cat.name}</span>
+                                                </div>
+                                                {categoryFilter.includes(cat.id) && <Check size={12} />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+
+                    <button
+                        onClick={() => setFilterOnlyInstallments(!filterOnlyInstallments)}
+                        className={`flex items-center gap-2 px-3.5 py-2 border rounded-full text-xs font-semibold whitespace-nowrap transition-all ${filterOnlyInstallments ? 'bg-purple-50 border-purple-200 text-purple-700' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}
+                    >
+                        <Repeat size={14} /> Parcelados
+                    </button>
+
+                    <button
+                        onClick={() => setFilterOnlyShared(!filterOnlyShared)}
+                        className={`flex items-center gap-2 px-3.5 py-2 border rounded-full text-xs font-semibold whitespace-nowrap transition-all ${filterOnlyShared ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 dark:bg-zinc-950'}`}
+                    >
+                        <Users size={14} /> Divididos
+                    </button>
+
+                    <div className="flex items-center gap-1.5 w-full sm:w-auto mt-2 sm:mt-0">
+                        <div className="relative flex-1 sm:flex-none">
+                            <input
+                                type="date"
+                                value={filterStartDate}
+                                onChange={(e) => setFilterStartDate(e.target.value)}
+                                className="w-full px-3 py-2 border rounded-full text-xs font-semibold focus:ring-2 focus:ring-blue-600/30 outline-none text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                                title="Data Inicial"
+                            />
+                        </div>
+                        <span className="text-zinc-400 dark:text-zinc-500 text-xs hidden sm:inline">até</span>
+                        <div className="relative flex-1 sm:flex-none">
+                            <input
+                                type="date"
+                                value={filterEndDate}
+                                onChange={(e) => setFilterEndDate(e.target.value)}
+                                className="w-full px-3 py-2 border rounded-full text-xs font-semibold focus:ring-2 focus:ring-blue-600/30 outline-none text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                                title="Data Final"
+                            />
+                        </div>
+                    </div>
+
+                    {(activeFilterCount > 0) && (
+                        <button onClick={clearFilter} className="px-3.5 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 rounded-full transition-colors whitespace-nowrap">
+                            Limpar
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* PAYMENT METHOD SUMMARY WIDGET */}
+            {paymentMethodSummary.length > 0 && (
+                <div className="pt-4 mt-2 border-t border-zinc-100 dark:border-zinc-800 pb-1">
+                    <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Resumo por Forma de Pagamento</h4>
+                        {paymentMethodFilter && (
+                            <button onClick={() => setPaymentMethodFilter(null)} className="text-[10px] font-bold text-blue-600 hover:underline">Limpar seleção</button>
+                        )}
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                        {paymentMethodSummary.map(({ cardName, total, color, isCard, filterKey }) => {
+                            const hasColor = isCard && color;
+                            const isActive = paymentMethodFilter === filterKey;
+                            const isDimmed = !!paymentMethodFilter && !isActive;
+                            return (
+                                <button
+                                    key={cardName}
+                                    type="button"
+                                    onClick={() => togglePaymentMethodFilter(filterKey)}
+                                    title={isActive ? `Clique para remover o filtro de ${cardName}` : `Filtrar lançamentos de ${cardName}`}
+                                    className={`bg-zinc-50 dark:bg-zinc-950/40 border rounded-2xl px-4 py-2.5 flex items-center justify-between min-w-[150px] flex-1 sm:flex-none transition-all hover:scale-[1.01] hover:shadow-sm text-left ${isActive ? 'ring-2 ring-blue-500 border-blue-500' : 'border-zinc-200/40 dark:border-zinc-800/80'} ${isDimmed ? 'opacity-50' : ''}`}
+                                    style={{
+                                        borderColor: hasColor && !isActive ? `${color}40` : undefined,
+                                        backgroundColor: hasColor ? `${color}0d` : undefined,
+                                    }}
+                                >
+                                    <div className="flex items-center gap-2 mr-3 min-w-0">
+                                        {hasColor ? (
+                                            <CardIcon size={14} style={{ color: color }} className="shrink-0" />
+                                        ) : (
+                                            <Wallet size={14} className="text-zinc-400 dark:text-zinc-500 shrink-0" />
+                                        )}
+                                        <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 line-clamp-1" title={cardName}>{cardName}</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(total)}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+
+        {/* INVESTMENT SUMMARY WIDGET */}
+        {viewMode === 'monthly' && (
+            <>
+                <div 
+                    className="bg-gradient-to-r from-blue-50/70 to-zinc-50/70 dark:from-blue-950/20 dark:to-zinc-900/20 border border-blue-100 dark:border-blue-900/30 rounded-3xl p-4 flex items-center justify-between shadow-sm shadow-zinc-200/5 animate-in slide-in-from-top-2 cursor-pointer hover:shadow-md transition-all group"
+                    onClick={() => setShowMonthInvestments(!showMonthInvestments)}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 p-2.5 rounded-xl shadow-sm shadow-zinc-200/5 group-hover:scale-110 transition-transform">
+                            <TrendingUp size={20} />
+                        </div>
+                        <div>
+                            <h3 className="font-medium text-blue-900 dark:text-blue-300 text-xs uppercase tracking-wide">Investimento do Mês</h3>
+                            <p className="text-[10px] text-blue-700/70 dark:text-blue-400/70 font-semibold mt-0.5">Meta: {formatCurrency(investmentSummary.targetAmount)} ({investmentSummary.targetPct}%)</p>
+                        </div>
+                    </div>
+                    <div className="text-right flex flex-col items-end">
+                        <span className="text-xl font-bold text-blue-800 dark:text-blue-400 block">{formatCurrency(investmentSummary.invested)}</span>
+                        <div className="flex flex-col items-end">
+                            <div className="flex items-center gap-1">
+                                <span className="text-[9px] text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wider">Total Aportado</span>
+                                {showMonthInvestments ? <ChevronUp size={12} className="text-blue-600 dark:text-blue-400" /> : <ChevronDown size={12} className="text-blue-600 dark:text-blue-400" />}
+                            </div>
+                            {investmentSummary.dividends > 0 && (
+                                <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold bg-white dark:bg-zinc-900/60 px-1.5 rounded border border-emerald-100 dark:border-emerald-900/40 mt-1 shadow-sm shadow-zinc-200/5">
+                                    + {formatCurrency(investmentSummary.dividends)} Proventos
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {showMonthInvestments && (
+                    <div className="animate-in slide-in-from-top-2 space-y-4">
+                        <TransactionGroup
+                            title="Novos Aportes"
+                            items={monthlyInvestments.buys}
+                            icon={<TrendingUp size={18}/>}
+                            colorClass="text-blue-800"
+                            accentColor="#2563eb"
+                            total={monthlyInvestments.buys.reduce((a,b) => a + b.amount, 0)}
+                            renderRow={renderTransactionRow}
+                            selectedIds={selectedIds}
+                            onToggleSelectAll={handleToggleSelectAllGroup}
+                        />
+                        <TransactionGroup
+                            title="Proventos Recebidos"
+                            items={monthlyInvestments.divs}
+                            icon={<Gift size={18}/>}
+                            colorClass="text-emerald-700"
+                            accentColor="#059669"
+                            total={monthlyInvestments.divs.reduce((a,b) => a + b.amount, 0)}
+                            renderRow={renderTransactionRow}
+                            selectedIds={selectedIds}
+                            onToggleSelectAll={handleToggleSelectAllGroup}
+                        />
+                        <TransactionGroup
+                            title="Resgates / Vendas"
+                            items={monthlyInvestments.sells}
+                            icon={<Banknote size={18}/>}
+                            colorClass="text-zinc-700 dark:text-zinc-300"
+                            accentColor="#71717a"
+                            total={monthlyInvestments.sells.reduce((a,b) => a + b.amount, 0)}
+                            renderRow={renderTransactionRow}
+                            selectedIds={selectedIds}
+                            onToggleSelectAll={handleToggleSelectAllGroup}
+                        />
+                        <TransactionGroup
+                            title="Eventos Corporativos"
+                            items={monthlyInvestments.corporate}
+                            icon={<Layers size={18}/>}
+                            colorClass="text-amber-700"
+                            accentColor="#d97706"
+                            total={0}
+                            renderRow={renderTransactionRow}
+                            selectedIds={selectedIds}
+                            onToggleSelectAll={handleToggleSelectAllGroup}
+                        />
+                    </div>
+                )}
+            </>
+        )}
+
+        {/* RESULTS SECTION */}
+        {viewMode === 'yearly' ? ( 
+            <YearlyView transactions={yearlyFilteredTransactions} allTransactions={transactions} categories={categories} subCategories={subCategories} creditCards={creditCards} settings={settings} year={selectedYear} /> 
+        ) : (
+            <div className="space-y-6">
+                {potentialDuplicateGroups.length > 0 && !dismissedDuplicates && (
+                    <div className="bg-amber-50/10 dark:bg-amber-950/20 border border-amber-200/40 dark:border-amber-900/30 rounded-3xl p-4 flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white dark:bg-zinc-900 p-2 rounded-xl text-amber-500 shadow-sm shadow-zinc-200/5"><AlertCircle size={20} /></div>
+                            <div>
+                                <h3 className="font-semibold text-amber-900 dark:text-amber-300 text-xs uppercase">Atenção Necessária</h3>
+                                <p className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold">{potentialDuplicateGroups.length} possíveis duplicatas detectadas.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => setDismissedDuplicates(true)} className="text-xs font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 hover:bg-amber-100/50 dark:hover:bg-amber-950/40 px-3 py-2 rounded-xl transition-all">Ignorar</button>
+                            <button onClick={() => setShowDuplicateResolver(true)} className="bg-white dark:bg-zinc-800 hover:bg-amber-100 dark:hover:bg-amber-950 text-amber-800 dark:text-amber-300 text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow-sm shadow-zinc-200/5 border border-amber-200 dark:border-amber-700/50">Resolver</button>
+                        </div>
+                    </div>
+                )}
+                
+                <div className="space-y-6">
+                    <TransactionGroup
+                        title={<span>Entradas <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 ml-1">({myGrouped.incomes.length})</span></span>}
+                        items={myGrouped.incomes}
+                        icon={<ArrowUpCircle size={20}/>}
+                        colorClass="text-emerald-700"
+                        accentColor="#059669"
+                        total={myGrouped.incomes.reduce((a,b) => a + b.amount, 0)}
+                        renderRow={renderTransactionRow}
+                        selectedIds={selectedIds}
+                        onToggleSelectAll={handleToggleSelectAllGroup}
+                    />
+
+                    <TransactionGroup
+                        title={<span>Débito & Dinheiro <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 ml-1">({myGrouped.debits.length})</span></span>}
+                        items={myGrouped.debits}
+                        icon={<Banknote size={20}/>}
+                        colorClass="text-zinc-800 dark:text-zinc-200"
+                        accentColor="#71717a"
+                        total={myGrouped.debits.reduce((a,b) => a + b.amount, 0)}
+                        renderRow={renderTransactionRow}
+                        selectedIds={selectedIds}
+                        onToggleSelectAll={handleToggleSelectAllGroup}
+                    />
+
+                    {myGrouped.groupedCredit.map(group => (
+                        <TransactionGroup
+                            key={group.id}
+                            title={
+                                <div className="flex items-center gap-2">
+                                    <span style={{ color: group.color }}>{group.name}</span>
+                                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">({group.items.length})</span>
+                                </div>
+                            }
+                            items={group.items}
+                            icon={<CardIcon size={18} style={{ color: group.color }} />}
+                            accentColor={group.color}
+                            total={group.total}
+                            secondaryTotal={group.myTotal}
+                            renderRow={renderTransactionRow}
+                            selectedIds={selectedIds}
+                            onToggleSelectAll={handleToggleSelectAllGroup} 
+                        />
+                    ))}
+
+                    {myGrouped.incomes.length === 0 && myGrouped.debits.length === 0 && myGrouped.groupedCredit.length === 0 && myGrouped.investments.length === 0 && nathyTransactions.length === 0 && (
+                        <div className="text-center py-20 bg-white dark:bg-zinc-900 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800">
+                            <Wallet className="mx-auto mb-4 text-zinc-800 dark:text-zinc-200" size={48} />
+                            <p className="font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">Nenhuma transação encontrada.</p>
+                            <p className="text-xs text-zinc-700 dark:text-zinc-300 mt-1">Ajuste os filtros ou o mês.</p>
+                        </div>
+                    )}
+                </div>
+
+
+                {nathyTransactions.length > 0 && (
+                    <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800">
+                        <button onClick={() => setIsNathyExpanded(!isNathyExpanded)} className="w-full flex items-center justify-between p-4 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm shadow-zinc-200/5 transition-all group">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-pink-100 text-pink-600 p-2 rounded-xl group-hover:bg-pink-200 transition-colors"><Users size={20} /></div>
+                                <div className="text-left">
+                                    <h3 className="font-medium text-zinc-800 dark:text-zinc-200 text-sm uppercase tracking-wide">Gastos Nathy / Cartão Adicional</h3>
+                                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">{nathyTransactions.length} lançamentos (agrupados por cartão)</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="text-sm font-medium text-pink-600">R$ {(nathyTransactions.reduce((acc, t) => acc + (t.type === TransactionType.EXPENSE && !t.fundedByResgate ? t.amount : 0), 0) || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                                {isNathyExpanded ? <ChevronUp className="text-zinc-700 dark:text-zinc-300" size={16} /> : <ChevronDown className="text-zinc-700 dark:text-zinc-300" size={16} />}
+                            </div>
+                        </button>
+                        {isNathyExpanded && (
+                            <div className="mt-4 space-y-4 pl-4 border-l-2 border-zinc-200 dark:border-zinc-800 animate-in fade-in slide-in-from-top-2">
+                                {nathyGrouped.incomes.length > 0 && (
+                                    <TransactionGroup title="Entradas" items={nathyGrouped.incomes} icon={<ArrowUpCircle size={18}/>} colorClass="text-pink-700" accentColor="#db2777" total={nathyGrouped.incomes.reduce((a,b) => a + b.amount, 0)} renderRow={renderTransactionRow} selectedIds={selectedIds} onToggleSelectAll={handleToggleSelectAllGroup} />
+                                )}
+                                {nathyGrouped.debits.length > 0 && (
+                                    <TransactionGroup title="Débito" items={nathyGrouped.debits} icon={<Banknote size={18}/>} colorClass="text-pink-700" accentColor="#db2777" total={nathyGrouped.debits.reduce((a,b) => a + b.amount, 0)} renderRow={renderTransactionRow} selectedIds={selectedIds} onToggleSelectAll={handleToggleSelectAllGroup} />
+                                )}
+                                {nathyGrouped.groupedCredit.map(group => (
+                                    <TransactionGroup key={group.id} title={`Cartão: ${group.name}`} items={group.items} icon={<CardIcon size={16}/>} colorClass="text-pink-700" accentColor="#db2777" total={group.items.reduce((acc, t) => acc + t.amount, 0)} renderRow={renderTransactionRow} selectedIds={selectedIds} onToggleSelectAll={handleToggleSelectAllGroup} />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        )}
+
+        {/* BATCH EDIT PANEL */}
+        {selectedIds.length > 0 && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-2xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-3xl shadow-2xl z-50 p-4 border border-zinc-200 dark:border-zinc-800 animate-in slide-in-from-bottom-8 ring-1 ring-black/5">
+                {isBatchUpdating ? (
+                    <div className="flex items-center justify-center gap-3 py-2 text-zinc-900 dark:text-zinc-100">
+                        <Loader2 className="animate-spin" size={20} />
+                        <span className="font-medium text-sm">Atualizando...</span>
+                    </div>
+                ) : (
+                    <>
+                        <div className="flex justify-between items-center mb-3">
+                            <div className="flex items-center gap-2">
+                                <div className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 p-1.5 rounded-lg">
+                                    <CheckSquare size={16} />
+                                </div>
+                                <span className="font-medium text-sm text-zinc-800 dark:text-zinc-200">{selectedIds.length} selecionados</span>
+                            </div>
+                            <button onClick={() => setSelectedIds([])} className="text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:text-zinc-300"><X size={18}/></button>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3 mb-3">
+                            <input 
+                                type="text" 
+                                value={batchEditDescription}
+                                onChange={(e) => setBatchEditDescription(e.target.value)}
+                                placeholder="Nova Descrição..." 
+                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-gray-900 outline-none"
+                            />
+                            <select 
+                                value={batchEditCategoryId}
+                                onChange={(e) => {
+                                    setBatchEditCategoryId(e.target.value);
+                                    setBatchEditSubCategoryId('');
+                                }}
+                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-gray-900 outline-none"
+                            >
+                                <option value="">Alterar Categoria...</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                            <select 
+                                value={batchEditSubCategoryId}
+                                onChange={(e) => setBatchEditSubCategoryId(e.target.value)}
+                                disabled={!batchEditCategoryId}
+                                className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-gray-900 outline-none disabled:opacity-50"
+                            >
+                                <option value="">Alterar Subcategoria...</option>
+                                {subCategories.filter(s => s.categoryId === batchEditCategoryId).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
+                        </div>
+
+                        <button 
+                            onClick={handleBatchUpdate}
+                            disabled={!batchEditDescription && !batchEditCategoryId && !batchEditSubCategoryId}
+                            className="w-full bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:bg-zinc-800 disabled:opacity-50 text-zinc-900 dark:text-zinc-100 py-2.5 rounded-xl font-medium text-xs flex items-center justify-center gap-2 transition-all shadow-sm shadow-zinc-200/5"
+                        >
+                            <Save size={14} /> Aplicar Alterações em Lote
+                        </button>
+                    </>
+                )}
+            </div>
+        )}
+
+        {/* SMART DELETION MODAL */}
+        {deletingTransaction && (
+          <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+                  <div className="p-8 border-b border-zinc-200 dark:border-zinc-800 flex flex-col items-center text-center bg-rose-50">
+                      <div className="p-4 bg-rose-100 text-rose-600 rounded-3xl mb-6">
+                          <Trash2 size={32} />
+                      </div>
+                      <h2 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-tight">Excluir Lançamento?</h2>
+                      <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 mt-2 italic">"{deletingTransaction.description}"</p>
+                      <div className="flex gap-2 mt-4">
+                        {deletingTransaction.installmentId && (
+                            <span className="bg-purple-100 text-purple-700 text-[10px] font-medium px-2.5 py-1 rounded-full uppercase tracking-widest border border-purple-200">Parcelado</span>
+                        )}
+                        {deletingTransaction.fixedGroupId && (
+                            <span className="bg-amber-100 text-amber-700 text-[10px] font-medium px-2.5 py-1 rounded-full uppercase tracking-widest border border-amber-200">Fixo</span>
+                        )}
+                      </div>
+                  </div>
+                  
+                  <div className="p-6 space-y-3">
+                      {(deletingTransaction.installmentId || deletingTransaction.fixedGroupId) ? (
+                        <>
+                          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 text-center uppercase tracking-widest mb-4">Escolha o modo de exclusão:</p>
+                          
+                          <button 
+                              onClick={() => { onDeleteTransaction(deletingTransaction.id, 'single'); setDeletingTransaction(null); }}
+                              className="w-full flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:bg-zinc-800 rounded-3xl border border-zinc-200 dark:border-zinc-800 transition-all text-left group"
+                          >
+                              <div>
+                                  <span className="block font-semibold text-zinc-900 dark:text-zinc-100 text-sm uppercase">Apenas este mês</span>
+                                  <span className="block text-[10px] font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 mt-0.5">Excluir somente esta data específica do histórico.</span>
+                              </div>
+                              <ChevronRight size={18} className="text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-500 dark:text-zinc-400 dark:text-zinc-500" />
+                          </button>
+
+                          <button 
+                              onClick={() => { onDeleteTransaction(deletingTransaction.id, 'future'); setDeletingTransaction(null); }}
+                              className="w-full flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-950 hover:bg-amber-50 rounded-3xl border border-zinc-200 dark:border-zinc-800 hover:border-amber-200 transition-all text-left group"
+                          >
+                              <div>
+                                  <span className="block font-medium text-amber-700 text-sm uppercase">Este e próximos</span>
+                                  <span className="block text-[10px] font-medium text-amber-500 mt-0.5">Apagar este lançamento e todos os posteriores desta série.</span>
+                              </div>
+                              <ChevronRight size={18} className="text-zinc-700 dark:text-zinc-300 group-hover:text-amber-500" />
+                          </button>
+
+                          <button 
+                              onClick={() => { onDeleteTransaction(deletingTransaction.id, 'all'); setDeletingTransaction(null); }}
+                              className="w-full flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-950 hover:bg-rose-50 rounded-3xl border border-zinc-200 dark:border-zinc-800 hover:border-rose-200 transition-all text-left group"
+                          >
+                              <div>
+                                  <span className="block font-medium text-rose-700 text-sm uppercase">Série Completa</span>
+                                  <span className="block text-[10px] font-medium text-rose-600 mt-0.5">Remover TODO o histórico (passado e futuro) desta série.</span>
+                              </div>
+                              <ChevronRight size={18} className="text-zinc-700 dark:text-zinc-300 group-hover:text-rose-500" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                           <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 text-center mb-6 px-4">
+                               Esta ação é definitiva. Deseja realmente remover este lançamento permanentemente?
+                           </p>
+                           <button 
+                              onClick={() => { onDeleteTransaction(deletingTransaction.id, 'single'); setDeletingTransaction(null); }}
+                              className="w-full flex items-center justify-between p-5 bg-rose-600 hover:bg-rose-700 text-white rounded-3xl shadow-lg transition-all text-left group"
+                           >
+                              <div>
+                                  <span className="block font-medium text-sm uppercase">Sim, Excluir</span>
+                                  <span className="block text-[10px] font-medium opacity-80 mt-0.5">Remover lançamento do banco de dados agora.</span>
+                              </div>
+                              <Trash2 size={20} />
+                           </button>
+                        </>
+                      )}
+                  </div>
+
+                  <div className="p-6 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 dark:bg-zinc-950/50 text-center">
+                      <button 
+                          onClick={() => setDeletingTransaction(null)}
+                          className="px-8 py-2 text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 font-medium hover:text-zinc-800 dark:hover:text-zinc-200 dark:text-zinc-200 text-xs uppercase tracking-widest"
+                      >
+                          {deletingTransaction.installmentId || deletingTransaction.fixedGroupId ? 'Manter Lançamento' : 'Cancelar'}
+                      </button>
+                  </div>
+              </div>
+          </div>
+        )}
+
+        <DuplicateResolverModal isOpen={showDuplicateResolver} onClose={() => setShowDuplicateResolver(false)} duplicateGroups={potentialDuplicateGroups} onDelete={(id) => onDeleteTransaction(id, 'single')} />
+        <PaymentConfirmationModal isOpen={!!paymentConfirmationTx} onClose={() => setPaymentConfirmationTx(null)} transaction={paymentConfirmationTx} onConfirm={handleConfirmPayment} />
+    </div>
+  );
+};

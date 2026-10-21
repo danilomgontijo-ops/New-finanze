@@ -1,0 +1,2339 @@
+const portfolioData = useMemo(() => {
+    const usdPriceObj = assetPrices.find((p) => p.ticker === "USDBRL");
+    const currentUsdRate = usdPriceObj ? usdPriceObj.currentPrice : 1;
+    const assets: Record<string, any> = {};
+    const profitMap: Record<string, number> = {};
+    let totalRealizedProfit = 0;
+
+    investmentTransactions.forEach((t) => {
+      if (!t.investmentDetails) return;
+      const {
+        ticker,
+        quantity,
+        price,
+        event,
+        currency,
+        broker,
+        newTicker,
+        yieldRate,
+      } = t.investmentDetails;
+      const tDate = new Date(t.date);
+
+      if (!assets[ticker]) {
+        const cat = categories.find((c) => c.id === t.categoryId);
+        const sub = subCategories.find((s) => s.id === t.subCategoryId);
+        assets[ticker] = {
+          ticker,
+          quantity: 0,
+          totalCost: 0,
+          totalProventos: 0,
+          totalProventos12m: 0,
+          bonusCost: 0,
+          realizedProfit: 0,
+          historicalCost: 0,
+          category: cat?.name || "Outros",
+          subCategory: sub?.name || "Geral",
+          categoryId: t.categoryId,
+          subCategoryId: t.subCategoryId || "",
+          currency: currency || "BRL",
+          broker: broker || "Carteira",
+          cashFlows: [],
+          yieldRate: yieldRate || undefined,
+          earliestDate: tDate,
+          lots: [], // FIFO Tracking: Array of { date: Date, q: number, cost: number, yieldRate?: string }
+        };
+      }
+      const a = assets[ticker];
+      if (tDate < a.earliestDate) a.earliestDate = tDate;
+
+      if (["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(event)) {
+        a.totalProventos += t.amount;
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        if (tDate >= oneYearAgo) a.totalProventos12m += t.amount;
+
+        a.cashFlows.push({ date: tDate, amount: t.amount });
+      } else if (event === "AMORTIZACAO") {
+        a.totalCost -= t.amount;
+        a.historicalCost -= t.amount;
+        a.cashFlows.push({ date: tDate, amount: t.amount });
+      } else if (event === "BUY") {
+        a.quantity += quantity;
+        a.totalCost += t.amount;
+        a.historicalCost += t.amount;
+        a.cashFlows.push({ date: tDate, amount: -t.amount });
+        // Add to FIFO Lots
+        a.lots.push({
+          date: tDate,
+          q: quantity,
+          cost: t.amount,
+          yieldRate: a.yieldRate,
+        });
+        if (yieldRate) a.yieldRate = yieldRate;
+      } else if (event === "SELL") {
+        const isFixed =
+          !!a.yieldRate ||
+          ticker.startsWith("TD:") ||
+          ticker.includes("TESOURO") ||
+          ticker.includes("CDB");
+        let costOfSold = 0;
+        const fees = t.investmentDetails.fees || 0;
+        const tax = t.investmentDetails.tax || 0;
+
+        let actualQtySold = quantity;
+        let isFullSale =
+          Math.abs(quantity - a.quantity) < 0.000001 ||
+          t.investmentDetails.isTotalRedemption ||
+          false;
+
+        if (isFixed) {
+          // Para Renda Fixa, se a quantidade for 1 (padrão) mas o valor de venda for muito menor que o custo,
+          // NÃO é uma venda total, mesmo que quantity == a.quantity.
+          if (
+            quantity === 1 &&
+            a.quantity === 1 &&
+            t.amount < a.totalCost * 0.95
+          ) {
+            isFullSale = false;
+          }
+
+          // Por outro lado, se o valor da venda for muito próximo ou maior que o valor estimado total,
+          // É uma venda total, mesmo que a quantidade não bata.
+          let estimatedTotalValue = 0;
+          a.lots.forEach((lot: any) => {
+            estimatedTotalValue += calculateRealFixedIncome(
+              lot.cost,
+              lot.date,
+              a.yieldRate || lot.yieldRate || "100% CDI",
+              cdiHistory,
+              t.date,
+            );
+          });
+          if (estimatedTotalValue === 0) estimatedTotalValue = a.totalCost;
+
+          if (t.amount + fees + tax >= estimatedTotalValue * 0.98) {
+            isFullSale = true;
+          }
+        }
+
+        if (isFullSale) {
+          costOfSold = a.totalCost;
+          actualQtySold = a.quantity;
+          a.lots = [];
+        } else if (isFixed) {
+          // Renda Fixa Parcial: Usa o valor financeiro para abater os lotes
+          let remainingGrossAmountToSell = t.amount + fees + tax;
+          let calculatedCostOfSold = 0;
+          let calculatedQtySold = 0;
+
+          a.lots.sort(
+            (x: any, y: any) =>
+              new Date(x.date).getTime() - new Date(y.date).getTime(),
+          );
+          let tempLots = JSON.parse(JSON.stringify(a.lots));
+
+          while (remainingGrossAmountToSell > 0.01 && tempLots.length > 0) {
+            const lot = tempLots[0];
+            let lotCurrentValue = calculateRealFixedIncome(
+              lot.cost,
+              lot.date,
+              a.yieldRate || lot.yieldRate || "100% CDI",
+              cdiHistory,
+              t.date,
+            );
+            if (lotCurrentValue <= lot.cost && tax > 0) {
+              lotCurrentValue = lot.cost + tax / ESTIMATED_FIXED_INCOME_TAX_RATE;
+            }
+
+            if (lotCurrentValue <= 0) {
+              tempLots.shift();
+              continue;
+            }
+
+            if (remainingGrossAmountToSell >= lotCurrentValue * 0.999) {
+              calculatedCostOfSold += lot.cost;
+              remainingGrossAmountToSell -= lotCurrentValue;
+              calculatedQtySold += lot.q;
+              tempLots.shift();
+            } else {
+              const ratio = remainingGrossAmountToSell / lotCurrentValue;
+              calculatedCostOfSold += lot.cost * ratio;
+              calculatedQtySold += lot.q * ratio;
+              remainingGrossAmountToSell = 0;
+            }
+          }
+          costOfSold = calculatedCostOfSold;
+          actualQtySold = calculatedQtySold;
+          a.lots = tempLots;
+        } else {
+          // Renda Variável Parcial: Custo Médio
+          const avgPrice = a.quantity > 0 ? a.totalCost / a.quantity : 0;
+          costOfSold = actualQtySold * avgPrice;
+
+          let qtyToSell = actualQtySold;
+          while (qtyToSell > 0 && a.lots.length > 0) {
+            const lot = a.lots[0];
+            if (lot.q > qtyToSell) {
+              const unitCost = lot.cost / lot.q;
+              const partialCost = unitCost * qtyToSell;
+              lot.q -= qtyToSell;
+              lot.cost -= partialCost;
+              qtyToSell = 0;
+            } else {
+              qtyToSell -= lot.q;
+              a.lots.shift();
+            }
+          }
+        }
+
+        // Se a quantidade restante for muito pequena, limpa os lotes
+        if (a.quantity - actualQtySold <= 0.000001) {
+          a.lots = [];
+        }
+
+        const transactionProfit = t.amount - costOfSold;
+
+        const previousTotalCost = a.totalCost;
+        const reductionRatio =
+          previousTotalCost > 0
+            ? Math.max(0, (previousTotalCost - costOfSold) / previousTotalCost)
+            : 0;
+
+        a.totalCost -= costOfSold;
+
+        if (a.quantity <= 0.000001) a.historicalCost = 0;
+        else a.historicalCost = a.historicalCost * reductionRatio;
+
+        profitMap[t.id] = transactionProfit;
+        a.realizedProfit += transactionProfit;
+        totalRealizedProfit += transactionProfit;
+        a.quantity -= actualQtySold;
+
+        // FORCE CLEANUP IF SOLD OUT
+        if (
+          (!isFixed && a.quantity < 0.000001) ||
+          (isFixed && a.totalCost < 1)
+        ) {
+          a.quantity = 0;
+          a.totalCost = 0;
+          a.historicalCost = 0;
+          a.lots = [];
+        }
+
+        a.cashFlows.push({ date: tDate, amount: t.amount });
+      } else if (event === "BONUS") {
+        const bonusValue = quantity * price;
+        a.quantity += quantity;
+        a.totalCost += bonusValue;
+        a.historicalCost += bonusValue;
+        a.bonusCost += bonusValue;
+        a.lots.push({ date: tDate, q: quantity, cost: bonusValue });
+      } else if (event === "SPLIT") {
+        const factor =
+          quantity > 50 && a.quantity > 0
+            ? (a.quantity + quantity) / a.quantity
+            : quantity;
+        a.quantity *= factor;
+        a.lots.forEach((lot: any) => {
+          lot.q *= factor;
+        });
+      } else if (event === "MERGE") {
+        a.quantity /= quantity;
+        a.lots.forEach((lot: any) => {
+          lot.q /= quantity;
+        });
+      } else if (event === "TICKER_UPDATE" && newTicker) {
+        const targetTicker = newTicker.toUpperCase();
+        if (!assets[targetTicker])
+          assets[targetTicker] = {
+            ticker: targetTicker,
+            quantity: 0,
+            totalCost: 0,
+            totalProventos: 0,
+            totalProventos12m: 0,
+            bonusCost: 0,
+            realizedProfit: 0,
+            historicalCost: 0,
+            category: a.category,
+            subCategory: a.subCategory,
+            categoryId: a.categoryId,
+            subCategoryId: a.subCategoryId,
+            currency: a.currency,
+            broker: a.broker,
+            cashFlows: [],
+            yieldRate: a.yieldRate,
+            earliestDate: a.earliestDate,
+            lots: [],
+          };
+        const b = assets[targetTicker];
+        const multiplier = quantity && quantity > 0 ? quantity : 1;
+        b.quantity += a.quantity * multiplier;
+        b.totalCost += a.totalCost;
+        b.historicalCost += a.historicalCost;
+        b.totalProventos += a.totalProventos;
+        b.totalProventos12m += a.totalProventos12m;
+        b.bonusCost += a.bonusCost;
+        b.realizedProfit += a.realizedProfit;
+        b.cashFlows = [...b.cashFlows, ...a.cashFlows];
+        const adjustedLots = a.lots.map((lot: any) => ({
+          ...lot,
+          q: lot.q * multiplier,
+        }));
+        b.lots = [...b.lots, ...adjustedLots];
+        a.quantity = 0;
+        a.totalCost = 0;
+        a.historicalCost = 0;
+        a.totalProventos = 0;
+        a.totalProventos12m = 0;
+        a.bonusCost = 0;
+        a.realizedProfit = 0;
+        a.cashFlows = [];
+        a.lots = [];
+      }
+    });
+
+    const list: PortfolioItem[] = Object.values(assets)
+      .filter((a: any) => {
+        if (
+          portfolioCategoryFilters.length > 0 &&
+          !portfolioCategoryFilters.includes(a.categoryId)
+        )
+          return false;
+        if (
+          portfolioSubCategoryFilters.length > 0 &&
+          !portfolioSubCategoryFilters.includes(a.subCategoryId)
+        )
+          return false;
+        return true;
+      })
+      .map((a: any) => {
+        const priceObj = assetPrices.find((p) => p.ticker === a.ticker);
+        const avgPrice = a.quantity > 0 ? a.totalCost / a.quantity : 0;
+        let rawQuote = avgPrice;
+        let currentTotal = 0;
+        let isFixedIncome = false;
+        let calculatedBalanceYesterday = 0;
+        let todayNetFlow = 0;
+        const isTesouro =
+          a.ticker.startsWith("TD:") || a.ticker.startsWith("TESOURO");
+
+        const catName = a.category?.toLowerCase() || "";
+        const subCatName = a.subCategory?.toLowerCase() || "";
+        const isFixedType =
+          catName.includes("renda fixa") ||
+          subCatName.includes("renda fixa") ||
+          catName.includes("poupança") ||
+          subCatName.includes("poupança") ||
+          a.ticker.toUpperCase().includes("CDB") ||
+          a.ticker.toUpperCase().includes("LCI") ||
+          a.ticker.toUpperCase().includes("LCA") ||
+          a.ticker.toUpperCase().includes("CRI") ||
+          a.ticker.toUpperCase().includes("CRA") ||
+          a.ticker.toUpperCase().includes("DEBENTURE");
+
+        if (!a.yieldRate && isFixedType && !isTesouro) {
+          a.yieldRate =
+            a.ticker.toUpperCase().includes("POUPA") ||
+            catName.includes("poupança")
+              ? "70% CDI"
+              : "100% CDI";
+        }
+
+        if (
+          a.yieldRate &&
+          !isTesouro &&
+          !(
+            priceObj &&
+            priceObj.manualHistory &&
+            priceObj.manualHistory.length > 0
+          )
+        ) {
+          isFixedIncome = true;
+          // Optimization: If quantity is 0, don't run expensive calculations
+          if (a.quantity <= 0.000001) {
+            currentTotal = 0;
+          } else {
+            let calculatedBalance = 0;
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString();
+            const todayStr = new Date().toISOString().split("T")[0];
+
+            const assetTxs = investmentTransactions.filter(
+              (t) => t.investmentDetails?.ticker === a.ticker,
+            );
+            assetTxs.forEach((t) => {
+              const ev = t.investmentDetails?.event;
+              const amt = t.amount;
+              const date = t.date;
+              const isTodayTx = date.split("T")[0] === todayStr;
+              if (ev === "BUY" || ev === "BONUS") {
+                calculatedBalance += calculateRealFixedIncome(
+                  amt,
+                  date,
+                  a.yieldRate,
+                  cdiHistory,
+                );
+                if (date <= yesterdayStr) {
+                  calculatedBalanceYesterday += calculateRealFixedIncome(
+                    amt,
+                    date,
+                    a.yieldRate,
+                    cdiHistory,
+                    yesterdayStr,
+                  );
+                } else if (isTodayTx) {
+                  todayNetFlow += amt;
+                }
+              } else if (ev === "SELL" || ev === "AMORTIZACAO") {
+                calculatedBalance -= calculateRealFixedIncome(
+                  amt,
+                  date,
+                  a.yieldRate,
+                  cdiHistory,
+                );
+                if (date <= yesterdayStr) {
+                  calculatedBalanceYesterday -= calculateRealFixedIncome(
+                    amt,
+                    date,
+                    a.yieldRate,
+                    cdiHistory,
+                    yesterdayStr,
+                  );
+                } else if (isTodayTx) {
+                  todayNetFlow -= amt;
+                }
+              }
+            });
+            if (calculatedBalance < 0.01 && a.totalCost > 0)
+              calculatedBalance = a.totalCost;
+            if (
+              calculatedBalanceYesterday <= 0.01 &&
+              a.totalCost - todayNetFlow > 0
+            )
+              calculatedBalanceYesterday = a.totalCost - todayNetFlow;
+            currentTotal = calculatedBalance;
+          }
+          rawQuote = currentTotal;
+        } else {
+          if (isTesouro) isFixedIncome = true;
+          let quoteBRL = rawQuote;
+          if (priceObj) {
+            if (priceObj.manualHistory && priceObj.manualHistory.length > 0) {
+              const sortedH = [...priceObj.manualHistory].sort((m1, m2) =>
+                m2.date.localeCompare(m1.date),
+              );
+              rawQuote = sortedH[0].price;
+            } else {
+              rawQuote = priceObj.currentPrice;
+            }
+            quoteBRL =
+              a.currency === "USD" ? rawQuote * currentUsdRate : rawQuote;
+          } else {
+            quoteBRL = avgPrice; // avgPrice is always in BRL
+          }
+          currentTotal = a.quantity * quoteBRL;
+        }
+
+        let quoteBRL = rawQuote;
+        if (priceObj) {
+          let finalPrice = priceObj.currentPrice;
+          if (priceObj.manualHistory && priceObj.manualHistory.length > 0) {
+            const sortedH = [...priceObj.manualHistory].sort((m1, m2) =>
+              m2.date.localeCompare(m1.date),
+            );
+            finalPrice = sortedH[0].price;
+          }
+          quoteBRL =
+            a.currency === "USD" ? finalPrice * currentUsdRate : finalPrice;
+        } else {
+          quoteBRL = avgPrice;
+        }
+
+        const unrealizedProfit =
+          currentTotal - (a.totalCost - (a.bonusCost || 0));
+        const totalProfit = unrealizedProfit + a.totalProventos;
+
+        let xtir = 0;
+        if (a.cashFlows.length > 0 && currentTotal > 0) {
+          let closingDate = new Date();
+          if (
+            priceObj &&
+            priceObj.manualHistory &&
+            priceObj.manualHistory.length > 0
+          ) {
+            const sortedH = [...priceObj.manualHistory].sort((m1, m2) =>
+              m2.date.localeCompare(m1.date),
+            );
+            closingDate = new Date(sortedH[0].date);
+          }
+          const flows = [
+            ...a.cashFlows,
+            { date: closingDate, amount: currentTotal },
+          ];
+          xtir = calculateXIRR(
+            flows.map((f: any) => f.amount),
+            flows.map((f: any) => f.date),
+          );
+        }
+
+        let finalDailyProfit =
+          (currentTotal * (priceObj?.changePercent || 0)) / 100;
+        let finalDailyChangePct = priceObj?.changePercent || 0;
+
+        if (isFixedIncome && currentTotal > 0) {
+          if (calculatedBalanceYesterday > 0 && !isTesouro) {
+            finalDailyProfit =
+              currentTotal - calculatedBalanceYesterday - todayNetFlow;
+            finalDailyChangePct =
+              calculatedBalanceYesterday > 0
+                ? (finalDailyProfit / calculatedBalanceYesterday) * 100
+                : 0;
+          }
+
+          if (
+            Math.abs(finalDailyProfit) <= 0.001 &&
+            Math.abs(finalDailyChangePct) <= 0.001
+          ) {
+            let rateStrToUse = a.yieldRate || "";
+            if (!rateStrToUse && isTesouro) {
+              const tickerObjId = (priceObj?.ticker || a.ticker).toUpperCase();
+              const fallbackTaxa = (priceObj as any)?.taxa || 0;
+              if (tickerObjId.includes("SELIC")) {
+                rateStrToUse = "100% CDI";
+              } else if (
+                tickerObjId.includes("IPCA") ||
+                tickerObjId.includes("RENDA") ||
+                tickerObjId.includes("EDUCA")
+              ) {
+                rateStrToUse = `IPCA+${fallbackTaxa > 0 ? fallbackTaxa : 5.0}`;
+              } else if (tickerObjId.includes("PRE")) {
+                rateStrToUse = `${fallbackTaxa > 0 ? fallbackTaxa : 10.0}`;
+              }
+            }
+
+            if (rateStrToUse) {
+              const cleanRate = rateStrToUse
+                .toUpperCase()
+                .replace(",", ".")
+                .replace("%", "");
+              let dailyFactor = 1;
+
+              if (cleanRate.includes("CDI") || cleanRate.includes("SELIC")) {
+                const numStr = cleanRate
+                  .replace("CDI", "")
+                  .replace("SELIC", "")
+                  .trim();
+                let pctCDI = numStr ? parseFloat(numStr) : 100;
+                if (isNaN(pctCDI)) pctCDI = 100;
+
+                let lastDailyCDI = FALLBACK_DAILY_CDI_RATE; // fallback
+                if (cdiHistory && cdiHistory.length > 0) {
+                  lastDailyCDI = cdiHistory[cdiHistory.length - 1].value;
+                }
+                dailyFactor = 1 + (lastDailyCDI / 100) * (pctCDI / 100);
+              } else if (cleanRate.includes("IPCA")) {
+                const numStr = cleanRate
+                  .replace("IPCA", "")
+                  .replace("+", "")
+                  .trim();
+                let fixed = parseFloat(numStr) || 0;
+                dailyFactor = Math.pow(1 + (fixed + 4.0) / 100, 1 / 365.25);
+              } else {
+                let fixedRate = parseFloat(cleanRate) || 0;
+                dailyFactor = Math.pow(1 + fixedRate / 100, 1 / 365.25);
+              }
+
+              finalDailyChangePct = (dailyFactor - 1) * 100;
+              finalDailyProfit = currentTotal - currentTotal / dailyFactor;
+            }
+          }
+        }
+
+        return {
+          ...a,
+          isFixedIncome,
+          avgPriceFiscal: avgPrice,
+          avgPriceYield:
+            a.quantity > 0 ? Math.max(0, (a.totalCost - a.totalProventos) / a.quantity) : 0,
+          currentQuote: rawQuote,
+          currentPriceBRL: quoteBRL,
+          currentTotal,
+          unrealizedProfit,
+          totalProfit,
+          totalReturnPct:
+            a.totalCost - (a.bonusCost || 0) > 0
+              ? (totalProfit / (a.totalCost - (a.bonusCost || 0))) * 100
+              : 0,
+          xtir,
+          longName: priceObj?.longName || a.ticker,
+          dailyChangePercent: finalDailyChangePct,
+          dailyProfit: finalDailyProfit,
+        };
+      })
+      .filter((i: any) => {
+        // FILTER: Must have quantity. Dust removal for Fixed Income too.
+        if (i.quantity <= 0.000001 && !i.isFixedIncome) return false;
+        if (i.isFixedIncome) return i.currentTotal > 1 && i.totalCost > 0.01;
+        return true;
+      });
+
+    const summary = list.reduce(
+      (acc: any, curr: any) => {
+        if (
+          curr.quantity > 0.000001 ||
+          (curr.isFixedIncome && curr.currentTotal > 1)
+        ) {
+          acc.marketValue += curr.currentTotal;
+          acc.investedValue += curr.totalCost - (curr.bonusCost || 0);
+          acc.unrealizedTotal += curr.unrealizedProfit;
+          acc.dailyProfitTotal += curr.dailyProfit;
+        }
+        return acc;
+      },
+      {
+        marketValue: 0,
+        investedValue: 0,
+        unrealizedTotal: 0,
+        proventosTotal: 0,
+        proventos12mTotal: 0,
+        realizedProfit: 0,
+        dailyProfitTotal: 0,
+      },
+    );
+
+    // Calculate realizedProfit and proventosTotal from ALL filtered assets (including sold ones)
+    Object.values(assets).forEach((a: any) => {
+      if (
+        portfolioCategoryFilters.length > 0 &&
+        !portfolioCategoryFilters.includes(a.categoryId)
+      )
+        return;
+      if (
+        portfolioSubCategoryFilters.length > 0 &&
+        !portfolioSubCategoryFilters.includes(a.subCategoryId)
+      )
+        return;
+      summary.realizedProfit += a.realizedProfit;
+      summary.proventosTotal += a.totalProventos;
+      summary.proventos12mTotal += a.totalProventos12m;
+    });
+
+    return { list, summary, usdRate: currentUsdRate, profitMap };
+  }, [
+    investmentTransactions,
+    categories,
+    subCategories,
+    assetPrices,
+    cdiHistory,
+    portfolioCategoryFilters,
+    portfolioSubCategoryFilters,
+  ]);
+
+  const overviewData = useMemo(() => {
+    let filteredTxs = [...investmentTransactions];
+    if (overviewFilterCategory) {
+      filteredTxs = filteredTxs.filter(
+        (t) => t.categoryId === overviewFilterCategory,
+      );
+    }
+    if (overviewFilterSubCategory) {
+      filteredTxs = filteredTxs.filter(
+        (t) => t.subCategoryId === overviewFilterSubCategory,
+      );
+    }
+    if (overviewFilterTicker) {
+      filteredTxs = filteredTxs.filter(
+        (t) => t.investmentDetails?.ticker === overviewFilterTicker,
+      );
+    }
+    if (overviewSearchTerm) {
+      const term = overviewSearchTerm.trim().toUpperCase();
+      filteredTxs = filteredTxs.filter((t) =>
+        t.investmentDetails?.ticker?.toUpperCase().includes(term),
+      );
+    }
+
+    if (filteredTxs.length === 0)
+      return { chartData: [], tableData: [], report: null };
+
+    const getStrategy = (ticker: string, catId?: string, subCatId?: string) => {
+      const cat =
+        categories.find((c) => c.id === catId)?.name.toLowerCase() || "";
+      const sub =
+        subCategories.find((s) => s.id === subCatId)?.name.toLowerCase() || "";
+      const name = (cat + " " + sub).toLowerCase();
+
+      if (
+        name.includes("liquidez") ||
+        name.includes("caixa") ||
+        name.includes("reserva")
+      )
+        return "Liquidez";
+      if (name.includes("tesouro") || name.includes("público"))
+        return "Título Público";
+      if (
+        name.includes("pós") ||
+        name.includes("cdi") ||
+        name.includes("selic")
+      )
+        return "Pós-fixado";
+      if (name.includes("pré")) return "Prefixado";
+      if (
+        name.includes("cripto") ||
+        name.includes("crypto") ||
+        name.includes("bitcoin")
+      )
+        return "Cripto";
+      if (
+        name.includes("fii") ||
+        name.includes("imobiliário") ||
+        name.includes("listado")
+      )
+        return "Fundos Listados";
+      if (
+        name.includes("eua") ||
+        name.includes("global") ||
+        name.includes("internacional") ||
+        name.includes("us")
+      )
+        return "Global";
+      if (
+        name.includes("ação") ||
+        name.includes("ações") ||
+        name.includes("variável") ||
+        name.includes("etf")
+      )
+        return "Renda Variável";
+
+      return "Outros";
+    };
+
+    const getLiquidityTerm = (strategy: string) => {
+      if (strategy === "Liquidez") return "0 a 1 dia";
+      if (
+        ["Renda Variável", "Fundos Listados", "Global", "Cripto"].includes(
+          strategy,
+        )
+      )
+        return "2 a 5 dias";
+      if (["Pós-fixado", "Prefixado", "Título Público"].includes(strategy))
+        return "Mais de 180 dias";
+      return "16 a 30 dias";
+    };
+
+    const firstDate = new Date(filteredTxs[0].date);
+    const lastDate = new Date();
+    const months: string[] = [];
+    let cursor = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
+    while (cursor <= lastDate) {
+      const mKey = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+      months.push(mKey);
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    // Pre-calculate split/merge/bonus multipliers
+    const assetMultipliers: Record<string, Record<string, number>> = {};
+    const splitEvents = filteredTxs.filter((t) =>
+      ["SPLIT", "MERGE", "BONUS"].includes(t.investmentDetails?.event || ""),
+    );
+    const uniqueTickers = Array.from(
+      new Set(
+        filteredTxs.map((t) => t.investmentDetails?.ticker).filter(Boolean),
+      ),
+    ) as string[];
+
+    uniqueTickers.forEach((ticker) => {
+      assetMultipliers[ticker] = {};
+
+      // Pre-calculate quantity before each transaction for this ticker
+      const tickerTxs = filteredTxs.filter(
+        (t) => t.investmentDetails?.ticker === ticker,
+      );
+      const qtyBeforeTx: Record<string, number> = {};
+      let runningQty = 0;
+
+      tickerTxs.forEach((t) => {
+        const det = t.investmentDetails!;
+        qtyBeforeTx[t.id] = runningQty;
+
+        if (det.event === "BUY") runningQty += det.quantity;
+        else if (det.event === "BONUS") runningQty += det.quantity;
+        else if (det.event === "SELL") runningQty -= det.quantity;
+        else if (det.event === "SPLIT") {
+          const factor =
+            det.quantity > 50 && runningQty > 0
+              ? (runningQty + det.quantity) / runningQty
+              : det.quantity;
+          runningQty *= factor;
+        } else if (det.event === "MERGE") runningQty /= det.quantity;
+        else if (det.event === "TICKER_UPDATE" && det.newTicker) runningQty = 0;
+      });
+
+      const tickerEvents = splitEvents.filter(
+        (t) => t.investmentDetails?.ticker === ticker,
+      );
+
+      months.forEach((monthKey) => {
+        // Future events are those that occur in a month STRICTLY AFTER the current monthKey.
+        // This correctly avoids timezone offset issues that happen when comparing local month boundaries against ISO UTC transaction dates.
+        const futureEvents = tickerEvents.filter((e) => {
+          const eventMonthKey = e.date.substring(0, 7);
+          return eventMonthKey > monthKey;
+        });
+
+        let multiplier = 1;
+        futureEvents.forEach((e) => {
+          const det = e.investmentDetails!;
+          if (det.event === "SPLIT") {
+            const qtyBefore = qtyBeforeTx[e.id];
+            const factor =
+              det.quantity > 50 && qtyBefore > 0
+                ? (qtyBefore + det.quantity) / qtyBefore
+                : det.quantity || 1;
+            multiplier *= factor;
+          } else if (det.event === "MERGE") {
+            multiplier /= det.quantity || 1;
+          } else if (det.event === "BONUS") {
+            if (typeof det.bonusRatio === "number" && !isNaN(det.bonusRatio)) {
+              multiplier *= 1 + det.bonusRatio / 100;
+            } else {
+              const qtyBefore = qtyBeforeTx[e.id];
+              if (qtyBefore > 0) {
+                multiplier *= (qtyBefore + det.quantity) / qtyBefore;
+              }
+            }
+          }
+        });
+        assetMultipliers[ticker][monthKey] = multiplier;
+      });
+    });
+
+    let cumulativeInvested = 0;
+    let cumulativeRealized = 0;
+    let cumulativeDividends = 0;
+    let cumulativeBonusCost = 0;
+
+    const runningAssets: Record<
+      string,
+      {
+        qty: number;
+        cost: number;
+        yieldRate?: string;
+        currency?: string;
+        firstDate?: Date;
+        categoryId?: string;
+        subCategoryId?: string;
+      }
+    > = {};
+    const assetValuesPrevMonth: Record<string, number> = {};
+    let chartData: any[] = [];
+    let tableData: any[] = [];
+
+    let previousMarketValue = 0;
+    let cdiIndex = 100;
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const cumulativeCashFlows: { date: Date; amount: number }[] = [];
+
+    months.forEach((monthKey, monthIdx) => {
+      const [y, m] = monthKey.split("-").map(Number);
+      const monthEnd = new Date(y, m, 0);
+      const monthTxs = filteredTxs.filter((t) => t.date.startsWith(monthKey));
+
+      monthTxs.forEach((t) => {
+        const event = t.investmentDetails?.event;
+        if (!event) return;
+        const tDate = new Date(t.date);
+        if (
+          [
+            "DIVIDEND",
+            "JCP",
+            "RENDIMENTO",
+            "REEMBOLSO",
+            "AMORTIZACAO",
+            "SELL",
+          ].includes(event)
+        ) {
+          cumulativeCashFlows.push({ date: tDate, amount: t.amount });
+        } else if (event === "BUY") {
+          cumulativeCashFlows.push({ date: tDate, amount: -t.amount });
+        }
+      });
+
+      let monthNetFlow = 0;
+      let monthWeightedFlow = 0;
+      let monthPurchases = 0;
+      let monthSales = 0;
+      let monthRealized = 0;
+      let monthDividends = 0;
+
+      const assetPurchases: Record<string, number> = {};
+      const assetWeightedFlow: Record<string, number> = {};
+      const assetPurchasesQty: Record<string, number> = {};
+      const assetDividends: Record<string, number> = {};
+      const assetSales: Record<string, number> = {};
+      const assetSalesQty: Record<string, number> = {};
+
+      const assetQtyAtStart: Record<string, number> = {};
+      const assetRealized: Record<string, number> = {};
+      Object.entries(runningAssets).forEach(([ticker, asset]) => {
+        assetQtyAtStart[ticker] = asset.qty;
+        assetRealized[ticker] = 0;
+      });
+
+      monthTxs.forEach((t) => {
+        const det = t.investmentDetails!;
+        const amount = t.amount;
+        const ticker = det.ticker;
+        if (!runningAssets[ticker]) {
+          const catName =
+            categories.find((c) => c.id === t.categoryId)?.name.toLowerCase() ||
+            "";
+          const subCatName =
+            subCategories
+              .find((s) => s.id === t.subCategoryId)
+              ?.name.toLowerCase() || "";
+          const isFixed =
+            catName.includes("renda fixa") ||
+            subCatName.includes("renda fixa") ||
+            catName.includes("tesouro") ||
+            subCatName.includes("tesouro") ||
+            catName.includes("poupança") ||
+            subCatName.includes("poupança") ||
+            ticker.toUpperCase().includes("CDB") ||
+            ticker.toUpperCase().includes("LCI") ||
+            ticker.toUpperCase().includes("LCA") ||
+            ticker.toUpperCase().includes("CRI") ||
+            ticker.toUpperCase().includes("CRA") ||
+            ticker.toUpperCase().includes("DEBENTURE");
+
+          let yRate = det.yieldRate;
+          if (
+            !yRate &&
+            isFixed &&
+            !ticker.toUpperCase().includes("TESOURO") &&
+            !ticker.toUpperCase().startsWith("TD:")
+          ) {
+            yRate =
+              ticker.toUpperCase().includes("POUPA") ||
+              catName.includes("poupança")
+                ? "70% CDI"
+                : "100% CDI";
+          }
+
+          runningAssets[ticker] = {
+            qty: 0,
+            cost: 0,
+            yieldRate: yRate,
+            currency: det.currency,
+            firstDate: new Date(t.date),
+            categoryId: t.categoryId,
+            subCategoryId: t.subCategoryId,
+          };
+          assetRealized[ticker] = 0;
+        }
+        const asset = runningAssets[ticker];
+
+        const txDate = new Date(t.date);
+        const day = txDate.getDate();
+        const daysInMonth = monthEnd.getDate();
+        // Weight based on days remaining in month (Modified Dietz)
+        const weight = (daysInMonth - day + 1) / daysInMonth;
+
+        if (det.event === "BUY") {
+          asset.qty += det.quantity;
+          asset.cost += amount;
+          cumulativeInvested += amount;
+
+          monthNetFlow += amount;
+          monthPurchases += amount;
+          monthWeightedFlow += amount * weight;
+          assetPurchases[ticker] = (assetPurchases[ticker] || 0) + amount;
+          assetWeightedFlow[ticker] =
+            (assetWeightedFlow[ticker] || 0) + amount * weight;
+
+          assetPurchasesQty[ticker] =
+            (assetPurchasesQty[ticker] || 0) + det.quantity;
+          if (det.currency) asset.currency = det.currency;
+        } else if (det.event === "BONUS") {
+          const addedQty = det.quantity;
+          const costIncrease = addedQty * (det.price || 0);
+          asset.qty += addedQty;
+          asset.cost += costIncrease;
+          cumulativeInvested += costIncrease;
+
+          if (det.currency) asset.currency = det.currency;
+
+          cumulativeBonusCost += costIncrease;
+        } else if (det.event === "SELL") {
+          const avgPrice = asset.qty > 0 ? asset.cost / asset.qty : 0;
+          const costSold = avgPrice * det.quantity;
+          const profit = amount - costSold;
+          monthRealized += profit;
+          cumulativeRealized += profit;
+          assetRealized[ticker] = (assetRealized[ticker] || 0) + profit;
+          asset.qty -= det.quantity;
+          asset.cost -= costSold;
+          cumulativeInvested -= costSold;
+          monthNetFlow -= amount;
+          monthSales += amount;
+          monthWeightedFlow -= amount * weight;
+          assetWeightedFlow[ticker] =
+            (assetWeightedFlow[ticker] || 0) - amount * weight;
+          assetSales[ticker] = (assetSales[ticker] || 0) + amount;
+          assetSalesQty[ticker] = (assetSalesQty[ticker] || 0) + det.quantity;
+          if (asset.qty < 0.000001) {
+            asset.qty = 0;
+            asset.cost = 0;
+          }
+        } else if (det.event === "AMORTIZACAO") {
+          const avgPrice = asset.qty > 0 ? asset.cost / asset.qty : 0;
+          const costReduction = Math.min(asset.cost, amount);
+          const profit = amount - costReduction;
+
+          asset.cost -= costReduction;
+          cumulativeInvested -= costReduction;
+          monthNetFlow -= amount;
+          monthSales += amount;
+          monthWeightedFlow -= amount * weight;
+          assetWeightedFlow[ticker] =
+            (assetWeightedFlow[ticker] || 0) - amount * weight;
+          monthRealized += profit;
+          cumulativeRealized += profit;
+          assetRealized[ticker] = (assetRealized[ticker] || 0) + profit;
+          assetSales[ticker] = (assetSales[ticker] || 0) + amount;
+        } else if (
+          ["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(det.event)
+        ) {
+          monthDividends += amount;
+          cumulativeDividends += amount;
+          assetDividends[ticker] = (assetDividends[ticker] || 0) + amount;
+          // Cash dividends are usually external flows if they leave the portfolio,
+          // but here we assume they stay in the "cash" part of the portfolio gain.
+          // If we want to be strictly TWR for the ASSET, dividends are external flows out.
+          // However, for the PORTFOLIO, they are internal.
+          // Let's keep them as internal for now (don't add to monthNetFlow).
+        } else if (det.event === "SPLIT") {
+          const factor =
+            det.quantity > 50 && asset.qty > 0
+              ? (asset.qty + det.quantity) / asset.qty
+              : det.quantity;
+          asset.qty *= factor;
+        } else if (det.event === "MERGE") asset.qty /= det.quantity;
+        else if (det.event === "TICKER_UPDATE" && det.newTicker) {
+          const newT = det.newTicker.toUpperCase();
+          if (!runningAssets[newT])
+            runningAssets[newT] = {
+              qty: 0,
+              cost: 0,
+              yieldRate: asset.yieldRate,
+              currency: asset.currency,
+              firstDate: asset.firstDate,
+              categoryId: asset.categoryId,
+              subCategoryId: asset.subCategoryId,
+            };
+          const multiplier =
+            det.quantity && det.quantity > 0 ? det.quantity : 1;
+          runningAssets[newT].qty += asset.qty * multiplier;
+          runningAssets[newT].cost += asset.cost;
+          asset.qty = 0;
+          asset.cost = 0;
+        }
+      });
+
+      let monthMarketValue = 0;
+      let monthTotalInvested = 0;
+      const isCurrentMonth = monthKey === currentMonthKey;
+      const monthAssetDetails: any[] = [];
+      const strategyAllocation: Record<string, number> = {};
+
+      Object.entries(runningAssets).forEach(([ticker, asset]) => {
+        const qtyStart = assetQtyAtStart[ticker] || 0;
+        const purchasesQty = assetPurchasesQty[ticker] || 0;
+        const salesQty = assetSalesQty[ticker] || 0;
+
+        const multiplier = assetMultipliers[ticker]?.[monthKey] || 1;
+
+        if (
+          asset.qty <= 0.000001 &&
+          !asset.yieldRate &&
+          qtyStart === 0 &&
+          purchasesQty === 0 &&
+          salesQty === 0
+        ) {
+          assetValuesPrevMonth[ticker] = 0;
+          return;
+        }
+
+        let assetEndValue = 0;
+
+        // PRE-CHECK: Manual History Override (for both Fixed and Variable income)
+        const manualPriceObj = assetPrices.find((ap) => ap.ticker === ticker);
+        let manualPriceFound = 0;
+        if (
+          manualPriceObj &&
+          manualPriceObj.manualHistory &&
+          manualPriceObj.manualHistory.length > 0
+        ) {
+          const manualExact = manualPriceObj.manualHistory.find(
+            (h) => h.date.substring(0, 7) === monthKey,
+          );
+          if (manualExact) {
+            manualPriceFound = manualExact.price;
+          } else {
+            const manualSorted = [...manualPriceObj.manualHistory].sort(
+              (a, b) => b.date.localeCompare(a.date),
+            );
+            const olderManual = manualSorted.find(
+              (h) => h.date.substring(0, 7) < monthKey,
+            );
+            if (olderManual) manualPriceFound = olderManual.price;
+          }
+        }
+
+        const pData = portfolioData.list.find((p) => p.ticker === ticker);
+        
+        if (isCurrentMonth) {
+          assetEndValue = pData ? pData.currentTotal : 0;
+        } else if (asset.yieldRate && manualPriceFound <= 0) {
+          let val = 0;
+          const monthEndUtc = new Date(
+            Date.UTC(y, m, 0, 23, 59, 59, 999),
+          ).toISOString();
+          investmentTransactions
+            .filter(
+              (t) =>
+                t.investmentDetails?.ticker === ticker &&
+                t.date.substring(0, 7) <= monthKey,
+            )
+            .forEach((t) => {
+              const ev = t.investmentDetails?.event;
+              if (ev === "BUY" || ev === "BONUS")
+                val += calculateRealFixedIncome(
+                  t.amount,
+                  t.date,
+                  asset.yieldRate!,
+                  cdiHistory,
+                  monthEndUtc,
+                );
+              else if (ev === "SELL" || ev === "AMORTIZACAO")
+                val -= calculateRealFixedIncome(
+                  t.amount,
+                  t.date,
+                  asset.yieldRate!,
+                  cdiHistory,
+                  monthEndUtc,
+                );
+            });
+          if (val < 0) val = 0;
+          assetEndValue = val;
+        } else {
+          let interpolatedTotal = asset.cost;
+          const histData = assetHistory[ticker];
+
+          let priceToUse = manualPriceFound;
+
+          // PRIORIDADE 2: Histórico Automático (se não encontrou manual ou manual é 0)
+          if (priceToUse <= 0 && histData && histData.history) {
+            const exactMatch = histData.history.find(
+              (h) => h.date === monthKey,
+            );
+            if (exactMatch && exactMatch.closingPrice > 0) {
+              priceToUse = exactMatch.closingPrice;
+            } else {
+              for (const h of histData.history) {
+                if (h.date < monthKey && h.closingPrice > 0) {
+                  priceToUse = h.closingPrice;
+                }
+              }
+            }
+          }
+
+          if (isCurrentMonth) {
+            assetEndValue = 0; // Already handled above
+          } else {
+            if (manualPriceFound > 0) {
+              interpolatedTotal = manualPriceFound * asset.qty;
+            } else if (priceToUse > 0) {
+              const _mult = (histData?.adjustForSplits === false) ? 1 : (multiplier || 1);
+              interpolatedTotal = priceToUse * (asset.qty * _mult);
+            }
+            assetEndValue = interpolatedTotal;
+          }
+        }
+
+        monthMarketValue += assetEndValue;
+        monthTotalInvested += asset.cost;
+
+        const strategy = getStrategy(
+          ticker,
+          asset.categoryId,
+          asset.subCategoryId,
+        );
+        strategyAllocation[strategy] =
+          (strategyAllocation[strategy] || 0) + assetEndValue;
+
+        const prevValue = assetValuesPrevMonth[ticker] || 0;
+        const purchases = assetPurchases[ticker] || 0;
+        const dividends = assetDividends[ticker] || 0;
+        const sales = assetSales[ticker] || 0;
+        const netFlow = purchases - sales;
+        const weightedFlow = assetWeightedFlow[ticker] || 0;
+
+        let assetTwr = 0;
+        const assetGain = assetEndValue - prevValue - netFlow + dividends;
+
+        // True TWR Calculation for Individual Asset (using exact transaction prices)
+        const txsInMonth = monthTxs.filter(
+          (t) => t.investmentDetails?.ticker === ticker,
+        );
+
+        if (txsInMonth.length > 0 && !asset.yieldRate) {
+          let currentVal = prevValue;
+          let currentQty = qtyStart;
+          let twrFactor = 1;
+
+          txsInMonth.forEach((t) => {
+            const det = t.investmentDetails!;
+            const amount = t.amount;
+
+            if (det.event === "BUY" || det.event === "SELL") {
+              const txPrice = det.quantity > 0 ? amount / det.quantity : 0;
+              if (txPrice > 0 && currentQty > 0) {
+                const valueBeforeTx = currentQty * txPrice;
+                const subPeriodReturn =
+                  (valueBeforeTx - currentVal) / currentVal;
+                twrFactor *= 1 + subPeriodReturn;
+
+                if (det.event === "BUY") {
+                  currentVal = valueBeforeTx + amount;
+                  currentQty += det.quantity;
+                } else {
+                  currentVal = valueBeforeTx - amount;
+                  currentQty -= det.quantity;
+                }
+              } else if (currentQty <= 0 && det.event === "BUY") {
+                currentVal = amount;
+                currentQty = det.quantity;
+              }
+            } else if (det.event === "SPLIT") {
+              const factor =
+                det.quantity > 50 && currentQty > 0
+                  ? (currentQty + det.quantity) / currentQty
+                  : det.quantity || 1;
+              currentQty *= factor;
+            } else if (det.event === "MERGE") {
+              currentQty /= det.quantity;
+            } else if (det.event === "BONUS") {
+              currentQty += det.quantity;
+            } else if (det.event === "AMORTIZACAO") {
+              const avgPrice = currentQty > 0 ? currentVal / currentQty : 0;
+              const costReduction = Math.min(currentVal, amount);
+              currentVal -= costReduction;
+            }
+          });
+
+          // Final sub-period to end of month
+          if (currentVal > 0) {
+            const finalSubPeriodReturn =
+              (assetEndValue + dividends - currentVal) / currentVal;
+            twrFactor *= 1 + finalSubPeriodReturn;
+          } else if (dividends > 0 && prevValue > 0) {
+            twrFactor *= 1 + (dividends / prevValue);
+          }
+
+          assetTwr = (twrFactor - 1) * 100;
+        } else {
+          // Fallback to Modified Dietz
+          if (prevValue > 0) {
+            let denominator = prevValue + weightedFlow;
+            // Modified Dietz anomaly protection for large outflows:
+            if (denominator < prevValue * 0.5 && netFlow < 0) {
+              denominator = prevValue;
+            }
+            if (denominator > 0) assetTwr = (assetGain / denominator) * 100;
+            else assetTwr = (assetGain / (prevValue + purchases)) * 100;
+          } else if (purchases > 0) {
+            // For new positions, use total purchases as denominator to avoid timing-based amplification
+            assetTwr = (assetGain / purchases) * 100;
+          } else if (netFlow > 0) assetTwr = (assetGain / netFlow) * 100;
+        }
+
+        let priceStart = 0;
+        if (qtyStart > 0 && prevValue > 0) priceStart = prevValue / qtyStart;
+        else if (purchasesQty > 0 && purchases > 0)
+          priceStart = purchases / purchasesQty;
+
+        let priceEnd = 0;
+        if (asset.qty > 0 && assetEndValue > 0)
+          priceEnd = assetEndValue / asset.qty;
+        else if (salesQty > 0 && sales > 0) priceEnd = sales / salesQty;
+
+        const _mult = multiplier || 1;
+        const prevMonthKey = monthIdx > 0 ? months[monthIdx - 1] : null;
+        const _startMult = prevMonthKey
+          ? assetMultipliers[ticker]?.[prevMonthKey] || 1
+          : _mult;
+
+        const adjQtyStart = qtyStart * _startMult;
+        const adjPurchasesQty = purchasesQty * _mult;
+        const adjSalesQty = salesQty * _mult;
+        const adjQuantity = asset.qty * _mult;
+        const eventsQty =
+          adjQuantity - adjQtyStart - adjPurchasesQty + adjSalesQty;
+
+        monthAssetDetails.push({
+          ticker,
+          strategy,
+          quantity: adjQuantity,
+          qtyStart: adjQtyStart,
+          eventsQty,
+          purchasesQty: adjPurchasesQty,
+          purchasesValue: purchases,
+          salesQty: adjSalesQty,
+          salesValue: sales,
+          avgPrice: (asset.qty > 0 ? asset.cost / asset.qty : 0) / _mult,
+          invested: asset.cost,
+          startValue: prevValue,
+          endValue: assetEndValue,
+          priceStart: priceStart / _mult,
+          priceEnd: priceEnd / _mult,
+          netFlow,
+          dividends,
+          realized: assetRealized[ticker] || 0,
+          twr: assetTwr,
+          gain: assetGain,
+        });
+
+        assetValuesPrevMonth[ticker] = assetEndValue;
+      });
+
+      let monthlyReturnPct = 0;
+      const gain =
+        monthMarketValue - previousMarketValue - monthNetFlow + monthDividends;
+
+      if (previousMarketValue > 0) {
+        let denominator = previousMarketValue + monthWeightedFlow;
+        // Modified Dietz anomaly protection for large outflows:
+        if (denominator < previousMarketValue * 0.5 && monthNetFlow < 0) {
+          denominator = previousMarketValue;
+        }
+        if (denominator > 0) monthlyReturnPct = gain / denominator;
+        else monthlyReturnPct = gain / (previousMarketValue + monthPurchases);
+      } else if (monthPurchases > 0) {
+        // For new portfolios, use total purchases as denominator to avoid timing-based amplification
+        monthlyReturnPct = gain / monthPurchases;
+      } else if (monthNetFlow > 0) monthlyReturnPct = gain / monthNetFlow;
+
+      const monthRates = cdiHistory.filter((d) => d.date.startsWith(monthKey));
+      let cdiMonthFactor = 1;
+      monthRates.forEach((d) => {
+        cdiMonthFactor *= 1 + d.value / 100;
+      });
+      const cdiMonthPct = cdiMonthFactor - 1;
+
+      const prevTwrAccum =
+        chartData.length > 0
+          ? chartData[chartData.length - 1].twrAccum / 100
+          : 0;
+      const currentTwrAccum = (1 + prevTwrAccum) * (1 + monthlyReturnPct) - 1;
+      cdiIndex = cdiIndex * (1 + cdiMonthPct);
+
+      const displayDate = new Date(y, m - 1, 2).toLocaleDateString("pt-BR", {
+        month: "short",
+        year: "2-digit",
+      });
+      const totalProfitAccumulated =
+        monthMarketValue +
+        cumulativeDividends +
+        cumulativeRealized +
+        cumulativeBonusCost -
+        monthTotalInvested;
+
+      let monthXtirAnnual = 0;
+      let monthXtirMonthly = 0;
+      if (cumulativeCashFlows.length > 0) {
+        // Tenta encontrar a data manual mais recente deste mês para maior precisão no XTIR
+        let bestEndDate = isCurrentMonth ? now : monthEnd;
+        let latestManualDateMatch: string | null = null;
+
+        assetPrices.forEach((ap) => {
+          if (ap.manualHistory) {
+            const manualInMonth = ap.manualHistory.find(
+              (h) => h.date.substring(0, 7) === monthKey,
+            );
+            if (
+              manualInMonth &&
+              (!latestManualDateMatch ||
+                manualInMonth.date > latestManualDateMatch)
+            ) {
+              latestManualDateMatch = manualInMonth.date;
+            }
+          }
+        });
+
+        if (latestManualDateMatch) {
+          bestEndDate = new Date(latestManualDateMatch);
+          // Ajusta para o final do dia para bater com o fechamento
+          bestEndDate.setHours(23, 59, 59, 999);
+        }
+
+        const flows = [
+          ...cumulativeCashFlows,
+          { date: bestEndDate, amount: monthMarketValue },
+        ];
+        monthXtirAnnual = calculateXIRR(
+          flows.map((f) => f.amount),
+          flows.map((f) => f.date),
+        );
+        monthXtirMonthly =
+          (Math.pow(1 + monthXtirAnnual / 100, 1 / 12) - 1) * 100;
+      }
+
+      const dataPoint = {
+        date: displayDate,
+        fullDate: monthKey,
+        invested: monthTotalInvested,
+        totalInvested: monthTotalInvested,
+        market: monthMarketValue,
+        flow: monthNetFlow,
+        purchases: monthPurchases,
+        sales: monthSales,
+        dividends: monthDividends,
+        cumulativeDividends,
+        realized: monthRealized,
+        totalProfit: totalProfitAccumulated,
+        totalProfitAccumulated,
+        gain: gain,
+        twrMonthly: monthlyReturnPct * 100,
+        twrAccum: currentTwrAccum * 100,
+        xtirAnnual: monthXtirAnnual,
+        xtirMonthly: monthXtirMonthly,
+        cdiAccum: cdiIndex - 100,
+        cdiMonthly: cdiMonthPct * 100,
+        assetDetails: monthAssetDetails.sort((a, b) => b.endValue - a.endValue),
+        strategyAllocation,
+      };
+
+      chartData.push(dataPoint);
+      tableData.unshift(dataPoint);
+      previousMarketValue = monthMarketValue;
+    });
+
+    const effectiveStartDateRaw =
+      overviewFilterDate !== null
+        ? overviewFilterDate
+        : settings.historyStartDate;
+    const effectiveStartDate = effectiveStartDateRaw
+      ? effectiveStartDateRaw.slice(0, 7)
+      : undefined;
+    if (effectiveStartDate && chartData.length > 0) {
+      const startIndex = chartData.findIndex(
+        (d) => d.fullDate >= effectiveStartDate,
+      );
+      if (startIndex > 0) {
+        const startPoint = chartData[startIndex - 1];
+        const baseTwr = startPoint.twrAccum;
+        const baseCdi = startPoint.cdiAccum;
+
+        chartData = chartData.slice(startIndex).map((d) => {
+          const baseTwrFactor = 1 + baseTwr / 100;
+          const baseCdiFactor = 1 + baseCdi / 100;
+          return {
+            ...d,
+            twrAccum:
+              baseTwrFactor !== 0
+                ? ((1 + d.twrAccum / 100) / baseTwrFactor - 1) * 100
+                : d.twrAccum,
+            cdiAccum:
+              baseCdiFactor !== 0
+                ? ((1 + d.cdiAccum / 100) / baseCdiFactor - 1) * 100
+                : d.cdiAccum,
+          };
+        });
+
+        tableData = tableData
+          .filter((d) => d.fullDate >= effectiveStartDate)
+          .map((d) => {
+            const originalD = chartData.find((c) => c.fullDate === d.fullDate);
+            if (!originalD) return d;
+            return {
+              ...d,
+              twrAccum: originalD.twrAccum,
+              cdiAccum: originalD.cdiAccum,
+            };
+          });
+      } else if (startIndex === -1) {
+        chartData = [];
+        tableData = [];
+      }
+    }
+
+    if (chartData.length === 0)
+      return { chartData: [], tableData: [], report: null };
+
+    // REPORT CALCULATIONS
+    const lastMonth = chartData[chartData.length - 1];
+    const prevMonth =
+      chartData.length > 1 ? chartData[chartData.length - 2] : null;
+
+    const returnsMonth = lastMonth.twrMonthly;
+    const currentYear = new Date().getFullYear();
+    const yearPoints = chartData.filter((d) =>
+      d.fullDate.startsWith(currentYear.toString()),
+    );
+    let yearReturn = 0;
+    if (yearPoints.length > 0) {
+      const startYearTwr =
+        chartData.find((d) =>
+          d.fullDate.startsWith((currentYear - 1).toString() + "-12"),
+        )?.twrAccum || 0;
+      yearReturn =
+        ((1 + lastMonth.twrAccum / 100) / (1 + startYearTwr / 100) - 1) * 100;
+    }
+    const inceptionReturn = lastMonth.twrAccum;
+
+    const monthlyReturns = chartData.map((d) => d.twrMonthly);
+    const avgReturn =
+      monthlyReturns.reduce((a, b) => a + b, 0) / monthlyReturns.length;
+    const variance =
+      monthlyReturns.reduce((a, b) => a + Math.pow(b - avgReturn, 2), 0) /
+      monthlyReturns.length;
+    const volatility = Math.sqrt(variance) * Math.sqrt(12);
+
+    const maxReturn = Math.max(...monthlyReturns);
+    const minReturn = Math.min(...monthlyReturns);
+    const monthsAboveCDI = chartData.filter(
+      (d) => d.twrMonthly > d.cdiMonthly,
+    ).length;
+    const monthsBelowCDI = chartData.length - monthsAboveCDI;
+
+    const calculateHorizonPerformance = (monthsCount: number) => {
+      const points = chartData.slice(-monthsCount);
+      if (points.length === 0) return null;
+
+      const startPoint =
+        chartData.length > monthsCount
+          ? chartData[chartData.length - monthsCount - 1]
+          : null;
+      const startTwr = startPoint ? startPoint.twrAccum : 0;
+      const startCdi = startPoint ? startPoint.cdiAccum : 0;
+
+      const portfolioReturn =
+        ((1 + lastMonth.twrAccum / 100) / (1 + startTwr / 100) - 1) * 100;
+      const cdiReturn =
+        ((1 + lastMonth.cdiAccum / 100) / (1 + startCdi / 100) - 1) * 100;
+      const index = cdiReturn !== 0 ? (portfolioReturn / cdiReturn) * 100 : 0;
+
+      const horizonMonthlyReturns = points.map((d) => d.twrMonthly);
+      const hAvg =
+        horizonMonthlyReturns.reduce((a, b) => a + b, 0) /
+        horizonMonthlyReturns.length;
+      const hVar =
+        horizonMonthlyReturns.reduce((a, b) => a + Math.pow(b - hAvg, 2), 0) /
+        horizonMonthlyReturns.length;
+      const hVol = Math.sqrt(hVar) * Math.sqrt(12);
+
+      let hXtirAnnual = 0;
+      let hXtirMonthly = 0;
+
+      const horizonFlows: { date: Date; amount: number }[] = [];
+      const startDate = startPoint
+        ? new Date(
+            Number(startPoint.fullDate.split("-")[0]),
+            Number(startPoint.fullDate.split("-")[1]),
+            0,
+          )
+        : null;
+      const endDate =
+        lastMonth.fullDate === currentMonthKey
+          ? now
+          : new Date(
+              Number(lastMonth.fullDate.split("-")[0]),
+              Number(lastMonth.fullDate.split("-")[1]),
+              0,
+            );
+
+      if (startPoint && startPoint.market) {
+        horizonFlows.push({ date: startDate!, amount: -startPoint.market });
+      }
+
+      filteredTxs.forEach((t) => {
+        const event = t.investmentDetails?.event;
+        if (!event) return;
+        const tDate = new Date(t.date);
+        if ((!startDate || tDate > startDate) && tDate <= endDate) {
+          if (
+            [
+              "DIVIDEND",
+              "JCP",
+              "RENDIMENTO",
+              "REEMBOLSO",
+              "AMORTIZACAO",
+              "SELL",
+            ].includes(event)
+          ) {
+            horizonFlows.push({ date: tDate, amount: t.amount });
+          } else if (event === "BUY") {
+            horizonFlows.push({ date: tDate, amount: -t.amount });
+          }
+        }
+      });
+
+      if (horizonFlows.length > 0 && lastMonth.market > 0) {
+        horizonFlows.push({ date: endDate, amount: lastMonth.market });
+        hXtirAnnual = calculateXIRR(
+          horizonFlows.map((f) => f.amount),
+          horizonFlows.map((f) => f.date),
+        );
+        hXtirMonthly = (Math.pow(1 + hXtirAnnual / 100, 1 / 12) - 1) * 100;
+      }
+
+      return {
+        portfolio: portfolioReturn,
+        cdi: cdiReturn,
+        index: index,
+        volatility: hVol,
+        xtirAnnual: hXtirAnnual,
+        xtirMonthly: hXtirMonthly,
+      };
+    };
+
+    const horizons = [
+      { label: "03 meses", months: 3 },
+      { label: "06 meses", months: 6 },
+      { label: "12 meses", months: 12 },
+      { label: "24 meses", months: 24 },
+      { label: "36 meses", months: 36 },
+      { label: "Desde o início", months: chartData.length },
+    ];
+
+    const performanceHorizons = horizons.map((h) => ({
+      period: h.label,
+      ...(calculateHorizonPerformance(h.months) || {
+        portfolio: 0,
+        cdi: 0,
+        index: 0,
+        volatility: 0,
+      }),
+    }));
+
+    const riskReturnSummary = {
+      above: {
+        qty: monthsAboveCDI,
+        percent: (monthsAboveCDI / chartData.length) * 100,
+      },
+      below: {
+        qty: monthsBelowCDI,
+        percent: (monthsBelowCDI / chartData.length) * 100,
+      },
+    };
+
+    const strategyTypes = [
+      {
+        name: "Renda Fixa",
+        strategies: ["Liquidez", "Título Público", "Pós-fixado", "Prefixado"],
+      },
+      {
+        name: "Renda Variável",
+        strategies: ["Renda Variável", "Fundos Listados"],
+      },
+      { name: "Exterior", strategies: ["Global"] },
+      { name: "Cripto", strategies: ["Cripto"] },
+      { name: "Outros", strategies: ["Outros"] },
+    ];
+
+    const strategyGains: any[] = [];
+    strategyTypes.forEach((type) => {
+      let typeMonth = 0;
+      let typeYear = 0;
+      let typeInception = 0;
+      let typeAllocation = 0;
+      let typeMarket = 0;
+      const subGains: any[] = [];
+
+      type.strategies.forEach((strat) => {
+        const assets = lastMonth.assetDetails.filter(
+          (d: any) => d.strategy === strat,
+        );
+        const monthGain = assets.reduce(
+          (sum: number, a: any) => sum + a.gain,
+          0,
+        );
+        const market = assets.reduce(
+          (sum: number, a: any) => sum + (a.endValue || 0),
+          0,
+        );
+        const yearGain = yearPoints.reduce((sum, p) => {
+          const pAssets = p.assetDetails.filter(
+            (d: any) => d.strategy === strat,
+          );
+          return sum + pAssets.reduce((s: number, a: any) => s + a.gain, 0);
+        }, 0);
+        const inceptionGain = chartData.reduce((sum, p) => {
+          const pAssets = p.assetDetails.filter(
+            (d: any) => d.strategy === strat,
+          );
+          return sum + pAssets.reduce((s: number, a: any) => s + a.gain, 0);
+        }, 0);
+        const allocation =
+          ((lastMonth.strategyAllocation[strat] || 0) /
+            (lastMonth.market || 1)) *
+          100;
+
+        let monthPct =
+          market - monthGain !== 0
+            ? (monthGain / Math.abs(market - monthGain)) * 100
+            : 0;
+        if (isNaN(monthPct) || !isFinite(monthPct)) monthPct = 0;
+
+        let yearPct =
+          market - yearGain !== 0
+            ? (yearGain / Math.abs(market - yearGain)) * 100
+            : 0;
+        if (isNaN(yearPct) || !isFinite(yearPct)) yearPct = 0;
+
+        let inceptionPct =
+          market - inceptionGain !== 0
+            ? (inceptionGain / Math.abs(market - inceptionGain)) * 100
+            : 0;
+        if (isNaN(inceptionPct) || !isFinite(inceptionPct)) inceptionPct = 0;
+
+        typeMonth += monthGain;
+        typeYear += yearGain;
+        typeInception += inceptionGain;
+        typeAllocation += allocation;
+        typeMarket += market;
+
+        subGains.push({
+          strategy: strat,
+          month: monthGain,
+          year: yearGain,
+          inception: inceptionGain,
+          monthPct,
+          yearPct,
+          inceptionPct,
+          allocation,
+        });
+      });
+
+      let typeMonthPct =
+        typeMarket - typeMonth !== 0
+          ? (typeMonth / Math.abs(typeMarket - typeMonth)) * 100
+          : 0;
+      if (isNaN(typeMonthPct) || !isFinite(typeMonthPct)) typeMonthPct = 0;
+
+      let typeYearPct =
+        typeMarket - typeYear !== 0
+          ? (typeYear / Math.abs(typeMarket - typeYear)) * 100
+          : 0;
+      if (isNaN(typeYearPct) || !isFinite(typeYearPct)) typeYearPct = 0;
+
+      let typeInceptionPct =
+        typeMarket - typeInception !== 0
+          ? (typeInception / Math.abs(typeMarket - typeInception)) * 100
+          : 0;
+      if (isNaN(typeInceptionPct) || !isFinite(typeInceptionPct)) typeInceptionPct = 0;
+
+      strategyGains.push({
+        strategy: type.name,
+        isHeader: true,
+        month: typeMonth,
+        year: typeYear,
+        inception: typeInception,
+        monthPct: typeMonthPct,
+        yearPct: typeYearPct,
+        inceptionPct: typeInceptionPct,
+        allocation: typeAllocation,
+      });
+
+      subGains.forEach((sub) => {
+        strategyGains.push({
+          ...sub,
+          isSub: true,
+        });
+      });
+    });
+
+    const liquidityTerms = [
+      "0 a 1 dia",
+      "2 a 5 dias",
+      "16 a 30 dias",
+      "Mais de 180 dias",
+    ];
+    const liquidityData = liquidityTerms.map((term) => {
+      const value = lastMonth.assetDetails
+        .filter((d: any) => getLiquidityTerm(d.strategy) === term)
+        .reduce((sum: number, a: any) => sum + a.endValue, 0);
+      return { term, value, percent: (value / (lastMonth.market || 1)) * 100 };
+    });
+
+    let xtirAnnual = 0;
+    let xtirMonthly = 0;
+    const portfolioCashFlows: { date: Date; amount: number }[] = [];
+    filteredTxs.forEach((t) => {
+      const event = t.investmentDetails?.event;
+      if (!event) return;
+      const tDate = new Date(t.date);
+      if (
+        [
+          "DIVIDEND",
+          "JCP",
+          "RENDIMENTO",
+          "REEMBOLSO",
+          "AMORTIZACAO",
+          "SELL",
+        ].includes(event)
+      ) {
+        portfolioCashFlows.push({ date: tDate, amount: t.amount });
+      } else if (event === "BUY") {
+        portfolioCashFlows.push({ date: tDate, amount: -t.amount });
+      }
+    });
+    if (portfolioCashFlows.length > 0 && lastMonth.market > 0) {
+      const endDate =
+        lastMonth.fullDate === currentMonthKey
+          ? now
+          : new Date(
+              Number(lastMonth.fullDate.split("-")[0]),
+              Number(lastMonth.fullDate.split("-")[1]),
+              0,
+            );
+      portfolioCashFlows.push({ date: endDate, amount: lastMonth.market });
+      xtirAnnual = calculateXIRR(
+        portfolioCashFlows.map((f) => f.amount),
+        portfolioCashFlows.map((f) => f.date),
+      );
+      xtirMonthly = (Math.pow(1 + xtirAnnual / 100, 1 / 12) - 1) * 100;
+    }
+
+    const report = {
+      identification: {
+        title: "Relatório de Performance Consolidado",
+        reference: lastMonth.date,
+        period: `${chartData[0].date} - ${lastMonth.date}`,
+        purpose:
+          "Análise gerencial de rentabilidade, alocação e riscos da carteira de investimentos.",
+      },
+      executiveSummary: {
+        equityEnd: lastMonth.market,
+        equityPrev: prevMonth?.market || 0,
+        gainsMonth: lastMonth.gain,
+        applications:
+          lastMonth.purchases - lastMonth.sales - lastMonth.dividends,
+        redemptions: lastMonth.sales,
+        totalInvested: lastMonth.totalInvested,
+        totalProfitAccumulated: lastMonth.totalProfitAccumulated,
+        cumulativeDividends: lastMonth.cumulativeDividends,
+        totalAlpha: lastMonth.twrAccum - lastMonth.cdiAccum,
+        returns: {
+          month: returnsMonth,
+          year: yearReturn,
+          inception: inceptionReturn,
+          xtirAnnual,
+          xtirMonthly,
+        },
+      },
+      riskReturn: {
+        volatility,
+        maxReturn,
+        minReturn,
+        monthsAboveCDI,
+        monthsBelowCDI,
+        summary: riskReturnSummary,
+        horizons: performanceHorizons,
+      },
+      strategyGains,
+      liquidityData,
+      lastMonthData: lastMonth,
+    };
+
+    return { chartData, tableData, report };
+  }, [
+    investmentTransactions,
+    cdiHistory,
+    assetPrices,
+    portfolioData,
+    assetHistory,
+    overviewFilterCategory,
+    overviewFilterSubCategory,
+    overviewFilterTicker,
+    overviewSearchTerm,
+    categories,
+    subCategories,
+    settings.historyStartDate,
+    overviewFilterDate,
+  ]);
+
+  const handleSyncHistory = async (syncType: "all" | "current_month" = "all") => {
+    if (!overviewData || !overviewData.tableData) return;
+
+    setIsSyncingHistory(true);
+    setSyncHistoryStatus("Iniciando...");
+    setShowSyncOptions(false);
+
+    try {
+      const tickers = new Map<string, boolean>();
+      const cryptoMap = new Map<string, boolean>();
+      const fixedIncomeMap = new Map<string, boolean>();
+      
+      const targetRow = syncType === "current_month" && overviewData.tableData.length > 0 
+        ? [overviewData.tableData[0]] // first element because it's unshifted (latest month)
+        : overviewData.tableData;
+
+      targetRow.forEach((row: any) => {
+        if (row.assetDetails) {
+          row.assetDetails.forEach((d: any) => {
+            const pData = portfolioData.list.find((p) => p.ticker === d.ticker);
+            let isSyncableVariable = false;
+            let isUS = false;
+            let isCrypto = false;
+            let isFixed = false;
+
+            if (pData) {
+              isUS = pData.currency === "USD";
+              isFixed = !!pData.isFixedIncome;
+              const isT =
+                d.ticker.toUpperCase().startsWith("TD:") ||
+                d.ticker.toUpperCase().startsWith("TESOURO");
+              // Only sync variable income and tesouro direct
+              isSyncableVariable = !isFixed || isT;
+              const catName = pData.category?.toLowerCase() || "";
+              const subName = pData.subCategory?.toLowerCase() || "";
+              isCrypto =
+                catName.includes("cripto") ||
+                subName.includes("cripto") ||
+                subName.includes("bitcoin") ||
+                subName.includes("ether") ||
+                BrapiService.isCrypto(d.ticker);
+            } else {
+              // For historical assets not in current portfolio, check transactions
+              const firstTx = investmentTransactions.find(
+                (t) => t.investmentDetails?.ticker === d.ticker,
+              );
+              if (firstTx && firstTx.investmentDetails) {
+                const det = firstTx.investmentDetails;
+                const cat = categories.find((c) => c.id === det.categoryId);
+                const subCat = subCategories.find(
+                  (s) => s.id === det.subCategoryId,
+                );
+
+                const catName = cat?.name.toLowerCase() || "";
+                const subCatName = subCat?.name.toLowerCase() || "";
+
+                isFixed =
+                  catName.includes("renda fixa") ||
+                  subCatName.includes("renda fixa") ||
+                  catName.includes("tesouro") ||
+                  subCatName.includes("tesouro") ||
+                  catName.includes("poupança") ||
+                  subCatName.includes("poupança");
+
+                isUS = det.currency === "USD";
+                const isT =
+                  d.ticker.toUpperCase().startsWith("TD:") ||
+                  d.ticker.toUpperCase().startsWith("TESOURO");
+                // Only sync variable income and tesouro direct
+                isSyncableVariable = !isFixed || isT;
+                isCrypto =
+                  catName.includes("cripto") ||
+                  subCatName.includes("cripto") ||
+                  subCatName.includes("bitcoin") ||
+                  subCatName.includes("ether") ||
+                  BrapiService.isCrypto(d.ticker);
+              }
+            }
+
+            if (isSyncableVariable) {
+              if (syncType === "current_month" && (!pData || pData.quantity <= 0)) {
+                  // Skip it, user doesn't hold it anymore
+              } else {
+                  tickers.set(d.ticker, isUS);
+                  cryptoMap.set(d.ticker, isCrypto);
+                  fixedIncomeMap.set(d.ticker, isFixed);
+              }
+            }
+          });
+        }
+      });
+
+      const tickerList = Array.from(tickers.keys());
+      const hasUSAssets = Array.from(tickers.values()).some((isUS) => isUS) || Array.from(cryptoMap.values()).some((isCrypto) => isCrypto);
+
+      const parseBrNumber = (val: any): number => {
+        if (typeof val === "number") return val;
+        if (!val) return 0;
+        const str = val.toString().trim();
+        const cleanStr = str.replace(/[R$\s%]/g, "");
+        if (cleanStr.includes(".") && cleanStr.includes(",")) {
+          return parseFloat(cleanStr.replace(/\./g, "").replace(",", "."));
+        }
+        if (cleanStr.includes(",")) {
+          return parseFloat(cleanStr.replace(",", "."));
+        }
+        return parseFloat(cleanStr);
+      };
+
+      const processSheetData = (resultados: any[]) => {
+        const monthlyGroups = new Map<
+          string,
+          {
+            firstDate: string;
+            lastDate: string;
+            opening: number;
+            closing: number;
+          }
+        >();
+
+        resultados.forEach((r) => {
+          if (r.data && r.preco != null) {
+            let dateStr = r.data.toString().trim();
+            const brDateMatch = dateStr.match(
+              /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/,
+            );
+            if (brDateMatch) {
+              const day = brDateMatch[1].padStart(2, "0");
+              const month = brDateMatch[2].padStart(2, "0");
+              let year = brDateMatch[3];
+              if (year.length === 2) {
+                year = `20${year}`;
+              }
+              dateStr = `${year}-${month}-${day}`;
+            } else if (dateStr.includes("T")) {
+              dateStr = dateStr.split("T")[0];
+            } else if (!dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              try {
+                const d = new Date(dateStr);
+                if (!isNaN(d.getTime())) {
+                  dateStr = d.toISOString().split("T")[0];
+                } else {
+                  return;
+                }
+              } catch {
+                return;
+              }
+            }
+
+            const monthKey = dateStr.substring(0, 7);
+            const price = parseBrNumber(r.preco);
+
+            if (isNaN(price) || price <= 0) return;
+
+            const existing = monthlyGroups.get(monthKey);
+            if (!existing) {
+              monthlyGroups.set(monthKey, {
+                firstDate: dateStr,
+                lastDate: dateStr,
+                opening: price,
+                closing: price,
+              });
+            } else {
+              if (dateStr < existing.firstDate) {
+                existing.firstDate = dateStr;
+                existing.opening = price;
+              }
+              if (dateStr >= existing.lastDate) {
+                existing.lastDate = dateStr;
+                existing.closing = price;
+              }
+            }
+          } else if (
+            r.mes &&
+            r.mes !== "Date" &&
+            r.mes.match(/^\d{4}-\d{2}$/)
+          ) {
+            const monthKey = r.mes;
+            const closing = parseBrNumber(r.fim);
+            const opening = parseBrNumber(r.inicio);
+
+            if (!isNaN(closing) && closing > 0) {
+              monthlyGroups.set(monthKey, {
+                firstDate: monthKey + "-01",
+                lastDate: monthKey + "-31",
+                opening: opening || closing,
+                closing,
+              });
+            }
+          }
+        });
+
+        const priceMap = new Map<
+          string,
+          { opening: number; closing: number }
+        >();
+        const sortedMonths = Array.from(monthlyGroups.keys()).sort();
+        let lastClosing = 0;
+
+        sortedMonths.forEach((monthKey) => {
+          const data = monthlyGroups.get(monthKey)!;
+          let opening = data.opening;
+          let closing = data.closing;
+          if (lastClosing > 0) {
+            opening = lastClosing;
+          } else if (opening === 0) {
+            opening = closing;
+          }
+          priceMap.set(monthKey, { opening, closing });
+          lastClosing = closing;
+        });
+
+        return priceMap;
+      };
+
+      let usaBrlPriceMap = new Map<
+        string,
+        { opening: number; closing: number }
+      >();
+
+      if (hasUSAssets) {
+        setSyncHistoryStatus(`Buscando USDBRL...`);
+        const ptaxSheetData = await SheetsService.fetchAssetHistory("CURRENCY:USDBRL");
+        if (ptaxSheetData && ptaxSheetData.resultados) {
+          usaBrlPriceMap = processSheetData(ptaxSheetData.resultados);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      const failedTickers: string[] = [];
+
+      for (const ticker of tickerList) {
+        setSyncHistoryStatus(`Buscando ${ticker}...`);
+        let fetchTicker = ticker;
+        const isCrypto = cryptoMap.get(ticker) || false;
+        const isUSA = tickers.get(ticker) || false;
+
+        if (isCrypto && !fetchTicker.match(/[0-9]{2}$/)) {
+          let base = fetchTicker.toUpperCase();
+          if (base.startsWith("CURRENCY:")) {
+            base = base.replace("CURRENCY:", "");
+          }
+          base = base.replace("-BRL", "").replace("BRL", "").replace("-USD", "").replace("USD", "");
+          
+          fetchTicker = `CURRENCY:${base}USD`;
+        } else {
+            const isTesouro = fetchTicker.toUpperCase().startsWith("TD:") || fetchTicker.toUpperCase().startsWith("TESOURO");
+            const isFixed = fixedIncomeMap.get(ticker);
+            
+            if (!isTesouro && !isFixed && !fetchTicker.includes(":")) {
+                if (isUSA) {
+                    fetchTicker = `NYSEARCA:${fetchTicker}`;
+                } else {
+                    fetchTicker = `BVMF:${fetchTicker}`;
+                }
+            }
+        }
+        
+        let sheetData = null;
+        try {
+            sheetData = await SheetsService.fetchAssetHistory(fetchTicker);
+        } catch (err) {
+            console.error(`Erro ao buscar ${ticker}:`, err);
+        }
+
+        if (sheetData && sheetData.resultados) {
+          const isUS = tickers.get(ticker) || false;
+          const priceMap = processSheetData(sheetData.resultados);
+
+          const historyItems: {
+            date: string;
+            quantity: number;
+            avgPrice: number;
+            openingPrice: number;
+            closingPrice: number;
+          }[] = [];
+
+          overviewData.tableData.forEach((row: any) => {
+            const detail = row.assetDetails?.find(
+              (d: any) => d.ticker === ticker,
+            );
+            if (detail && detail.quantity > 0) {
+              const date = row.fullDate;
+              const prices = priceMap.get(date);
+
+              let openingPrice = prices?.opening || 0;
+              let closingPrice = prices?.closing || 0;
+
+              const shouldMultiplyUSD = isUS || (isCrypto && !ticker.match(/[0-9]{2}$/));
+
+              if (shouldMultiplyUSD) {
+                const usdPrices = usaBrlPriceMap.get(date);
+                // We fallback to 1 if we couldn't fetch USDBRL for some reason, to not zero it completely
+                const usdOp = usdPrices?.opening || 1;
+                const usdCl = usdPrices?.closing || 1;
+                openingPrice *= usdOp;
+                closingPrice *= usdCl;
+              }
+
+              historyItems.push({
+                date,
+                quantity: detail.quantity,
+                avgPrice: detail.avgPrice || 0,
+                openingPrice,
+                closingPrice,
+              });
+            }
+          });
+
+          if (historyItems.length > 0) {
+            historyItems.sort((a, b) => a.date.localeCompare(b.date));
+            // SheetsService (Google Finance) usually returns adjusted prices. Maintain user's preference if toggled.
+            const preserveAdjustment = assetHistory[ticker] !== undefined 
+                ? assetHistory[ticker].adjustForSplits 
+                : true;
+            await StorageService.saveAssetHistory(ticker, historyItems, preserveAdjustment);
+          }
+        } else {
+          // Failure case
+          failedTickers.push(ticker);
+          if (sheetData && (sheetData as any).erro) {
+            const errMesg = (sheetData as any).erro;
+            console.error(`Erro do Apps Script para ${ticker}:`, errMesg);
+            setSyncHistoryStatus(`Erro: ${errMesg}`);
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+          } else {
+            console.warn(`Sincronização falhou para o ativo ${ticker}. Dados não retornados.`);
+          }
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      if (failedTickers.length > 0) {
+          alert(`Os seguintes ativos não puderam ser sincronizados (possível troca de ticker, OPA, ou API indisponível):\n\n${failedTickers.join(', ')}`);
+      }
+
+      setSyncHistoryStatus("Finalizado!");
+    } catch (e) {
+      console.error(e);
+      setSyncHistoryStatus("Erro!");
+    } finally {
+      setTimeout(() => setSyncHistoryStatus(""), 3000);
+      setIsSyncingHistory(false);
+    }
+  };
+
+  // ... (rest of the component code remains exactly the same)
+
+  const classSummary = useMemo(() => {
+    const groups: Record<
+      string,
+      {
+        name: string;
+        market: number;
+        invested: number;
+        totalProfit: number;
+        dailyProfit: number;
+        count: number;
+        subcategories: any;
+      }
+    > = {};
+    portfolioData.list.forEach((item) => {
+      if (!groups[item.category]) {
+        groups[item.category] = {
+          name: item.category,
+          market: 0,
+          invested: 0,
+          totalProfit: 0,
+          dailyProfit: 0,
+          count: 0,
+          subcategories: {},
+        };
+      }
+      const g = groups[item.category];
+      g.market += item.currentTotal;
+      g.invested += item.totalCost;
+      g.totalProfit += item.totalProfit;
+      g.dailyProfit += item.dailyProfit;
+      g.count += 1;
+
+      const subName = item.subCategory || "Outros";
+      if (!g.subcategories[subName])
+        g.subcategories[subName] = {
+          name: subName,
+          value: 0,
+          invested: 0,
+          dailyProfit: 0,
+          totalProfit: 0,
+        };
+      g.subcategories[subName].value += item.currentTotal;
+      g.subcategories[subName].invested += item.totalCost;
+      g.subcategories[subName].dailyProfit += item.dailyProfit;
+      g.subcategories[subName].totalProfit += item.totalProfit;
+    });
+    return Object.values(groups).sort((a, b) => b.market - a.market);
+  }, [portfolioData.list]);
+
+  const groupedPositions = useMemo(() => {
+    const groups: Record<string, typeof portfolioData.list> = {};
+    portfolioData.list.forEach((item) => {
+      if (!groups[item.category]) groups[item.category] = [];
+      groups[item.category].push(item);
+    });
+    Object.keys(groups).forEach((key) => {
+      groups[key].sort((a, b) => b.currentTotal - a.currentTotal);
+    });
+    return groups;
+  }, [portfolioData.list]);
+
+  const toggleSubCategory = (catName: string, subName: string) => {
+    const key = `${catName}-${subName}`;
+    const newSet = new Set(expandedSubCategories);
+    if (newSet.has(key)) newSet.delete(key);
+    else newSet.add(key);
+    setExpandedSubCategories(newSet);
+  };
+
+  const filteredHistoryTransactions = useMemo<Transaction[]>(() => {
+    return [...investmentTransactions].reverse().filter((t) => {
+      if (
+        historySearchTerm &&
+        !t.investmentDetails?.ticker.includes(
+          historySearchTerm.toUpperCase(),
+        ) &&
+        !(
+          t.investmentDetails?.newTicker &&
+          t.investmentDetails.newTicker.includes(
+            historySearchTerm.toUpperCase(),
+          )
+        )
+      )
+        return false;
+      if (historyFilterCategory && t.categoryId !== historyFilterCategory)
+        return false;
+      if (
+        historyFilterSubCategory &&
+        t.subCategoryId !== historyFilterSubCategory
+      )
+        return false;
+      const dateStr = t.date.split("T")[0];
+      if (historyStart && dateStr < historyStart) return false;
+      if (historyEnd && dateStr > historyEnd) return false;
+      return true;
+    });
+  }, [
+    investmentTransactions,
+    historySearchTerm,
+    historyFilterCategory,
+    historyFilterSubCategory,
+    historyStart,
+    historyEnd,
+  ]);
+
+  const historyDividendsList = useMemo(() => {
+    return filteredHistoryTransactions.filter((t) =>
+      ["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(
+        t.investmentDetails?.event || "",
+      ),
+    );
+  }, [filteredHistoryTransactions]);
+
+  const historyOperationsList = useMemo(() => {
+    return filteredHistoryTransactions.filter(
+      (t) =>
+        !["DIVIDEND", "JCP", "RENDIMENTO", "REEMBOLSO"].includes(
+          t.investmentDetails?.event || "",
+        ),
+    );
+  }, [filteredHistoryTransactions]);
+
