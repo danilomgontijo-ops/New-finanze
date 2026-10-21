@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tcontrole v3 - TCEPR Fiscalização</title>
+    <meta name="description" content="A comprehensive web application to manage, track, and analyze fiscal demands using Firebase for data storage and Gemini API for intelligent analysis and summarization." />
+    <meta property="og:title" content="tcontrole v3 - TCEPR Fiscalização" />
+    <meta property="og:description" content="A comprehensive web application to manage, track, and analyze fiscal demands using Firebase for data storage and Gemini API for intelligent analysis and summarization." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              tcepr: {
+                50: '#f0f7fc',
+                100: '#e0f0f9',
+                200: '#b9e0f3',
+                300: '#7cc7ea',
+                400: '#38a8dd',
+                500: '#006fa9',
+                600: '#00588a',
+                700: '#034a74', // Main TCEPR Navy Blue from logo
+                800: '#002f4d',
+                900: '#002138',
+                950: '#001525',
+              },
+            }
+          }
+        }
+      }
+    </script>
+    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/",
+    "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "dompurify": "https://aistudiocdn.com/dompurify@^3.3.0",
+    "@tiptap/extension-underline": "https://aistudiocdn.com/@tiptap/extension-underline@^3.10.1",
+    "@tiptap/extension-image": "https://aistudiocdn.com/@tiptap/extension-image@^3.10.1",
+    "@tiptap/extension-link": "https://aistudiocdn.com/@tiptap/extension-link@^3.10.1",
+    "@tiptap/extension-text-align": "https://aistudiocdn.com/@tiptap/extension-text-align@^3.10.1",
+    "@tiptap/starter-kit": "https://aistudiocdn.com/@tiptap/starter-kit@^3.10.1",
+    "@tiptap/core": "https://aistudiocdn.com/@tiptap/core@^3.10.1",
+    "@tiptap/react": "https://aistudiocdn.com/@tiptap/react@^3.10.1",
+    "@tiptap/extension-blockquote": "https://aistudiocdn.com/@tiptap/extension-blockquote@^3.10.1",
+    "react-csv": "https://aistudiocdn.com/react-csv@^2.2.2",
+    "@tiptap/extension-color": "https://aistudiocdn.com/@tiptap/extension-color@^3.10.1",
+    "@tiptap/extension-text-style": "https://aistudiocdn.com/@tiptap/extension-text-style@^3.10.1",
+    "@tiptap/extension-highlight": "https://aistudiocdn.com/@tiptap/extension-highlight@^3.10.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+html, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Ensure smooth rendering for the font */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* TipTap Editor & Rich Text List and Content Styling */
+.ProseMirror,
+.tiptap {
+  outline: none;
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+}
+
+.ProseMirror ul,
+.tiptap ul,
+.observation-note-content ul {
+  list-style: disc !important;
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  padding-left: 2rem !important;
+}
+
+.ProseMirror ol,
+.tiptap ol,
+.observation-note-content ol {
+  list-style: decimal !important;
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  padding-left: 2rem !important;
+}
+
+.ProseMirror li,
+.tiptap li,
+.observation-note-content li {
+  display: list-item !important;
+  list-style: inherit !important;
+  list-style-type: inherit !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  padding-left: 0.25rem !important;
+}
+
+.ProseMirror li p,
+.tiptap li p {
+  margin: 0 !important;
+}
+
+.ProseMirror blockquote,
+.tiptap blockquote,
+.observation-note-content blockquote {
+  border-left: 3px solid #006fa9 !important;
+  padding-left: 0.75rem !important;
+  margin: 0.5rem 0 !important;
+  font-style: italic !important;
+  color: #475569 !important;
+}
+
+.ProseMirror h1,
+.tiptap h1 {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  margin: 0.75rem 0 0.25rem 0 !important;
+  color: #0f172a !important;
+}
+
+.ProseMirror h2,
+.tiptap h2 {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  margin: 0.5rem 0 0.25rem 0 !important;
+  color: #0f172a !important;
+}
+
+.ProseMirror p,
+.tiptap p {
+  margin-bottom: 0.4rem;
+}
+
+.ProseMirror p:last-child,
+.tiptap p:last-child {
+  margin-bottom: 0;
+}
+
